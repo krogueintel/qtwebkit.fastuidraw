@@ -1,0 +1,20 @@
+Building:
+  Tools/Scripts/build-webkit --qt --release --cmakeargs="-DENABLE_MINIBROWSER=ON"
+  Tools/Scripts/build-webkit --qt --debug --cmakeargs="-DENABLE_MINIBROWSER=ON"
+
+Qt WebKit: rendering.
+  Entry point to drawing with QPainter is QWebFrameAdapter::renderRelativeCoords()
+  in Source/WebKit/qt/WebCoreSupport/QWebFrameAdapter.cpp. Full stack:
+
+  QWebView::paint() --> QWebFrame::render() --> QWebFrameAdapter::renderRelativeCoords()
+
+  We can probably do the FastUIDraw magic there where we add a render() method series
+  that passes along a fastuidraw::Painter handle. We can modify the test application,
+  QtTestBrowser, class WebPage to do the work probably, code located in
+  Tools/QtTestBrowser. We can also, go for the GraphicsView stuff which has access
+  to GL (probably). Better to use the QOpenGLWidget code base probably.
+
+
+Adding FastUIDraw to build:
+  The best place looks like adding to Source/cmake/WebKitCommon.cmake the necessary includes and links,
+  or pssibly better place is PlatformQt.cmake in Source/WebCore
