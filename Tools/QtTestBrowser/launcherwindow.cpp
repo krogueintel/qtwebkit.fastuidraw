@@ -73,6 +73,8 @@
 #include <QtNetwork/QNetworkDiskCache>
 #endif
 
+#include <QSurfaceFormat>
+
 struct HighlightedElement {
     QWebElement m_element;
     QString m_previousStyle;
@@ -1048,8 +1050,16 @@ void LauncherWindow::toggleQGLWidgetViewport(bool enable)
         m_windowOptions.useQOpenGLWidgetViewport = false;
     m_windowOptions.useQGLWidgetViewport = enable;
 
+    /* Arbitrarily choose version 4.5 because Mesa/i965
+     * on Gen9 supports it.
+     */
+    QSurfaceFormat sf(QSurfaceFormat::defaultFormat());
+    QGLFormat f;
+    f.setProfile(QGLFormat::CoreProfile);
+    f.setVersion(sf.majorVersion(), sf.minorVersion());
+
     WebViewGraphicsBased* view = static_cast<WebViewGraphicsBased*>(m_view);
-    view->setViewport(enable ? new QGLWidget() : 0);
+    view->setViewport(enable ? new QGLWidget(f) : 0);
 }
 
 void LauncherWindow::toggleQOpenGLWidgetViewport(bool enable)

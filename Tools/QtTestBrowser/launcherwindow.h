@@ -37,6 +37,7 @@
 
 #ifndef QT_NO_OPENGL
 #include <QtOpenGL/QGLWidget>
+#include <QtOpenGL/QGLContext>
 #endif
 #if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLWidget>

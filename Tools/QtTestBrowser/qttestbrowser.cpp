@@ -302,6 +302,25 @@ void LauncherApplication::handleUserOptions()
 
 int main(int argc, char **argv)
 {
+    /* make all the windows of all GL contexts 
+     * in the same share group; this must be set
+     * before the QCoreApplication derived object
+     * is created (in this case LauncherApplication).
+     * This is for that FastUIDraw will use a single
+     * global set of atlases.
+     */
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
+    /* make sure that all QOpenGLWidget and QOpenGLContext
+     * are made with the following GL context properties.
+     * We choose 4.5 because Mesa/i965 supports it.
+     */
+    QSurfaceFormat f;
+    f.setProfile(QSurfaceFormat::CoreProfile);
+    f.setMajorVersion(4);
+    f.setMinorVersion(5);
+    QSurfaceFormat::setDefaultFormat(f);
+  
     LauncherApplication app(argc, argv);
 
     if (app.isRobotized()) {
