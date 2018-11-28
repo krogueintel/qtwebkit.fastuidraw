@@ -19,6 +19,7 @@
 
 #include "config.h"
 #include "qwebkitglobal.h"
+#include "GraphicsContext.h"
 
 #include <WebKitVersion.h>
 
@@ -69,4 +70,11 @@ int qWebKitMajorVersion()
 int qWebKitMinorVersion()
 {
     return WEBKIT_MINOR_VERSION;
+}
+
+void qSetFastUIDrawAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas> g,
+                           fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
+                           fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c)
+{
+  WebCore::GraphicsContext::setDefaultAtlases(g, i, c);
 }

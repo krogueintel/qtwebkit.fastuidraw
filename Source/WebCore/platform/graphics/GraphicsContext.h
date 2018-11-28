@@ -47,7 +47,9 @@ class PlatformContextCairo;
 typedef WebCore::PlatformContextCairo PlatformGraphicsContext;
 #elif PLATFORM(QT)
 #include <QPainter>
+#include <fastuidraw/painter/painter.hpp>
 typedef QPainter PlatformGraphicsContext;
+
 #elif USE(WINGDI)
 typedef struct HDC__ PlatformGraphicsContext;
 #else
@@ -441,6 +443,27 @@ public:
 
 #if PLATFORM(QT) || USE(CAIRO)
     bool mustUseShadowBlur() const;
+#endif
+
+#if PLATFORM(QT)
+  static
+  void
+  setDefaultAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas> g,
+                    fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
+                    fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c);
+
+  static
+  const fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas>&
+  glyphAtlas(void);
+
+  static
+  const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
+  imageAtlas(void);
+
+  static
+  const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
+  colorAtlas(void);
+  
 #endif
 
     void drawFocusRing(const Vector<FloatRect>&, float width, float offset, const Color&);

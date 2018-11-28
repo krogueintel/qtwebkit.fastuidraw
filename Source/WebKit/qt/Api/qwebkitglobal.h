@@ -23,6 +23,7 @@
 
 #include <QtCore/qglobal.h>
 #include <QtCore/qstring.h>
+#include <fastuidraw/painter/painter.hpp>
 
 #ifndef QT_STATIC
 #  if !defined(BUILDING_WebKitWidgets) && (defined(BUILDING_WebKit) || defined(BUILDING_WebKit2))
@@ -43,5 +44,9 @@
 QWEBKIT_EXPORT QString qWebKitVersion();
 QWEBKIT_EXPORT int qWebKitMajorVersion();
 QWEBKIT_EXPORT int qWebKitMinorVersion();
+
+QWEBKIT_EXPORT void qSetFastUIDrawAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas> g,
+                                          fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
+                                          fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c);
 
 #endif // QWEBKITGLOBAL_H
