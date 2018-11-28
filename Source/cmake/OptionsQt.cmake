@@ -951,3 +951,16 @@ endif ()
 # traditional approach with Runtime and Devel, but we need it to fix concurrent installation of
 # debug and release builds in qmake-based build
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "Code")
+
+find_package(PkgConfig)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  pkg_check_modules(FASTUIDRAW REQUIRED fastuidrawGL-debug)
+else ()
+  pkg_check_modules(FASTUIDRAW REQUIRED fastuidrawGL-release)
+endif ()
+
+FOREACH(FLAG ${FASTUIDRAW_CFLAGS})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAG}")
+ENDFOREACH(FLAG ${FASTUIDRAW_CFLAGS})
+
+link_directories(${FASTUIDRAW_LIBRARY_DIRS})

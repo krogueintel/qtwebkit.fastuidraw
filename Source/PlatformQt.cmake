@@ -11,7 +11,6 @@ if (ENABLE_WEBKIT2)
 endif ()
 set_property(TARGET ${TARGETS_WITH_AUTOMOC} PROPERTY AUTOMOC ON)
 
-
 # Minimal debug
 
 # Builds with debug flags result in a huge amount of symbols with the GNU toolchain,
