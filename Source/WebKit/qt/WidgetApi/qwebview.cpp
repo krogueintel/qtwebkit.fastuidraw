@@ -43,6 +43,7 @@ public:
         : view(view)
         , page(0)
         , renderHints(QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform)
+        , m_painter(NULL)
     {
         Q_ASSERT(view);
     }
@@ -56,6 +57,7 @@ public:
     QWebPage *page;
 
     QPainter::RenderHints renderHints;
+    fastuidraw::reference_counted_ptr<fastuidraw::Painter> *m_painter;
 };
 
 QWebViewPrivate::~QWebViewPrivate()
@@ -172,7 +174,7 @@ static QAccessibleInterface* accessibleInterfaceFactory(const QString& key, QObj
     \sa load()
 */
 QWebView::QWebView(QWidget *parent)
-    : QWidget(parent)
+    : QGLWidget(parent)
 {
     d = new QWebViewPrivate(this);
 
@@ -189,6 +191,30 @@ QWebView::QWebView(QWidget *parent)
 #ifndef QT_NO_ACCESSIBILITY
     QAccessible::installFactory(accessibleInterfaceFactory);
 #endif
+}
+
+QWebView::
+QWebView(fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+         QWidget* parent):
+  QGLWidget(parent)
+{
+  d = new QWebViewPrivate(this);
+
+#if !defined(Q_WS_QWS)
+    setAttribute(Qt::WA_InputMethodEnabled);
+#endif
+
+    setAttribute(Qt::WA_AcceptTouchEvents);
+    setAcceptDrops(true);
+
+    setMouseTracking(true);
+    setFocusPolicy(Qt::WheelFocus);
+
+#ifndef QT_NO_ACCESSIBILITY
+    QAccessible::installFactory(accessibleInterfaceFactory);
+#endif
+
+    d->m_painter = &painter;
 }
 
 /*!
@@ -815,6 +841,11 @@ void QWebView::resizeEvent(QResizeEvent *e)
 */
 void QWebView::paintEvent(QPaintEvent *ev)
 {
+    if (d->m_painter) {
+        QGLWidget::paintEvent(ev);
+        return;
+    }
+  
     if (!d->page)
         return;
 #ifdef QWEBKIT_TIME_RENDERING
@@ -832,6 +863,26 @@ void QWebView::paintEvent(QPaintEvent *ev)
     int elapsed = time.elapsed();
     qDebug() << "paint event on " << ev->region() << ", took to render =  " << elapsed;
 #endif
+}
+
+void QWebView::initializeGL(void)
+{
+    if (d->m_painter) {
+        fastuidraw::reference_counted_ptr<fastuidraw::Painter> &P(*d->m_painter);
+        if (!P) {
+            /* Create the Painter, along with atlases and install the atlases */
+        }
+    }
+}
+
+void QWebView::resizeGL(int w, int h)
+{
+  /* delete the Fastuidraw surface if we have one */
+}
+
+void QWebView::paintGL(void)
+{
+    
 }
 
 /*!

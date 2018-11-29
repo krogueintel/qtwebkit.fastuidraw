@@ -28,6 +28,9 @@
 #include <QtGui/qpainter.h>
 #include <QtNetwork/qnetworkaccessmanager.h>
 #include <QtWidgets/qwidget.h>
+#include <QGLWidget>
+
+#include <fastuidraw/painter/painter.hpp>
 
 QT_BEGIN_NAMESPACE
 class QNetworkRequest;
@@ -38,7 +41,11 @@ class QWebPage;
 class QWebViewPrivate;
 class QWebNetworkRequest;
 
-class QWEBKITWIDGETS_EXPORT QWebView : public QWidget {
+/* Using QOpenGLWidget makes a crash in WebCore::GraphicsContext::isAcceleratedContext()
+ * of Source/WebCore/platform/graphics/qt/GraphicsContextQt.cpp because
+ * platformContext()->paintEngine() is NULL. Fixing that still leaves us with a blackscreen.
+ */
+class QWEBKITWIDGETS_EXPORT QWebView : public QGLWidget {
     Q_OBJECT
     Q_PROPERTY(QString title READ title)
     Q_PROPERTY(QUrl url READ url WRITE setUrl)
@@ -55,6 +62,8 @@ class QWEBKITWIDGETS_EXPORT QWebView : public QWidget {
     Q_FLAGS(QPainter::RenderHints)
 public:
     explicit QWebView(QWidget* parent = Q_NULLPTR);
+    explicit QWebView(fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                      QWidget* parent = Q_NULLPTR);
     ~QWebView();
 
     QWebPage* page() const;
@@ -130,6 +139,9 @@ Q_SIGNALS:
 protected:
     void resizeEvent(QResizeEvent*) Q_DECL_OVERRIDE;
     void paintEvent(QPaintEvent*) Q_DECL_OVERRIDE;
+    void paintGL(void) Q_DECL_OVERRIDE;
+    void initializeGL(void) Q_DECL_OVERRIDE;
+    void resizeGL(int w, int h) Q_DECL_OVERRIDE;
 
     virtual QWebView *createWindow(QWebPage::WebWindowType type);
 
