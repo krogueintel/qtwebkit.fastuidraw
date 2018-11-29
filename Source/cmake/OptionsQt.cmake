@@ -520,7 +520,7 @@ if (WEBP_FOUND)
     SET_AND_EXPOSE_TO_BUILD(USE_WEBP 1)
 endif ()
 
-set(QT_REQUIRED_COMPONENTS Core Gui Network)
+set(QT_REQUIRED_COMPONENTS Core Gui Network OpenGL)
 
 # FIXME: Allow building w/o these components
 list(APPEND QT_REQUIRED_COMPONENTS

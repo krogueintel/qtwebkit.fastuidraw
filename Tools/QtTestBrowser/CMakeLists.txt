@@ -42,7 +42,10 @@ set(QtTestBrowser_LIBRARIES
     ${Qt5PrintSupport_LIBRARIES}
     WebKitWidgets
     ${STATIC_LIB_DEPENDENCIES}
+    ${FASTUIDRAW_LIBRARIES}
 )
+
+message("QtTestBrowser_LIBRARIES is: ${QtTestBrowser_LIBRARIES}")
 
 qt_wrap_cpp(WebKit QtTestBrowser_SOURCES
     webinspector.h

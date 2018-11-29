@@ -290,6 +290,7 @@ list(APPEND WebCore_LIBRARIES
     ${Qt5Gui_LIBRARIES}
     ${Qt5Network_LIBRARIES}
     ${Qt5Sensors_LIBRARIES}
+    ${Qt5OpenGL_LIBRARIES}
     ${SQLITE_LIBRARIES}
     ${X11_X11_LIB}
     ${ZLIB_LIBRARIES}
