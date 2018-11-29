@@ -279,6 +279,7 @@ list(APPEND WebKit_LIBRARIES
         ${Qt5Core_LIBRARIES}
         ${Qt5Gui_LIBRARIES}
         ${Qt5Network_LIBRARIES}
+        ${Qt5OpenGL_LIBRARIES}
 )
 
 if (ENABLE_GEOLOCATION)
