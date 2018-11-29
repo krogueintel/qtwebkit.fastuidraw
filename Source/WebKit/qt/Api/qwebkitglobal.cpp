@@ -72,7 +72,7 @@ int qWebKitMinorVersion()
     return WEBKIT_MINOR_VERSION;
 }
 
-void qSetFastUIDrawAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas> g,
+void qSetFastUIDrawAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
                            fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
                            fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c)
 {

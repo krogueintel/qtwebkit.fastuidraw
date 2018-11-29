@@ -95,7 +95,7 @@ namespace {
       return R;
     }
 
-    fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas> m_glyph_atlas;
+    fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> m_glyph_cache;
     fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> m_image_atlas;
     fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> m_color_stop_atlas;
     
@@ -109,21 +109,21 @@ namespace WebCore {
 
 void
 GraphicsContext::
-setDefaultAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas> g,
+setDefaultAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
                   fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
                   fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c)
 {
   AtlasSet &R(AtlasSet::atlas_set());
-  R.m_glyph_atlas = g;
+  R.m_glyph_cache = g;
   R.m_image_atlas = i;
   R.m_color_stop_atlas = c;
 }
 
-const fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas>&
+const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
 GraphicsContext::
-glyphAtlas(void)
+glyphCache(void)
 {
-  return AtlasSet::atlas_set().m_glyph_atlas;
+  return AtlasSet::atlas_set().m_glyph_cache;
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
@@ -1829,7 +1829,9 @@ void GraphicsContext::takeOwnershipOfPlatformContext()
 
 bool GraphicsContext::isAcceleratedContext() const
 {
-    return (platformContext()->paintEngine()->type() == QPaintEngine::OpenGL2);
+  return platformContext()
+    && platformContext()->paintEngine()
+    && platformContext()->paintEngine()->type() == QPaintEngine::OpenGL2;
 }
 
 }

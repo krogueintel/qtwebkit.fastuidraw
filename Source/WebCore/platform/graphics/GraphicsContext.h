@@ -448,13 +448,13 @@ public:
 #if PLATFORM(QT)
   static
   void
-  setDefaultAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas> g,
+  setDefaultAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
                     fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
                     fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c);
 
   static
-  const fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas>&
-  glyphAtlas(void);
+  const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
+  glyphCache(void);
 
   static
   const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&

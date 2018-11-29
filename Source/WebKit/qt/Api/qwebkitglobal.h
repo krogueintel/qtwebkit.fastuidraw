@@ -45,7 +45,7 @@ QWEBKIT_EXPORT QString qWebKitVersion();
 QWEBKIT_EXPORT int qWebKitMajorVersion();
 QWEBKIT_EXPORT int qWebKitMinorVersion();
 
-QWEBKIT_EXPORT void qSetFastUIDrawAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphAtlas> g,
+QWEBKIT_EXPORT void qSetFastUIDrawAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
                                           fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
                                           fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c);
 
