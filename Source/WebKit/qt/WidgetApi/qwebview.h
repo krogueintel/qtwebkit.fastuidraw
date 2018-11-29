@@ -62,7 +62,8 @@ class QWEBKITWIDGETS_EXPORT QWebView : public QGLWidget {
     Q_FLAGS(QPainter::RenderHints)
 public:
     explicit QWebView(QWidget* parent = Q_NULLPTR);
-    explicit QWebView(fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+    explicit QWebView(QGLWidget *sharedWidget,
+                      fastuidraw::reference_counted_ptr<fastuidraw::Painter> painter,
                       QWidget* parent = Q_NULLPTR);
     ~QWebView();
 

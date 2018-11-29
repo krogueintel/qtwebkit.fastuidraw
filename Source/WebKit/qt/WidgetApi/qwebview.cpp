@@ -21,6 +21,7 @@
 
 #include "config.h"
 #include "qwebview.h"
+#include "qwebkitglobal.h"
 
 #include "QWebPageClient.h"
 #include "qwebframe.h"
@@ -37,6 +38,9 @@
 #include <qprinter.h>
 #endif
 
+#include <fastuidraw/gl_backend/ngl_header.hpp>
+#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+
 static QGLFormat
 gl45_format(void)
 {
@@ -52,7 +56,6 @@ public:
         : view(view)
         , page(0)
         , renderHints(QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform)
-        , m_painter(NULL)
     {
         Q_ASSERT(view);
     }
@@ -66,7 +69,7 @@ public:
     QWebPage *page;
 
     QPainter::RenderHints renderHints;
-    fastuidraw::reference_counted_ptr<fastuidraw::Painter> *m_painter;
+    fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
 };
 
 QWebViewPrivate::~QWebViewPrivate()
@@ -203,9 +206,10 @@ QWebView::QWebView(QWidget *parent)
 }
 
 QWebView::
-QWebView(fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+QWebView(QGLWidget *sharedWidget,
+         fastuidraw::reference_counted_ptr<fastuidraw::Painter> painter,
          QWidget* parent):
-  QGLWidget(gl45_format(), parent)
+  QGLWidget(gl45_format(), parent, sharedWidget)
 {
   d = new QWebViewPrivate(this);
 
@@ -223,7 +227,7 @@ QWebView(fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
     QAccessible::installFactory(accessibleInterfaceFactory);
 #endif
 
-    d->m_painter = &painter;
+    d->m_painter = painter;
 }
 
 /*!
@@ -876,12 +880,6 @@ void QWebView::paintEvent(QPaintEvent *ev)
 
 void QWebView::initializeGL(void)
 {
-    if (d->m_painter) {
-        fastuidraw::reference_counted_ptr<fastuidraw::Painter> &P(*d->m_painter);
-        if (!P) {
-            /* Create the Painter, along with atlases and install the atlases */
-        }
-    }
 }
 
 void QWebView::resizeGL(int w, int h)
@@ -891,7 +889,8 @@ void QWebView::resizeGL(int w, int h)
 
 void QWebView::paintGL(void)
 {
-    
+  fastuidraw_glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+  fastuidraw_glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 /*!
