@@ -37,6 +37,15 @@
 #include <qprinter.h>
 #endif
 
+static QGLFormat
+gl45_format(void)
+{
+  QGLFormat qf;
+  qf.setProfile(QGLFormat::CoreProfile);
+  qf.setVersion(4, 5);
+  return qf;
+}
+
 class QWebViewPrivate {
 public:
     QWebViewPrivate(QWebView *view)
@@ -196,7 +205,7 @@ QWebView::QWebView(QWidget *parent)
 QWebView::
 QWebView(fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
          QWidget* parent):
-  QGLWidget(parent)
+  QGLWidget(gl45_format(), parent)
 {
   d = new QWebViewPrivate(this);
 
