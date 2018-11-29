@@ -41,15 +41,50 @@
 #include <QGraphicsWidget>
 #include <QTime>
 
+#include <QGLWidget>
+#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+
 QT_BEGIN_NAMESPACE
 class QStateMachine;
 QT_END_NAMESPACE
+
+/* Sighs. Something so simple as just share GL resources across multiple
+ * QGLWidget objects and something to initially create them.
+ */
+class HacksForQt:public QGLWidget
+{
+    Q_OBJECT
+public:
+  static
+  HacksForQt*
+  getHacksForQt(void);
+
+  static
+  void
+  shut_down(void);
+
+  fastuidraw::reference_counted_ptr<fastuidraw::gl::ImageAtlasGL> m_image_atlas;
+  fastuidraw::reference_counted_ptr<fastuidraw::gl::GlyphAtlasGL> m_glyph_atlas;
+  fastuidraw::reference_counted_ptr<fastuidraw::gl::ColorStopAtlasGL> m_colorstop_atlas;
+  fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> m_glyph_cache;
+  fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> m_backend;
+
+private:
+  HacksForQt(void);
+  ~HacksForQt();
+};
+
 
 class WebViewTraditional final : public QWebView {
     Q_OBJECT
 
 public:
-    WebViewTraditional(QWidget* parent) : QWebView(parent) {}
+    enum paint_with_fastuidraw_t
+      {
+        paint_with_fastuidraw
+      };
+    WebViewTraditional(QWidget* parent);
+    WebViewTraditional(QWidget* parent, enum paint_with_fastuidraw_t);
 
 protected:
     void contextMenuEvent(QContextMenuEvent*) final;

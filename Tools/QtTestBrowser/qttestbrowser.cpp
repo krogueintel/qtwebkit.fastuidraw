@@ -49,20 +49,26 @@ WindowOptions windowOptions;
 #include <QFontDatabase>
 #include <QRegExp>
 
+#include <iostream>
+
 int launcherMain(const QApplication& app)
 {
-#ifndef NDEBUG
     int retVal = app.exec();
+    HacksForQt::shut_down();
 
-#if HAVE(QTTESTSUPPORT)
-    WebKit::QtTestSupport::garbageCollectorCollect();
-#endif
+    #ifndef NDEBUG
+      {
+        #if HAVE(QTTESTSUPPORT)
+          {
+            WebKit::QtTestSupport::garbageCollectorCollect();
+          }
+        #endif
 
-    QWebSettings::clearMemoryCaches();
+        QWebSettings::clearMemoryCaches();
+      }
+    #endif
+
     return retVal;
-#else
-    return app.exec();
-#endif
 }
 
 class LauncherApplication : public QApplication {
@@ -107,7 +113,6 @@ LauncherApplication::LauncherApplication(int& argc, char** argv)
     setOrganizationName("QtProject");
     setApplicationName("QtTestBrowser");
     setApplicationVersion("0.1");
-
     applyDefaultSettings();
 
     handleUserOptions();
@@ -307,20 +312,11 @@ int main(int argc, char **argv)
      * before the QCoreApplication derived object
      * is created (in this case LauncherApplication).
      * This is for that FastUIDraw will use a single
-     * global set of atlases.
+     * global set of atlases; later we will test if
+     * this works, and if it does, we can likely kill
+     * the HacksForQt insanity.
      */
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
-
-    /* make sure that all QOpenGLWidget and QOpenGLContext
-     * are made with the following GL context properties.
-     * We choose 4.5 because Mesa/i965 supports it.
-     */
-    QSurfaceFormat f;
-    f.setProfile(QSurfaceFormat::CoreProfile);
-    f.setMajorVersion(4);
-    f.setMinorVersion(5);
-    QSurfaceFormat::setDefaultFormat(f);
-  
     LauncherApplication app(argc, argv);
 
     if (app.isRobotized()) {

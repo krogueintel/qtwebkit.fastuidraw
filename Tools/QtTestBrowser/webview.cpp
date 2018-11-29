@@ -49,6 +49,128 @@
 #include <QStateMachine>
 #endif
 
+#include <iostream>
+#include <fastuidraw/gl_backend/gl_binding.hpp>
+#include <fastuidraw/gl_backend/ngl_header.hpp>
+
+namespace
+{
+  HacksForQt*&
+  HacksForQtPtr(void)
+  {
+    static HacksForQt *ptr(0);
+    return ptr;
+  }
+
+  QGLContext*&
+  HacksForQtContext(void)
+  {
+    static QGLContext* R(0);
+    return R;
+  }
+
+  QGLFormat
+  gl45_format(void)
+  {
+    QGLFormat qf;
+    qf.setProfile(QGLFormat::CoreProfile);
+    qf.setVersion(4, 5);
+    return qf;
+  }
+
+  static void*
+  get_proc_from_hacks_for_qt(fastuidraw::c_string proc_name)
+  {
+    void *f;
+
+    f = reinterpret_cast<void*>(HacksForQtContext()->getProcAddress(QString(proc_name)));
+    std::cout << proc_name << ":" << f << " of GL version "
+              << HacksForQtContext()->format().majorVersion()
+              << "." << HacksForQtContext()->format().minorVersion()
+              << "\n";
+    return f;
+  }
+}
+
+HacksForQt::HacksForQt(void):
+  QGLWidget(gl45_format())
+{
+  hide();
+
+  /* force the GL context to exist and make it current */
+  makeCurrent();
+
+  /* TODO: should do the lambda-thing to make a function that just
+   * takes a c-string instead of relying on a global pointer value.
+   */
+  HacksForQtContext() = context();
+  fastuidraw::gl_binding::get_proc_function(get_proc_from_hacks_for_qt, true);
+
+  m_image_atlas = FASTUIDRAWnew fastuidraw::gl::ImageAtlasGL(fastuidraw::gl::ImageAtlasGL::params());
+  m_glyph_atlas = FASTUIDRAWnew fastuidraw::gl::GlyphAtlasGL(fastuidraw::gl::GlyphAtlasGL::params());
+  m_colorstop_atlas = FASTUIDRAWnew fastuidraw::gl::ColorStopAtlasGL(fastuidraw::gl::ColorStopAtlasGL::params());
+
+  fastuidraw::gl::PainterBackendGL::ConfigurationGL painter_params;
+  painter_params
+    .image_atlas(m_image_atlas)
+    .glyph_atlas(m_glyph_atlas)
+    .colorstop_atlas(m_colorstop_atlas)
+    .configure_from_context(true);
+
+  m_backend = fastuidraw::gl::PainterBackendGL::create(painter_params);
+  m_glyph_cache = FASTUIDRAWnew fastuidraw::GlyphCache(m_glyph_atlas);
+  qSetFastUIDrawAtlases(m_glyph_cache,
+                        m_image_atlas,
+                        m_colorstop_atlas);
+
+  doneCurrent();
+}
+
+HacksForQt::~HacksForQt()
+{
+  makeCurrent();
+  m_glyph_cache.clear();
+  m_glyph_cache.clear();
+  m_image_atlas.clear();
+  m_colorstop_atlas.clear();
+
+  qSetFastUIDrawAtlases(m_glyph_cache,
+                        m_image_atlas,
+                        m_colorstop_atlas);
+  doneCurrent();
+}
+
+HacksForQt*
+HacksForQt::getHacksForQt(void)
+{
+    if (!HacksForQtPtr()) {
+        HacksForQtPtr() = new HacksForQt();
+    }
+    return HacksForQtPtr();
+}
+
+void
+HacksForQt::shut_down(void)
+{
+  if(HacksForQtPtr())
+    {
+      delete HacksForQtPtr();
+    }
+  HacksForQtPtr() = 0;
+}
+
+WebViewTraditional::WebViewTraditional(QWidget* parent) :
+  QWebView(parent)
+{
+  HacksForQt::getHacksForQt();
+}
+
+WebViewTraditional::WebViewTraditional(QWidget* parent, enum paint_with_fastuidraw_t) :
+  QWebView(HacksForQt::getHacksForQt(),
+           FASTUIDRAWnew fastuidraw::Painter(HacksForQt::getHacksForQt()->m_backend->create_sharing_shaders()),
+           parent)
+{}
+
 WebViewGraphicsBased::WebViewGraphicsBased(QWidget* parent)
     : QGraphicsView(parent)
     , m_item(new GraphicsWebView)
