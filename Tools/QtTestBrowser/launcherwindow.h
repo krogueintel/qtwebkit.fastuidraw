@@ -92,6 +92,7 @@ public:
     QUrl inspectorUrl;
     quint16 remoteInspectorPort { 0 };
     bool startMaximized { false };
+    bool useFastUIDraw { false };
 };
 
 class LauncherWindow final : public MainWindow {
@@ -130,6 +131,7 @@ protected Q_SLOTS:
     void setDiskCache(bool enable);
     void setTouchMocking(bool on);
     void toggleWebView(bool graphicsBased);
+    void toggleFastUIDraw(bool vFastUIDrawBased);
     void toggleAcceleratedCompositing(bool toggle);
     void toggleAccelerated2dCanvas(bool toggle);
     void toggleTiledBackingStore(bool toggle);
@@ -197,6 +199,7 @@ private:
     void applyZoom();
 
     bool isGraphicsBased() const;
+    bool isFastUIDraw() const;
 
 private:
     void closeEvent(QCloseEvent*) final;

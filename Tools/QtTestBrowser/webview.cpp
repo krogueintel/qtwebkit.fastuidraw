@@ -399,17 +399,23 @@ HacksForQt::shut_down(void)
 }
 
 WebViewTraditional::WebViewTraditional(QWidget* parent) :
-  QWebView(parent)
+  QWebView(parent),
+  m_drawWithFastUIDraw(false)
 {
-  HacksForQt::getHacksForQt();
 }
 
 WebViewTraditional::WebViewTraditional(QWidget* parent, enum paint_with_fastuidraw_t) :
   QWebView(HacksForQt::getHacksForQt(),
            FASTUIDRAWnew fastuidraw::Painter(HacksForQt::getHacksForQt()->m_backend->create_sharing_shaders()),
-           parent)
+           parent),
+  m_drawWithFastUIDraw(true)
 {}
 
+bool WebViewTraditional::drawWithFastUIDraw(void) const
+{
+  return m_drawWithFastUIDraw;
+}
+  
 WebViewGraphicsBased::WebViewGraphicsBased(QWidget* parent)
     : QGraphicsView(parent)
     , m_item(new GraphicsWebView)

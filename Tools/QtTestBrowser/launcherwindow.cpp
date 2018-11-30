@@ -161,7 +161,12 @@ void LauncherWindow::initializeView()
     QSplitter* splitter = static_cast<QSplitter*>(centralWidget());
 
     if (!m_windowOptions.useGraphicsView) {
-        WebViewTraditional* view = new WebViewTraditional(splitter);
+        WebViewTraditional* view;
+        if (m_windowOptions.useFastUIDraw) {
+            view = new WebViewTraditional(splitter, WebViewTraditional::paint_with_fastuidraw);
+        } else {
+            view = new WebViewTraditional(splitter);
+        }
         view->setPage(page());
 
         view->installEventFilter(this);
@@ -320,6 +325,10 @@ void LauncherWindow::createChrome()
     QAction* toggleGraphicsView = graphicsViewMenu->addAction("Toggle use of QGraphicsView", this, SLOT(toggleWebView(bool)));
     toggleGraphicsView->setCheckable(true);
     toggleGraphicsView->setChecked(isGraphicsBased());
+
+    QAction *toggleFastUIDraw = toolsMenu->addAction("Toggle FastUIDraw", this, SLOT(toggleFastUIDraw(bool)));
+    toggleFastUIDraw->setCheckable(true);
+    toggleFastUIDraw->setChecked(isFastUIDraw());
 
     QAction* toggleWebGL = toolsMenu->addAction("Toggle WebGL", this, SLOT(toggleWebGL(bool)));
     toggleWebGL->setCheckable(true);
@@ -600,6 +609,14 @@ void LauncherWindow::createChrome()
 bool LauncherWindow::isGraphicsBased() const
 {
     return bool(qobject_cast<QGraphicsView*>(m_view));
+}
+
+bool LauncherWindow::isFastUIDraw() const
+{
+    WebViewTraditional *p;
+
+    p = qobject_cast<WebViewTraditional*>(m_view);
+    return p && p->drawWithFastUIDraw();
 }
 
 void LauncherWindow::closeEvent(QCloseEvent* e)
@@ -915,6 +932,16 @@ void LauncherWindow::setTouchMocking(bool on)
 void LauncherWindow::toggleWebView(bool graphicsBased)
 {
     m_windowOptions.useGraphicsView = graphicsBased;
+    initializeView();
+#ifndef QT_NO_SHORTCUT
+    menuBar()->clear();
+#endif
+    createChrome();
+}
+
+void LauncherWindow::toggleFastUIDraw(bool vFastUIDrawBased)
+{
+    m_windowOptions.useFastUIDraw = vFastUIDrawBased;
     initializeView();
 #ifndef QT_NO_SHORTCUT
     menuBar()->clear();

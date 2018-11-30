@@ -90,9 +90,14 @@ public:
     WebViewTraditional(QWidget* parent);
     WebViewTraditional(QWidget* parent, enum paint_with_fastuidraw_t);
 
+    bool drawWithFastUIDraw(void) const;
+
 protected:
     void contextMenuEvent(QContextMenuEvent*) final;
     void mousePressEvent(QMouseEvent*) final;
+
+ private:
+    bool m_drawWithFastUIDraw;
 };
 
 
