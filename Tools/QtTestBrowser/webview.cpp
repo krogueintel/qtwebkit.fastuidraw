@@ -50,6 +50,18 @@
 #endif
 
 #include <iostream>
+#include <string>
+#include <algorithm>
+#include <mutex>
+#include <sstream>
+#include <dirent.h>
+#include <fastuidraw/util/c_array.hpp>
+#include <fastuidraw/util/vecN.hpp>
+#include <fastuidraw/text/glyph_selector.hpp>
+#include <fastuidraw/text/glyph_cache.hpp>
+#include <fastuidraw/text/font_freetype.hpp>
+#include <fastuidraw/painter/painter.hpp>
+#include <fastuidraw/painter/glyph_sequence.hpp>
 #include <fastuidraw/gl_backend/gl_binding.hpp>
 #include <fastuidraw/gl_backend/ngl_header.hpp>
 
@@ -84,6 +96,175 @@ namespace
               << "." << ctx->format().minorVersion()
               << "\n";
     return f;
+  }
+
+  inline
+  std::ostream&
+  operator<<(std::ostream &str, const fastuidraw::FontProperties &obj)
+  {
+    str << obj.source_label() << "(" << obj.foundry()
+        << ", " << obj.family() << ", " << obj.style()
+        << ", " << obj.italic() << ", " << obj.bold() << ")";
+    return str;
+  }
+
+  /* The purpose of the DaaBufferHolder is to -DELAY-
+   * the loading of data until the first time the data
+   * is requested.
+   */
+  class DataBufferLoader:public fastuidraw::reference_counted<DataBufferLoader>::default_base
+  {
+  public:
+    explicit
+    DataBufferLoader(const std::string &pfilename):
+      m_filename(pfilename)
+    {}
+
+    fastuidraw::reference_counted_ptr<fastuidraw::DataBufferBase>
+    buffer(void)
+    {
+      fastuidraw::reference_counted_ptr<fastuidraw::DataBufferBase> R;
+
+      m_mutex.lock();
+      if (!m_buffer)
+        {
+          m_buffer = FASTUIDRAWnew fastuidraw::DataBuffer(m_filename.c_str());
+        }
+      R = m_buffer;
+      m_mutex.unlock();
+
+      return R;
+    }
+
+  private:
+    std::string m_filename;
+    std::mutex m_mutex;
+    fastuidraw::reference_counted_ptr<fastuidraw::DataBufferBase> m_buffer;
+  };
+
+  class FreeTypeFontGenerator:public fastuidraw::GlyphSelector::FontGeneratorBase
+  {
+  public:
+    FreeTypeFontGenerator(fastuidraw::reference_counted_ptr<DataBufferLoader> buffer,
+                          fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib,
+                          int face_index,
+                          const fastuidraw::FontProperties &props):
+      m_buffer(buffer),
+      m_lib(lib),
+      m_face_index(face_index),
+      m_props(props)
+    {}
+
+    virtual
+    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
+    generate_font(void) const
+    {
+      fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeFace::GeneratorBase> h;
+      fastuidraw::reference_counted_ptr<fastuidraw::DataBufferBase> buffer;
+      fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font;
+      buffer = m_buffer->buffer();
+      h = FASTUIDRAWnew fastuidraw::FreeTypeFace::GeneratorMemory(buffer, m_face_index);
+      font = FASTUIDRAWnew fastuidraw::FontFreeType(h, m_props, m_lib);
+      return font;
+    }
+
+    virtual
+    const fastuidraw::FontProperties&
+    font_properties(void) const
+    {
+      return m_props;
+    }
+
+  private:
+    fastuidraw::reference_counted_ptr<DataBufferLoader> m_buffer;
+    fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> m_lib;
+    int m_face_index;
+    fastuidraw::FontProperties m_props;
+  };
+
+  void
+  add_fonts_from_file(const std::string &filename,
+                      fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib,
+                      fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector> glyph_selector)
+  {
+    FT_Error error_code;
+    FT_Face face(nullptr);
+
+    lib->lock();
+    error_code = FT_New_Face(lib->lib(), filename.c_str(), 0, &face);
+    lib->unlock();
+
+    if (error_code == 0 && face != nullptr && (face->face_flags & FT_FACE_FLAG_SCALABLE) != 0)
+      {
+        fastuidraw::reference_counted_ptr<DataBufferLoader> buffer_loader;
+
+        buffer_loader = FASTUIDRAWnew DataBufferLoader(filename);
+        for(unsigned int i = 0, endi = face->num_faces; i < endi; ++i)
+          {
+            fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector::FontGeneratorBase> h;
+            std::ostringstream source_label;
+            fastuidraw::FontProperties props;
+            if (i != 0)
+              {
+                lib->lock();
+                FT_Done_Face(face);
+                FT_New_Face(lib->lib(), filename.c_str(), i, &face);
+                lib->unlock();
+              }
+            fastuidraw::FontFreeType::compute_font_properties_from_face(face, props);
+            source_label << filename << ":" << i;
+            props.source_label(source_label.str().c_str());
+
+            h = FASTUIDRAWnew FreeTypeFontGenerator(buffer_loader, lib, i, props);
+            glyph_selector->add_font_generator(h);
+
+            std::cout << "add font: " << props << "\n";
+          }
+      }
+
+    lib->lock();
+    if (face != nullptr)
+      {
+        FT_Done_Face(face);
+      }
+    lib->unlock();
+  }
+
+  void
+  add_fonts_from_path(const std::string &filename,
+                      const fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> &lib,
+                      const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector> &glyph_selector)
+  {
+    DIR *dir;
+    struct dirent *entry;
+
+    dir = opendir(filename.c_str());
+    if (!dir)
+      {
+        add_fonts_from_file(filename, lib, glyph_selector);
+        return;
+      }
+
+    for(entry = readdir(dir); entry != nullptr; entry = readdir(dir))
+      {
+        std::string file;
+        file = entry->d_name;
+        if (file != ".." && file != ".")
+          {
+            add_fonts_from_path(filename + "/" + file, lib, glyph_selector);
+          }
+      }
+    closedir(dir);
+  }
+
+  void
+  add_fonts_from_path(const std::string &filename,
+                      const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector> &glyph_selector)
+  {
+    fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib;
+
+    lib = FASTUIDRAWnew fastuidraw::FreeTypeLib();
+    add_fonts_from_path(filename, lib, glyph_selector);
   }
 
   class FastUIDrawGLLogger:public fastuidraw::gl_binding::CallbackGL
@@ -172,6 +353,11 @@ HacksForQt::HacksForQt(void):
     {
       FASTUIDRAWassert(!"fastuidraw::PainterBackendGL::program_with_discard failed link");
     }
+
+  /* Populate m_glyph_selector, this path is just from Ubuntu 18.04 and the right thing
+   * would be to use something like FontConfig to collect all the fonts.
+   */
+  add_fonts_from_path("/usr/share/fonts", m_glyph_selector);
 
   doneCurrent();
 }
