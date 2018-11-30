@@ -39,6 +39,7 @@
 #endif
 
 #include <fastuidraw/gl_backend/ngl_header.hpp>
+#include <fastuidraw/gl_backend/gl_get.hpp>
 #include <fastuidraw/gl_backend/painter_backend_gl.hpp>
 
 static QGLFormat
@@ -70,6 +71,7 @@ public:
 
     QPainter::RenderHints renderHints;
     fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
+    fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
 };
 
 QWebViewPrivate::~QWebViewPrivate()
@@ -848,6 +850,8 @@ void QWebView::resizeEvent(QResizeEvent *e)
 {
     if (d->page)
         d->page->setViewportSize(e->size());
+
+    QGLWidget::resizeEvent(e);
 }
 
 /*! \reimp
@@ -880,17 +884,51 @@ void QWebView::paintEvent(QPaintEvent *ev)
 
 void QWebView::initializeGL(void)
 {
+  fastuidraw_glDisable(GL_SCISSOR_TEST);
 }
 
 void QWebView::resizeGL(int w, int h)
 {
-  /* delete the Fastuidraw surface if we have one */
+  if (d->m_painter && d->m_surface)
+    {
+      fastuidraw::ivec2 dims(d->m_surface->dimensions());
+      if (w != dims.x() || h != dims.y())
+        {
+          d->m_surface.clear();
+        }
+    }
 }
 
 void QWebView::paintGL(void)
 {
-  fastuidraw_glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
-  fastuidraw_glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  //std::string text("Hello World!!");
+  //std::istringstream str(text);
+  enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
+  //float pixel_size("32");
+
+  //fastuidraw::GlyphSequence sequence(pixel_size, orientation, qFastUIDrawGlyphCache());
+  //create_formatted_text(sequence, str, font, m_glyph_selector);
+
+  if (!d->m_surface)
+    {
+      int w(width()), h(height());
+      fastuidraw::PainterBackend::Surface::Viewport vwp(0, 0, w, h);
+
+      d->m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(fastuidraw::ivec2(w, h));
+      d->m_surface->viewport(vwp);
+    }
+
+  GLuint fbo;
+  fbo = fastuidraw::gl::context_get<GLint>(GL_DRAW_FRAMEBUFFER_BINDING);
+
+  d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
+  d->m_painter->begin(d->m_surface, orientation);
+  d->m_painter->end();
+
+  fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  fastuidraw_glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  fastuidraw_glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  d->m_surface->blit_surface(GL_NEAREST);
 }
 
 /*!
