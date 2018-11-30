@@ -62,13 +62,6 @@ namespace
     return ptr;
   }
 
-  QGLContext*&
-  HacksForQtContext(void)
-  {
-    static QGLContext* R(0);
-    return R;
-  }
-
   QGLFormat
   gl45_format(void)
   {
@@ -79,17 +72,61 @@ namespace
   }
 
   static void*
-  get_proc_from_hacks_for_qt(fastuidraw::c_string proc_name)
+  get_proc_from_hacks_for_qt(void *c, fastuidraw::c_string proc_name)
   {
     void *f;
-
-    f = reinterpret_cast<void*>(HacksForQtContext()->getProcAddress(QString(proc_name)));
+    QGLContext *ctx;
+    
+    ctx = static_cast<QGLContext*>(c);
+    f = reinterpret_cast<void*>(ctx->getProcAddress(QString(proc_name)));
     std::cout << proc_name << ":" << f << " of GL version "
-              << HacksForQtContext()->format().majorVersion()
-              << "." << HacksForQtContext()->format().minorVersion()
+              << ctx->format().majorVersion()
+              << "." << ctx->format().minorVersion()
               << "\n";
     return f;
   }
+
+  class FastUIDrawGLLogger:public fastuidraw::gl_binding::CallbackGL
+  {
+  public:
+    virtual
+    void
+    pre_call(fastuidraw::c_string call_string_values,
+             fastuidraw::c_string call_string_src,
+             fastuidraw::c_string function_name,
+             void *function_ptr,
+             fastuidraw::c_string src_file, int src_line)
+    {
+      FASTUIDRAWunused(call_string_src);
+      FASTUIDRAWunused(function_name);
+      FASTUIDRAWunused(function_ptr);
+      std::cout << "Pre: [" << src_file << "," << src_line << "] "
+                << call_string_values << "\n";
+    }
+
+    virtual
+    void
+    post_call(fastuidraw::c_string call_string_values,
+              fastuidraw::c_string call_string_src,
+              fastuidraw::c_string function_name,
+              fastuidraw::c_string error_string,
+              void *function_ptr,
+              fastuidraw::c_string src_file, int src_line)
+    {
+      FASTUIDRAWunused(call_string_src);
+      FASTUIDRAWunused(function_name);
+      FASTUIDRAWunused(function_ptr);
+      FASTUIDRAWunused(error_string);
+      std::cout << "Post: [" << src_file << "," << src_line << "] "
+                << call_string_values;
+
+      if (error_string && *error_string)
+        {
+          std::cout << "{" << error_string << "}";
+        }
+      std::cout << "\n";
+    }
+  };
 }
 
 HacksForQt::HacksForQt(void):
@@ -99,12 +136,8 @@ HacksForQt::HacksForQt(void):
 
   /* force the GL context to exist and make it current */
   makeCurrent();
-
-  /* TODO: should do the lambda-thing to make a function that just
-   * takes a c-string instead of relying on a global pointer value.
-   */
-  HacksForQtContext() = context();
-  fastuidraw::gl_binding::get_proc_function(get_proc_from_hacks_for_qt, true);
+  //m_gl_logger = FASTUIDRAWnew FastUIDrawGLLogger();
+  fastuidraw::gl_binding::get_proc_function(context(), get_proc_from_hacks_for_qt, true);
 
   m_image_atlas = FASTUIDRAWnew fastuidraw::gl::ImageAtlasGL(fastuidraw::gl::ImageAtlasGL::params());
   m_glyph_atlas = FASTUIDRAWnew fastuidraw::gl::GlyphAtlasGL(fastuidraw::gl::GlyphAtlasGL::params());
@@ -119,9 +152,26 @@ HacksForQt::HacksForQt(void):
 
   m_backend = fastuidraw::gl::PainterBackendGL::create(painter_params);
   m_glyph_cache = FASTUIDRAWnew fastuidraw::GlyphCache(m_glyph_atlas);
-  qSetFastUIDrawAtlases(m_glyph_cache,
-                        m_image_atlas,
-                        m_colorstop_atlas);
+  m_glyph_selector = FASTUIDRAWnew fastuidraw::GlyphSelector();
+  qSetFastUIDrawResources(m_glyph_cache,
+                          m_image_atlas,
+                          m_colorstop_atlas,
+                          m_glyph_selector);
+
+  if (!m_backend->program(fastuidraw::gl::PainterBackendGL::program_all)->link_success())
+    {
+      FASTUIDRAWassert(!"fastuidraw::PainterBackendGL::program_all failed link");
+    }
+    
+  if (!m_backend->program(fastuidraw::gl::PainterBackendGL::program_without_discard)->link_success())
+    {
+      FASTUIDRAWassert(!"fastuidraw::PainterBackendGL::program_without_discard failed link");
+    }
+
+  if (!m_backend->program(fastuidraw::gl::PainterBackendGL::program_with_discard)->link_success())
+    {
+      FASTUIDRAWassert(!"fastuidraw::PainterBackendGL::program_with_discard failed link");
+    }
 
   doneCurrent();
 }
@@ -133,10 +183,13 @@ HacksForQt::~HacksForQt()
   m_glyph_cache.clear();
   m_image_atlas.clear();
   m_colorstop_atlas.clear();
+  m_glyph_selector.clear();
+  m_gl_logger.clear();
 
-  qSetFastUIDrawAtlases(m_glyph_cache,
-                        m_image_atlas,
-                        m_colorstop_atlas);
+  qSetFastUIDrawResources(m_glyph_cache,
+                          m_image_atlas,
+                          m_colorstop_atlas,
+                          m_glyph_selector);
   doneCurrent();
 }
 

@@ -83,62 +83,7 @@ enum HBitmapFormat {
 };
 #endif
 
-namespace {
-  class AtlasSet:fastuidraw::noncopyable
-  {
-  public:
-    static
-    AtlasSet&
-    atlas_set(void)
-    {
-      static AtlasSet R;
-      return R;
-    }
-
-    fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> m_glyph_cache;
-    fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> m_image_atlas;
-    fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> m_color_stop_atlas;
-    
-  private:
-    AtlasSet(void)
-    {}
-  };
-}
-
 namespace WebCore {
-
-void
-GraphicsContext::
-setDefaultAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
-                  fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
-                  fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c)
-{
-  AtlasSet &R(AtlasSet::atlas_set());
-  R.m_glyph_cache = g;
-  R.m_image_atlas = i;
-  R.m_color_stop_atlas = c;
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
-GraphicsContext::
-glyphCache(void)
-{
-  return AtlasSet::atlas_set().m_glyph_cache;
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
-GraphicsContext::
-imageAtlas(void)
-{
-  return AtlasSet::atlas_set().m_image_atlas;
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
-GraphicsContext::
-colorAtlas(void)
-{
-  return AtlasSet::atlas_set().m_color_stop_atlas;
-}
 
 static inline QPainter::CompositionMode toQtCompositionMode(CompositeOperator op)
 {

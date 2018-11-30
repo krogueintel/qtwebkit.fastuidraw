@@ -23,6 +23,7 @@
 
 #include <QtCore/qglobal.h>
 #include <QtCore/qstring.h>
+#include <fastuidraw/text/glyph_selector.hpp>
 #include <fastuidraw/painter/painter.hpp>
 
 #ifndef QT_STATIC
@@ -45,8 +46,21 @@ QWEBKIT_EXPORT QString qWebKitVersion();
 QWEBKIT_EXPORT int qWebKitMajorVersion();
 QWEBKIT_EXPORT int qWebKitMinorVersion();
 
-QWEBKIT_EXPORT void qSetFastUIDrawAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
-                                          fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
-                                          fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c);
+QWEBKIT_EXPORT void qSetFastUIDrawResources(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
+                                            fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
+                                            fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c,
+                                            fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector> s);
+
+QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
+qFastUIDrawGlyphCache(void);
+
+QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
+qFastUIDrawImageAtlas(void);
+
+QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
+qFastUIDrawColorAtlas(void);
+
+const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
+qFastUIDrawGlyphSelector(void);
 
 #endif // QWEBKITGLOBAL_H

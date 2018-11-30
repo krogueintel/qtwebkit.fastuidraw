@@ -20,6 +20,7 @@
 #include "config.h"
 #include "qwebkitglobal.h"
 #include "GraphicsContext.h"
+#include "FastUIDrawResources.h"
 
 #include <WebKitVersion.h>
 
@@ -72,9 +73,34 @@ int qWebKitMinorVersion()
     return WEBKIT_MINOR_VERSION;
 }
 
-void qSetFastUIDrawAtlases(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
-                           fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
-                           fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c)
+void qSetFastUIDrawResources(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
+                             fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
+                             fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c,
+                             fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector> s)
 {
-  WebCore::GraphicsContext::setDefaultAtlases(g, i, c);
+  WebCore::FastUIDrawResources::setResources(g, i, c, s);
+}
+
+const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
+qFastUIDrawGlyphCache(void)
+{
+  return WebCore::FastUIDrawResources::glyphCache();
+}
+
+const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
+qFastUIDrawImageAtlas(void)
+{
+  return WebCore::FastUIDrawResources::imageAtlas();
+}
+
+const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
+qFastUIDrawColorAtlas(void)
+{
+  return WebCore::FastUIDrawResources::colorAtlas();
+}
+
+const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
+qFastUIDrawGlyphSelector(void)
+{
+  return WebCore::FastUIDrawResources::glyphSelector();
 }

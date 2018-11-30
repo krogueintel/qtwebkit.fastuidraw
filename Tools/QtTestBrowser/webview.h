@@ -42,6 +42,7 @@
 #include <QTime>
 
 #include <QGLWidget>
+#include <fastuidraw/gl_backend/gl_binding.hpp>
 #include <fastuidraw/gl_backend/painter_backend_gl.hpp>
 
 QT_BEGIN_NAMESPACE
@@ -67,11 +68,14 @@ public:
   fastuidraw::reference_counted_ptr<fastuidraw::gl::GlyphAtlasGL> m_glyph_atlas;
   fastuidraw::reference_counted_ptr<fastuidraw::gl::ColorStopAtlasGL> m_colorstop_atlas;
   fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> m_glyph_cache;
+  fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector> m_glyph_selector;
   fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> m_backend;
 
 private:
   HacksForQt(void);
   ~HacksForQt();
+
+  fastuidraw::reference_counted_ptr<fastuidraw::gl_binding::CallbackGL> m_gl_logger;
 };
 
 
