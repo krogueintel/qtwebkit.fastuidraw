@@ -38,18 +38,12 @@
 #include <qprinter.h>
 #endif
 
-#include <fastuidraw/gl_backend/ngl_header.hpp>
-#include <fastuidraw/gl_backend/gl_get.hpp>
-#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+#include <QOpenGLContext>
+#include <QFunctionPointer>
+#include <iostream>
 
-static QGLFormat
-gl45_format(void)
-{
-  QGLFormat qf;
-  qf.setProfile(QGLFormat::CoreProfile);
-  qf.setVersion(4, 5);
-  return qf;
-}
+#include <fastuidraw/gl_backend/ngl_header.hpp>
+#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
 
 class QWebViewPrivate {
 public:
@@ -70,6 +64,7 @@ public:
     QWebPage *page;
 
     QPainter::RenderHints renderHints;
+    bool m_drawWithFastUIDraw;
     fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
 };
@@ -188,9 +183,21 @@ static QAccessibleInterface* accessibleInterfaceFactory(const QString& key, QObj
     \sa load()
 */
 QWebView::QWebView(QWidget *parent)
-    : QGLWidget(parent)
+    : QOpenGLWidget(parent)
 {
+  QSurfaceFormat sf(QSurfaceFormat::defaultFormat());
+
+    /* On Mesa/i965, GL versions higher than 3.0 are only
+     * available as Core Profiles, so we use that.
+     */
+    sf.setMajorVersion(4);
+    sf.setMinorVersion(5);
+    sf.setProfile(QSurfaceFormat::CoreProfile);
+    setFormat(sf);
+    create();
+
     d = new QWebViewPrivate(this);
+    d->m_drawWithFastUIDraw = false;
 
 #if !defined(Q_WS_QWS)
     setAttribute(Qt::WA_InputMethodEnabled);
@@ -205,31 +212,6 @@ QWebView::QWebView(QWidget *parent)
 #ifndef QT_NO_ACCESSIBILITY
     QAccessible::installFactory(accessibleInterfaceFactory);
 #endif
-}
-
-QWebView::
-QWebView(QGLWidget *sharedWidget,
-         fastuidraw::reference_counted_ptr<fastuidraw::Painter> painter,
-         QWidget* parent):
-  QGLWidget(gl45_format(), parent, sharedWidget)
-{
-  d = new QWebViewPrivate(this);
-
-#if !defined(Q_WS_QWS)
-    setAttribute(Qt::WA_InputMethodEnabled);
-#endif
-
-    setAttribute(Qt::WA_AcceptTouchEvents);
-    setAcceptDrops(true);
-
-    setMouseTracking(true);
-    setFocusPolicy(Qt::WheelFocus);
-
-#ifndef QT_NO_ACCESSIBILITY
-    QAccessible::installFactory(accessibleInterfaceFactory);
-#endif
-
-    d->m_painter = painter;
 }
 
 /*!
@@ -237,6 +219,9 @@ QWebView(QGLWidget *sharedWidget,
 */
 QWebView::~QWebView()
 {
+    if (d->m_painter) {
+        qFastUIDrawClearResources();
+    }
     delete d;
 }
 
@@ -771,7 +756,7 @@ bool QWebView::event(QEvent *e)
             d->page->event(e);
     }
 
-    return QWidget::event(e);
+    return QOpenGLWidget::event(e);
 }
 
 /*!
@@ -844,51 +829,41 @@ void QWebView::reload()
         d->page->triggerAction(QWebPage::Reload);
 }
 
-/*! \reimp
-*/
-void QWebView::resizeEvent(QResizeEvent *e)
+static void* get_proc_from_context(void *c, fastuidraw::c_string proc_name)
 {
-    if (d->page)
-        d->page->setViewportSize(e->size());
+  QOpenGLContext *ctx;
+  void *f;
 
-    QGLWidget::resizeEvent(e);
-}
+  ctx = static_cast<QOpenGLContext*>(c);
+  f = reinterpret_cast<void*>(ctx->getProcAddress(proc_name));
 
-/*! \reimp
-*/
-void QWebView::paintEvent(QPaintEvent *ev)
-{
-    if (d->m_painter) {
-        QGLWidget::paintEvent(ev);
-        return;
-    }
-  
-    if (!d->page)
-        return;
-#ifdef QWEBKIT_TIME_RENDERING
-    QTime time;
-    time.start();
-#endif
-
-    QWebFrame *frame = d->page->mainFrame();
-    QPainter p(this);
-    p.setRenderHints(d->renderHints);
-
-    frame->render(&p, ev->region());
-
-#ifdef    QWEBKIT_TIME_RENDERING
-    int elapsed = time.elapsed();
-    qDebug() << "paint event on " << ev->region() << ", took to render =  " << elapsed;
-#endif
+  return f;
 }
 
 void QWebView::initializeGL(void)
 {
-  fastuidraw_glDisable(GL_SCISSOR_TEST);
+    /* A GL Context must be current so that the GLContext
+     * can be queried when creating the FastUIDraw resources
+     */
+    qFastUIDrawInitializeResources(context(), get_proc_from_context);
+    d->m_painter = qFastUIDrawCreatePainter();
+}
+
+bool QWebView::drawWithFastUIDraw(void) const
+{
+    return d->m_drawWithFastUIDraw;
+}
+
+void QWebView::drawWithFastUIDraw(bool v)
+{
+    d->m_drawWithFastUIDraw = v;
 }
 
 void QWebView::resizeGL(int w, int h)
 {
+  if (d->page)
+    d->page->setViewportSize(QSize(w, h));
+
   if (d->m_painter && d->m_surface)
     {
       fastuidraw::ivec2 dims(d->m_surface->dimensions());
@@ -901,6 +876,16 @@ void QWebView::resizeGL(int w, int h)
 
 void QWebView::paintGL(void)
 {
+  QPainter p(this);
+  if (!d->m_drawWithFastUIDraw || !d->m_painter) {
+      QWebFrame *frame = d->page->mainFrame();
+      p.setRenderHints(d->renderHints);
+    
+      frame->render(&p);
+      return;
+  }
+
+  p.beginNativePainting();
   //std::string text("Hello World!!");
   //std::istringstream str(text);
   enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
@@ -919,16 +904,16 @@ void QWebView::paintGL(void)
     }
 
   GLuint fbo;
-  fbo = fastuidraw::gl::context_get<GLint>(GL_DRAW_FRAMEBUFFER_BINDING);
+  fbo = defaultFramebufferObject();
 
   d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
   d->m_painter->begin(d->m_surface, orientation);
   d->m_painter->end();
 
   fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-  fastuidraw_glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  fastuidraw_glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   d->m_surface->blit_surface(GL_NEAREST);
+
+  p.endNativePainting();
 }
 
 /*!
@@ -960,6 +945,8 @@ void QWebView::mouseMoveEvent(QMouseEvent* ev)
         d->page->event(ev);
         ev->setAccepted(accepted);
     }
+    if (!ev->isAccepted())
+      QOpenGLWidget::mouseMoveEvent(ev);
 }
 
 /*! \reimp
@@ -971,6 +958,8 @@ void QWebView::mousePressEvent(QMouseEvent* ev)
         d->page->event(ev);
         ev->setAccepted(accepted);
     }
+    if (!ev->isAccepted())
+        QOpenGLWidget::mousePressEvent(ev);
 }
 
 /*! \reimp
@@ -982,6 +971,8 @@ void QWebView::mouseDoubleClickEvent(QMouseEvent* ev)
         d->page->event(ev);
         ev->setAccepted(accepted);
     }
+    if (!ev->isAccepted())
+        QOpenGLWidget::mouseDoubleClickEvent(ev);
 }
 
 /*! \reimp
@@ -993,6 +984,8 @@ void QWebView::mouseReleaseEvent(QMouseEvent* ev)
         d->page->event(ev);
         ev->setAccepted(accepted);
     }
+    if (!ev->isAccepted())
+        QOpenGLWidget::mouseReleaseEvent(ev);
 }
 
 #ifndef QT_NO_CONTEXTMENU
@@ -1005,6 +998,8 @@ void QWebView::contextMenuEvent(QContextMenuEvent* ev)
         d->page->event(ev);
         ev->setAccepted(accepted);
     }
+    if (!ev->isAccepted())
+        QOpenGLWidget::contextMenuEvent(ev);
 }
 #endif // QT_NO_CONTEXTMENU
 
@@ -1018,6 +1013,8 @@ void QWebView::wheelEvent(QWheelEvent* ev)
         d->page->event(ev);
         ev->setAccepted(accepted);
     }
+    if (!ev->isAccepted())
+        QOpenGLWidget::wheelEvent(ev);
 }
 #endif // QT_NO_WHEELEVENT
 
@@ -1028,7 +1025,7 @@ void QWebView::keyPressEvent(QKeyEvent* ev)
     if (d->page)
         d->page->event(ev);
     if (!ev->isAccepted())
-        QWidget::keyPressEvent(ev);
+        QOpenGLWidget::keyPressEvent(ev);
 }
 
 /*! \reimp
@@ -1038,7 +1035,7 @@ void QWebView::keyReleaseEvent(QKeyEvent* ev)
     if (d->page)
         d->page->event(ev);
     if (!ev->isAccepted())
-        QWidget::keyReleaseEvent(ev);
+        QOpenGLWidget::keyReleaseEvent(ev);
 }
 
 /*! \reimp
@@ -1048,7 +1045,7 @@ void QWebView::focusInEvent(QFocusEvent* ev)
     if (d->page)
         d->page->event(ev);
     else
-        QWidget::focusInEvent(ev);
+        QOpenGLWidget::focusInEvent(ev);
 }
 
 /*! \reimp
@@ -1058,7 +1055,7 @@ void QWebView::focusOutEvent(QFocusEvent* ev)
     if (d->page)
         d->page->event(ev);
     else
-        QWidget::focusOutEvent(ev);
+        QOpenGLWidget::focusOutEvent(ev);
 }
 
 /*! \reimp
@@ -1069,6 +1066,8 @@ void QWebView::dragEnterEvent(QDragEnterEvent* ev)
     if (d->page)
         d->page->event(ev);
 #endif
+    if (!ev->isAccepted())
+        QOpenGLWidget::dragEnterEvent(ev);
 }
 
 /*! \reimp
@@ -1079,6 +1078,8 @@ void QWebView::dragLeaveEvent(QDragLeaveEvent* ev)
     if (d->page)
         d->page->event(ev);
 #endif
+    if (!ev->isAccepted())
+        QOpenGLWidget::dragLeaveEvent(ev);
 }
 
 /*! \reimp
@@ -1089,6 +1090,8 @@ void QWebView::dragMoveEvent(QDragMoveEvent* ev)
     if (d->page)
         d->page->event(ev);
 #endif
+    if (!ev->isAccepted())
+        QOpenGLWidget::dragMoveEvent(ev);
 }
 
 /*! \reimp
@@ -1099,6 +1102,8 @@ void QWebView::dropEvent(QDropEvent* ev)
     if (d->page)
         d->page->event(ev);
 #endif
+    if (!ev->isAccepted())
+        QOpenGLWidget::dropEvent(ev);
 }
 
 /*! \reimp
@@ -1107,7 +1112,7 @@ bool QWebView::focusNextPrevChild(bool next)
 {
     if (d->page && d->page->focusNextPrevChild(next))
         return true;
-    return QWidget::focusNextPrevChild(next);
+    return QOpenGLWidget::focusNextPrevChild(next);
 }
 
 /*!\reimp
@@ -1133,7 +1138,7 @@ void QWebView::changeEvent(QEvent *e)
 {
     if (d->page && e->type() == QEvent::PaletteChange)
         d->page->setPalette(palette());
-    QWidget::changeEvent(e);
+    QOpenGLWidget::changeEvent(e);
 }
 
 /*!

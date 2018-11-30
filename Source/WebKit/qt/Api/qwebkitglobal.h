@@ -46,10 +46,23 @@ QWEBKIT_EXPORT QString qWebKitVersion();
 QWEBKIT_EXPORT int qWebKitMajorVersion();
 QWEBKIT_EXPORT int qWebKitMinorVersion();
 
-QWEBKIT_EXPORT void qSetFastUIDrawResources(fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> g,
-                                            fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas> i,
-                                            fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas> c,
-                                            fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector> s);
+/* A GL context must be current when this call is made
+ * so that the GL context can be queried to properly
+ * configure the (hidden) PainterBackendGL object.
+ * Calling this increments a reference counter and
+ * only when at entry when the reference counter is zero
+ * are objects actually created.
+ */
+QWEBKIT_EXPORT void qFastUIDrawInitializeResources(void *get_proc_data,
+                                                   void* (*get_proc)(void*, fastuidraw::c_string function_name));
+
+/* A GL context must be current when this call is made
+ * so that GL can be called to release the resources.
+ * Calling this decrements a reference counter, once the
+ * counter reaches zero, then the resources are actually
+ * cleared.
+ */
+QWEBKIT_EXPORT void qFastUIDrawClearResources(void);
 
 QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
 qFastUIDrawGlyphCache(void);
@@ -60,7 +73,10 @@ qFastUIDrawImageAtlas(void);
 QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
 qFastUIDrawColorAtlas(void);
 
-const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
+QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
 qFastUIDrawGlyphSelector(void);
+
+QWEBKIT_EXPORT fastuidraw::reference_counted_ptr<fastuidraw::Painter>
+qFastUIDrawCreatePainter(void);
 
 #endif // QWEBKITGLOBAL_H

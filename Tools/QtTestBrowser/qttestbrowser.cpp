@@ -54,7 +54,8 @@ WindowOptions windowOptions;
 int launcherMain(const QApplication& app)
 {
     int retVal = app.exec();
-    HacksForQt::shut_down();
+
+    /* TODO: clean-up FastUIDraw resources */
 
     #ifndef NDEBUG
       {
@@ -307,18 +308,28 @@ void LauncherApplication::handleUserOptions()
 
 int main(int argc, char **argv)
 {
+    /* set the default GL version to be 4.5 Core profile;
+     * FastUIDraw works (much) better with new GL features
+     * but Mesa/i965 only expose version past 3.0 with Core
+     * profiles.
+     */
+    QSurfaceFormat sf(QSurfaceFormat::defaultFormat());
+    sf.setMajorVersion(4);
+    sf.setMinorVersion(5);
+    sf.setProfile(QSurfaceFormat::CoreProfile);
+    QSurfaceFormat::setDefaultFormat(sf);
+
     /* make all the windows of all GL contexts 
      * in the same share group; this must be set
      * before the QCoreApplication derived object
      * is created (in this case LauncherApplication).
      * This is for that FastUIDraw will use a single
-     * global set of atlases; later we will test if
-     * this works, and if it does, we can likely kill
-     * the HacksForQt insanity.
+     * global set of atlases.
      */
-    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
-    LauncherApplication app(argc, argv);
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);    
 
+    LauncherApplication app(argc, argv);
+    
     if (app.isRobotized()) {
         LauncherWindow* window = new LauncherWindow();
         UrlLoader loader(window->page()->mainFrame(), app.urls().at(0), app.robotTimeout(), app.robotExtraTime());

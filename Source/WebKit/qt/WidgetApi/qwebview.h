@@ -29,6 +29,7 @@
 #include <QtNetwork/qnetworkaccessmanager.h>
 #include <QtWidgets/qwidget.h>
 #include <QGLWidget>
+#include <QOpenGLWidget>
 
 #include <fastuidraw/painter/painter.hpp>
 
@@ -45,7 +46,7 @@ class QWebNetworkRequest;
  * of Source/WebCore/platform/graphics/qt/GraphicsContextQt.cpp because
  * platformContext()->paintEngine() is NULL. Fixing that still leaves us with a blackscreen.
  */
-class QWEBKITWIDGETS_EXPORT QWebView : public QGLWidget {
+class QWEBKITWIDGETS_EXPORT QWebView : public QOpenGLWidget {
     Q_OBJECT
     Q_PROPERTY(QString title READ title)
     Q_PROPERTY(QUrl url READ url WRITE setUrl)
@@ -61,10 +62,8 @@ class QWEBKITWIDGETS_EXPORT QWebView : public QGLWidget {
     Q_PROPERTY(QPainter::RenderHints renderHints READ renderHints WRITE setRenderHints)
     Q_FLAGS(QPainter::RenderHints)
 public:
+    
     explicit QWebView(QWidget* parent = Q_NULLPTR);
-    explicit QWebView(QGLWidget *sharedWidget,
-                      fastuidraw::reference_counted_ptr<fastuidraw::Painter> painter,
-                      QWidget* parent = Q_NULLPTR);
     ~QWebView();
 
     QWebPage* page() const;
@@ -117,6 +116,7 @@ public:
     bool findText(const QString& subString, QWebPage::FindFlags options = QWebPage::FindFlags());
 
     bool event(QEvent*) Q_DECL_OVERRIDE;
+    bool drawWithFastUIDraw(void) const;
 
 public Q_SLOTS:
     void stop();
@@ -125,6 +125,7 @@ public Q_SLOTS:
     void reload();
 
     void print(QPrinter*) const;
+    void drawWithFastUIDraw(bool);
 
 Q_SIGNALS:
     void loadStarted();
@@ -138,8 +139,6 @@ Q_SIGNALS:
     void urlChanged(const QUrl&);
 
 protected:
-    void resizeEvent(QResizeEvent*) Q_DECL_OVERRIDE;
-    void paintEvent(QPaintEvent*) Q_DECL_OVERRIDE;
     void paintGL(void) Q_DECL_OVERRIDE;
     void initializeGL(void) Q_DECL_OVERRIDE;
     void resizeGL(int w, int h) Q_DECL_OVERRIDE;

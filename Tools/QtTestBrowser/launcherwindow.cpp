@@ -161,12 +161,8 @@ void LauncherWindow::initializeView()
     QSplitter* splitter = static_cast<QSplitter*>(centralWidget());
 
     if (!m_windowOptions.useGraphicsView) {
-        WebViewTraditional* view;
-        if (m_windowOptions.useFastUIDraw) {
-            view = new WebViewTraditional(splitter, WebViewTraditional::paint_with_fastuidraw);
-        } else {
-            view = new WebViewTraditional(splitter);
-        }
+        WebViewTraditional* view = new WebViewTraditional(splitter);
+        view->drawWithFastUIDraw(m_windowOptions.useFastUIDraw);
         view->setPage(page());
 
         view->installEventFilter(this);
@@ -941,12 +937,12 @@ void LauncherWindow::toggleWebView(bool graphicsBased)
 
 void LauncherWindow::toggleFastUIDraw(bool vFastUIDrawBased)
 {
-    m_windowOptions.useFastUIDraw = vFastUIDrawBased;
-    initializeView();
-#ifndef QT_NO_SHORTCUT
-    menuBar()->clear();
-#endif
-    createChrome();
+    WebViewTraditional *p;
+    p = qobject_cast<WebViewTraditional*>(m_view);
+    if (p) {
+        m_windowOptions.useFastUIDraw = vFastUIDrawBased;
+        p->drawWithFastUIDraw(vFastUIDrawBased);
+    }
 }
 
 void LauncherWindow::toggleAcceleratedCompositing(bool toggle)
