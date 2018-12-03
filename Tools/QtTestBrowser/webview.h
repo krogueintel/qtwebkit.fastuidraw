@@ -55,6 +55,8 @@ class WebViewTraditional final : public QWebView {
 public:
     WebViewTraditional(QWidget* parent);
 
+    static void shutDown(void);
+
 protected:
     void contextMenuEvent(QContextMenuEvent*) final;
     void mousePressEvent(QMouseEvent*) final;

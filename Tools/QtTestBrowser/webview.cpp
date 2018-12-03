@@ -49,11 +49,108 @@
 #include <QStateMachine>
 #endif
 
+#include <QOpenGLContext>
+#include <QOffscreenSurface>
+#include <iostream>
+
+/* This HACK is to make it so that the FastUIDraw resources
+ * stay alive even if the last QWebView is deleted. This way
+ * the FastUIDraw resources are not re-created.
+ */
+class KeepItAlive:QOffscreenSurface
+{
+public:
+  static void makeAlive(void)
+  {
+      if (!ptr()) {
+          ptr() = new KeepItAlive();
+      }
+  }
+
+  static void shutDown(void)
+  {
+      if (ptr()) {
+          delete ptr();
+          ptr() = nullptr;
+      }
+  }
+  
+private:
+  KeepItAlive(void)
+  {
+      bool b;
+      QSurfaceFormat sf(QSurfaceFormat::defaultFormat());
+
+      /* create the offscreen surface */
+      sf.setMajorVersion(4);
+      sf.setMinorVersion(5);
+      sf.setProfile(QSurfaceFormat::CoreProfile);
+      setFormat(sf);
+      create();
+
+      /* create the GL context */
+      m_ctx = new QOpenGLContext();
+      m_ctx->setShareContext(QOpenGLContext::globalShareContext());
+      m_ctx->setFormat(sf);
+      b = m_ctx->create();
+      FASTUIDRAWassert(b);
+
+      /* make it current on the surface */
+      b = m_ctx->makeCurrent(this);
+      FASTUIDRAWassert(b);
+
+      /* initialize FastUIDraw resource, in truth they
+       * should already be ready though.
+       */
+      qFastUIDrawInitializeResources(m_ctx, local_get_proc);
+      m_ctx->doneCurrent();
+  }
+
+  ~KeepItAlive()
+  {
+      bool b;
+
+      b = m_ctx->makeCurrent(this);
+      FASTUIDRAWassert(b);
+
+      qFastUIDrawClearResources();
+      m_ctx->doneCurrent();
+
+      delete m_ctx;
+  }
+
+  static void *local_get_proc(void *c, fastuidraw::c_string name)
+  {
+      QOpenGLContext *ctx;
+      ctx = static_cast<QOpenGLContext*>(c);
+      return reinterpret_cast<void*>(ctx->getProcAddress(name));
+  }
+
+  static KeepItAlive*& ptr(void)
+  {
+    static KeepItAlive *p(nullptr);
+    return p;
+  }
+
+  QOpenGLContext *m_ctx;
+};
+
+
+/////////////////////////////////////////////////////
+//WebViewTraditional methods
 WebViewTraditional::WebViewTraditional(QWidget* parent) :
   QWebView(parent)
 {
+    KeepItAlive::makeAlive();
 }
-  
+
+void WebViewTraditional::shutDown(void)
+{
+    KeepItAlive::shutDown();
+}
+
+/////////////////////////////////////////////////////
+//WebViewGraphicsBased methods
 WebViewGraphicsBased::WebViewGraphicsBased(QWidget* parent)
     : QGraphicsView(parent)
     , m_item(new GraphicsWebView)

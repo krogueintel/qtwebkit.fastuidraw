@@ -54,6 +54,7 @@ WindowOptions windowOptions;
 int launcherMain(const QApplication& app)
 {
     int retVal = app.exec();
+    WebViewTraditional::shutDown();
 
     /* TODO: clean-up FastUIDraw resources */
 
