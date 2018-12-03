@@ -129,7 +129,7 @@ void TextureMapperImageBuffer::drawBorder(const Color& color, float borderWidth 
     context->concatCTM(matrix.toAffineTransform());
 #endif
 
-    QPainter& painter = *context->platformContext();
+    QPainter& painter = context->platformContext()->qt();
     painter.setBrush(Qt::NoBrush);
     QPen newPen(color);
     newPen.setWidthF(borderWidth);
@@ -169,7 +169,7 @@ void TextureMapperImageBuffer::drawNumber(int number, const Color& color, const 
     IntSize size(width, height);
     IntRect sourceRect(IntPoint::zero(), size);
 
-    QPainter& painter = *context->platformContext();
+    QPainter& painter = context->platformContext()->qt();
     painter.translate(targetPoint);
     painter.fillRect(sourceRect, color);
     painter.setFont(font);

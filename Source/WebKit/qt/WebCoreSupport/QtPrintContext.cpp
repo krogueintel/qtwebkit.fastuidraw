@@ -29,7 +29,8 @@
 using namespace WebCore;
 
 QtPrintContext::QtPrintContext(QPainter* painter, const QRect& pageRect, QWebFrameAdapter* frameAdapter)
-    : m_graphicsContext(new GraphicsContext(painter))
+    : m_ngc(new PlatformGraphicsContext(painter))
+    , m_graphicsContext(new GraphicsContext(m_ngc))
     , m_printContext(new PrintContext(frameAdapter->frame))
 {
     m_printContext->begin(pageRect.width(), pageRect.height());
@@ -43,6 +44,7 @@ QtPrintContext::~QtPrintContext()
     m_printContext->end();
     delete m_graphicsContext;
     delete m_printContext;
+    delete m_ngc;
 }
 
 int QtPrintContext::pageCount() const

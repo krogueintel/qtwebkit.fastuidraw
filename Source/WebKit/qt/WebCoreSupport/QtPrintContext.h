@@ -28,6 +28,7 @@
 namespace WebCore {
 class PrintContext;
 class GraphicsContext;
+class PlatformGraphicsContext;
 }
 
 class QWebFrameAdapter;
@@ -41,6 +42,7 @@ public:
     void spoolPage(int pageNumber, float width);
 
 private:
+    WebCore::PlatformGraphicsContext *m_ngc;
     WebCore::GraphicsContext* m_graphicsContext;
     WebCore::PrintContext* m_printContext;
 };

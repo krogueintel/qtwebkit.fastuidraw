@@ -52,6 +52,7 @@
 #include "Path.h"
 #include "Pattern.h"
 #include "ShadowBlur.h"
+#include "GraphicsContext.h"
 #include "TransformationMatrix.h"
 #include "TransparencyLayer.h"
 #include "URL.h"
@@ -70,6 +71,8 @@
 #include <QVector>
 #include <private/qpdf_p.h>
 #include <wtf/MathExtras.h>
+
+#include <iostream>
 
 #if OS(WINDOWS)
 QT_BEGIN_NAMESPACE
@@ -235,14 +238,24 @@ static inline Qt::FillRule toQtFillRule(WindRule rule)
 class GraphicsContextPlatformPrivate {
     WTF_MAKE_NONCOPYABLE(GraphicsContextPlatformPrivate); WTF_MAKE_FAST_ALLOCATED;
 public:
-    GraphicsContextPlatformPrivate(QPainter*, const QColor& initialSolidColor);
+    GraphicsContextPlatformPrivate(PlatformGraphicsContext*, const QColor& initialSolidColor);
     ~GraphicsContextPlatformPrivate();
 
     inline QPainter* p() const
     {
         if (layers.isEmpty())
-            return painter;
+            return &platform->qt();
         return &layers.top()->painter;
+    }
+
+    inline PlatformGraphicsContext *platform_gc() const
+    {
+      if (platform->is_qt() && !layers.isEmpty()) {
+          return &layers.top()->platform_gc;
+      }
+      else {
+          return platform;
+      }
     }
 
     bool antiAliasingForRectsAndLines;
@@ -266,29 +279,31 @@ public:
     void takeOwnershipOfPlatformContext() { platformContextIsOwned = true; }
 
 private:
-    QPainter* painter;
+    PlatformGraphicsContext *platform;
     bool platformContextIsOwned;
 };
 
-GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(QPainter* p, const QColor& initialSolidColor)
+GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsContext* p, const QColor& initialSolidColor)
     : antiAliasingForRectsAndLines(false)
     , layerCount(0)
     , solidColor(initialSolidColor)
     , imageInterpolationQuality(InterpolationDefault)
     , initialSmoothPixmapTransformHint(false)
-    , painter(p)
+    , platform(p)
     , platformContextIsOwned(false)
 {
-    if (!painter)
+    if (!platform)
         return;
 
-    // Use the default the QPainter was constructed with.
-    antiAliasingForRectsAndLines = painter->testRenderHint(QPainter::Antialiasing);
+    if (platform->is_qt()) {
+        // Use the default the QPainter was constructed with.
+      antiAliasingForRectsAndLines = platform->qt().testRenderHint(QPainter::Antialiasing);
 
-    // Used for default image interpolation quality.
-    initialSmoothPixmapTransformHint = painter->testRenderHint(QPainter::SmoothPixmapTransform);
+      // Used for default image interpolation quality.
+      initialSmoothPixmapTransformHint = platform->qt().testRenderHint(QPainter::SmoothPixmapTransform);
 
-    painter->setRenderHint(QPainter::Antialiasing, true);
+      platform->qt().setRenderHint(QPainter::Antialiasing, true);
+    }
 
 }
 
@@ -297,13 +312,15 @@ GraphicsContextPlatformPrivate::~GraphicsContextPlatformPrivate()
     if (!platformContextIsOwned)
         return;
 
+    QPainter *painter = &platform->qt();
     QPaintDevice* device = painter->device();
     painter->end();
     delete painter;
     delete device;
+    delete platform;
 }
 
-void GraphicsContext::platformInit(QPainter* painter)
+void GraphicsContext::platformInit(PlatformGraphicsContext *painter)
 {
     if (!painter)
         return;
@@ -311,13 +328,13 @@ void GraphicsContext::platformInit(QPainter* painter)
     m_data = new GraphicsContextPlatformPrivate(painter, fillColor());
 
     // solidColor is initialized with the fillColor().
-    painter->setBrush(m_data->solidColor);
+    painter->qt().setBrush(m_data->solidColor);
 
-    QPen pen(painter->pen());
+    QPen pen(painter->qt().pen());
     pen.setColor(strokeColor());
     pen.setJoinStyle(toQtLineJoin(MiterJoin));
     pen.setCapStyle(Qt::FlatCap);
-    painter->setPen(pen);
+    painter->qt().setPen(pen);
 }
 
 void GraphicsContext::platformDestroy()
@@ -332,7 +349,7 @@ void GraphicsContext::platformDestroy()
 
 PlatformGraphicsContext* GraphicsContext::platformContext() const
 {
-    return m_data->p();
+    return m_data->platform_gc();
 }
 
 AffineTransform GraphicsContext::getCTM(IncludeDeviceScale includeScale) const
@@ -341,8 +358,8 @@ AffineTransform GraphicsContext::getCTM(IncludeDeviceScale includeScale) const
         return AffineTransform();
 
     const QTransform& matrix = (includeScale == DefinitelyIncludeDeviceScale)
-        ? platformContext()->combinedTransform()
-        : platformContext()->worldTransform();
+        ? platformContext()->qt().combinedTransform()
+        : platformContext()->qt().worldTransform();
     return AffineTransform(matrix.m11(), matrix.m12(), matrix.m21(),
                            matrix.m22(), matrix.dx(), matrix.dy());
 }
@@ -411,7 +428,7 @@ void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point
     if (!thickness || !strokeWidth)
         return;
 
-    QPainter* p = platformContext();
+    QPainter* p = &platformContext()->qt();
     const bool savedAntiAlias = p->testRenderHint(QPainter::Antialiasing);
     p->setRenderHint(QPainter::Antialiasing, m_data->antiAliasingForRectsAndLines);
 
@@ -535,7 +552,7 @@ void GraphicsContext::drawPattern(Image& image, const FloatRect& tileRect, const
 
     setCompositeOperation(!pixmap.hasAlpha() && op == CompositeSourceOver ? CompositeCopy : op);
 
-    QPainter* p = platformContext();
+    QPainter* p = &platformContext()->qt();
     QTransform transform(patternTransform);
 
     QTransform combinedTransform = p->combinedTransform();
@@ -644,7 +661,7 @@ void GraphicsContext::fillPath(const Path& path)
             ShadowBlur shadow(m_state);
             GraphicsContext* shadowContext = shadow.beginShadowLayer(*this, platformPath.controlPointRect());
             if (shadowContext) {
-                QPainter* shadowPainter = shadowContext->platformContext();
+                QPainter* shadowPainter = &shadowContext->platformContext()->qt();
                 if (m_state.fillPattern) {
                     shadowPainter->fillPath(platformPath, QBrush(m_state.fillPattern->createPlatformPattern()));
                 } else if (m_state.fillGradient) {
@@ -710,7 +727,7 @@ void GraphicsContext::strokePath(const Path& path)
             boundingRect.inflate(pen.miterLimit() + pen.widthF());
             GraphicsContext* shadowContext = shadow.beginShadowLayer(*this, boundingRect);
             if (shadowContext) {
-                QPainter* shadowPainter = shadowContext->platformContext();
+                QPainter* shadowPainter = &shadowContext->platformContext()->qt();
                 if (m_state.strokeGradient) {
                     QBrush brush(*m_state.strokeGradient->platformGradient());
                     brush.setTransform(m_state.strokeGradient->gradientSpaceTransform());
@@ -801,7 +818,7 @@ void GraphicsContext::fillRect(const FloatRect& rect)
             ShadowBlur shadow(m_state);
             GraphicsContext* shadowContext = shadow.beginShadowLayer(*this, normalizedRect);
             if (shadowContext) {
-                QPainter* shadowPainter = shadowContext->platformContext();
+                QPainter* shadowPainter = &shadowContext->platformContext()->qt();
                 drawRepeatPattern(shadowPainter, *m_state.fillPattern, normalizedRect);
                 shadow.endShadowLayer(*this);
             }
@@ -814,7 +831,7 @@ void GraphicsContext::fillRect(const FloatRect& rect)
             ShadowBlur shadow(m_state);
             GraphicsContext* shadowContext = shadow.beginShadowLayer(*this, normalizedRect);
             if (shadowContext) {
-                QPainter* shadowPainter = shadowContext->platformContext();
+                QPainter* shadowPainter = &shadowContext->platformContext()->qt();
                 shadowPainter->fillRect(normalizedRect, brush);
                 shadow.endShadowLayer(*this);
             }
@@ -829,7 +846,7 @@ void GraphicsContext::fillRect(const FloatRect& rect)
                 if (!getCTM().preservesAxisAlignment()) {
                     GraphicsContext* shadowContext = shadow.beginShadowLayer(*this, normalizedRect);
                     if (shadowContext) {
-                        QPainter* shadowPainter = shadowContext->platformContext();
+                        QPainter* shadowPainter = &shadowContext->platformContext()->qt();
                         shadowPainter->fillRect(normalizedRect, p->brush());
                         shadow.endShadowLayer(*this);
                     }
@@ -1041,7 +1058,7 @@ void GraphicsContext::drawLineForText(const FloatPoint& origin, float width, boo
     bool strokeThicknessChanged = strokeThickness() != bounds.height();
     bool needSavePen = strokeColorChanged || strokeThicknessChanged;
 
-    QPainter* p = platformContext();
+    QPainter* p = &platformContext()->qt();
     const bool savedAntiAlias = p->testRenderHint(QPainter::Antialiasing);
     p->setRenderHint(QPainter::Antialiasing, m_data->antiAliasingForRectsAndLines);
 
@@ -1212,7 +1229,7 @@ void GraphicsContext::drawLineForDocumentMarker(const FloatPoint& origin, float 
     if (paintingDisabled())
         return;
 
-    QPainter* painter = platformContext();
+    QPainter* painter = &platformContext()->qt();
     const QPen originalPen = painter->pen();
 
     switch (style) {
@@ -1236,7 +1253,7 @@ FloatRect GraphicsContext::roundToDevicePixels(const FloatRect& frect, RoundingM
     // affine transform matrix to device space can mess with this conversion if we have a
     // rotating image like the hands of the world clock widget. We just need the scale, so
     // we get the affine transform matrix and extract the scale.
-    QPainter* painter = platformContext();
+    QPainter* painter = &platformContext()->qt();
     QTransform deviceTransform = painter->deviceTransform();
     if (deviceTransform.isIdentity())
         return frect;
@@ -1573,7 +1590,7 @@ TransformationMatrix GraphicsContext::get3DTransform() const
     if (paintingDisabled())
         return TransformationMatrix();
 
-    return platformContext()->worldTransform();
+    return platformContext()->qt().worldTransform();
 }
 
 void GraphicsContext::concat3DTransform(const TransformationMatrix& transform)
@@ -1774,9 +1791,19 @@ void GraphicsContext::takeOwnershipOfPlatformContext()
 
 bool GraphicsContext::isAcceleratedContext() const
 {
-  return platformContext()
-    && platformContext()->paintEngine()
-    && platformContext()->paintEngine()->type() == QPaintEngine::OpenGL2;
+    bool return_value;
+    return_value = platformContext()
+      && platformContext()->is_qt()
+      && platformContext()->qt().paintEngine()
+      && platformContext()->qt().paintEngine()->type() == QPaintEngine::OpenGL2;
+
+    if (return_value) {
+        std::cout << "Y" << std::flush;
+    } else {
+        std::cout << "N" << std::flush;
+    }
+
+    return return_value;
 }
 
 }

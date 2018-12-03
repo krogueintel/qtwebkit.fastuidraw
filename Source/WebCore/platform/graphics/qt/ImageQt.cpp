@@ -274,7 +274,7 @@ void BitmapImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
 #endif
 
     QPixmap prescaledBuffer;
-    image = prescaleImageIfRequired(ctxt.platformContext(), image, &prescaledBuffer, normalizedDst, &normalizedSrc);
+    image = prescaleImageIfRequired(&ctxt.platformContext()->qt(), image, &prescaledBuffer, normalizedDst, &normalizedSrc);
 
     CompositeOperator previousOperator = ctxt.compositeOperation();
     BlendMode previousBlendMode = ctxt.blendModeOperation();
@@ -284,13 +284,13 @@ void BitmapImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
         ShadowBlur shadow(ctxt.state());
         GraphicsContext* shadowContext = shadow.beginShadowLayer(ctxt, normalizedDst);
         if (shadowContext) {
-            QPainter* shadowPainter = shadowContext->platformContext();
+            QPainter* shadowPainter = &shadowContext->platformContext()->qt();
             shadowPainter->drawPixmap(normalizedDst, *image, normalizedSrc);
             shadow.endShadowLayer(ctxt);
         }
     }
 
-    ctxt.platformContext()->drawPixmap(normalizedDst, *image, normalizedSrc);
+    ctxt.platformContext()->qt().drawPixmap(normalizedDst, *image, normalizedSrc);
 
     ctxt.setCompositeOperation(previousOperator, previousBlendMode);
 

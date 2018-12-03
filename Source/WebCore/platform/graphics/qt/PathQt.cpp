@@ -119,7 +119,8 @@ static GraphicsContext* scratchContext()
 {
     static QImage image(1, 1, NativeImageQt::defaultFormatForAlphaEnabledImages());
     static QPainter painter(&image);
-    static GraphicsContext* context = new GraphicsContext(&painter);
+    static PlatformGraphicsContext ngc(&painter);
+    static GraphicsContext* context = new GraphicsContext(&ngc);
     return context;
 }
 
@@ -131,7 +132,7 @@ bool Path::strokeContains(StrokeStyleApplier* applier, const FloatPoint& point) 
     GraphicsContext* context = scratchContext();
     applier->strokeStyle(context);
 
-    QPen pen = context->platformContext()->pen();
+    QPen pen = context->platformContext()->qt().pen();
     stroke.setWidth(pen.widthF());
     stroke.setCapStyle(pen.capStyle());
     stroke.setJoinStyle(pen.joinStyle());
@@ -164,7 +165,7 @@ FloatRect Path::strokeBoundingRect(StrokeStyleApplier* applier) const
     if (applier) {
         applier->strokeStyle(context);
 
-        QPen pen = context->platformContext()->pen();
+        QPen pen = context->platformContext()->qt().pen();
         stroke.setWidth(pen.widthF());
         stroke.setCapStyle(pen.capStyle());
         stroke.setJoinStyle(pen.joinStyle());

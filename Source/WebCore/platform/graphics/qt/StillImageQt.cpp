@@ -93,13 +93,13 @@ void StillImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
         ShadowBlur shadow(ctxt.state());
         GraphicsContext* shadowContext = shadow.beginShadowLayer(ctxt, normalizedDst);
         if (shadowContext) {
-            QPainter* shadowPainter = shadowContext->platformContext();
+            QPainter* shadowPainter = &shadowContext->platformContext()->qt();
             shadowPainter->drawPixmap(normalizedDst, *m_pixmap, normalizedSrc);
             shadow.endShadowLayer(ctxt);
         }
     }
 
-    ctxt.platformContext()->drawPixmap(normalizedDst, *m_pixmap, normalizedSrc);
+    ctxt.platformContext()->qt().drawPixmap(normalizedDst, *m_pixmap, normalizedSrc);
     ctxt.setCompositeOperation(previousOperator, previousBlendMode);
 }
 

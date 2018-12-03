@@ -36,6 +36,8 @@
 #ifndef TransparencyLayer_h
 #define TransparencyLayer_h
 
+#include "GraphicsContext.h"
+
 #include <QPaintEngine>
 #include <QPainter>
 #include <QPixmap>
@@ -52,6 +54,7 @@ public:
         : opacity(opacity)
         , alphaMask(alphaMask)
         , saveCounter(1) // see the comment for saveCounter
+        , platform_gc(&painter)
     {
         int devicePixelRatio = p->device()->devicePixelRatio();
         pixmap = QPixmap(rect.width() * devicePixelRatio, rect.height() * devicePixelRatio);
@@ -81,6 +84,7 @@ public:
     // saveCounter is only used in combination with alphaMask
     // otherwise, its value is unspecified
     int saveCounter;
+    PlatformGraphicsContext platform_gc;
 };
 
 } // namespace WebCore

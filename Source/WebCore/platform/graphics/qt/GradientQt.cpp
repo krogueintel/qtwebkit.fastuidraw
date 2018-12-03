@@ -112,7 +112,7 @@ QGradient* Gradient::platformGradient()
 
 void Gradient::fill(GraphicsContext* context, const FloatRect& rect)
 {
-    context->platformContext()->fillRect(rect, *platformGradient());
+    context->platformContext()->qt().fillRect(rect, *platformGradient());
 }
 
 } //namespace

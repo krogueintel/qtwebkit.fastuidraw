@@ -37,6 +37,7 @@
 #include "Path.h"
 #include "Pattern.h"
 #include <wtf/Noncopyable.h>
+#include <fastuidraw/painter/painter.hpp>
 
 #if USE(CG)
 typedef struct CGContext PlatformGraphicsContext;
@@ -47,7 +48,32 @@ class PlatformContextCairo;
 typedef WebCore::PlatformContextCairo PlatformGraphicsContext;
 #elif PLATFORM(QT)
 #include <QPainter>
-typedef QPainter PlatformGraphicsContext;
+namespace WebCore {
+class PlatformGraphicsContext {
+public:
+    PlatformGraphicsContext(::QPainter *qt = nullptr):
+      m_qt_painter(qt)
+    {}
+
+    ::QPainter&
+    qt(void)
+    {
+        FASTUIDRAWassert(m_qt_painter);
+        return *m_qt_painter;
+    }
+
+    bool
+    is_qt(void) const
+    {
+        return m_qt_painter != nullptr;
+    }
+
+private:
+    ::QPainter *m_qt_painter;
+    ::fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_fastuidraw_painter;
+};
+
+} //namespace WebCore
 
 #elif USE(WINGDI)
 typedef struct HDC__ PlatformGraphicsContext;

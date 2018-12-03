@@ -61,8 +61,9 @@ std::unique_ptr<GraphicsContext> ShareableBitmap::createGraphicsContext()
     // QTFIXME: Shallow QImage leaks here, but it should not be destroyed earlier than QPainter
     QImage* image = new QImage(createQImage());
     QPainter* painter = new QPainter(image);
+    PlatformGraphicsContext *ngc = new PlatformGraphicsContext(painter);
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-    auto context = std::make_unique<GraphicsContext>(painter);
+    auto context = std::make_unique<GraphicsContext>(ngc);
     context->takeOwnershipOfPlatformContext();
     return context;
 }
@@ -70,7 +71,7 @@ std::unique_ptr<GraphicsContext> ShareableBitmap::createGraphicsContext()
 void ShareableBitmap::paint(GraphicsContext& context, const IntPoint& dstPoint, const IntRect& srcRect)
 {
     QImage image = createQImage();
-    QPainter* painter = context.platformContext();
+    QPainter* painter = &context.platformContext()->qt();
     painter->drawImage(dstPoint, image, QRect(srcRect));
 }
 
@@ -82,7 +83,7 @@ void ShareableBitmap::paint(GraphicsContext& context, float scaleFactor, const I
     }
 
     QImage image = createQImage();
-    QPainter* painter = context.platformContext();
+    QPainter* painter = &context.platformContext()->qt();
 
     painter->save();
     painter->scale(scaleFactor, scaleFactor);

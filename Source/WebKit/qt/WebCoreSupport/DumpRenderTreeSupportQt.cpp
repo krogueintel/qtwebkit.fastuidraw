@@ -814,7 +814,8 @@ QImage DumpRenderTreeSupportQt::paintPagesWithBoundaries(QWebFrameAdapter* adapt
     image.fill(Qt::white);
     painter.begin(&image);
 
-    GraphicsContext ctx(&painter);
+    PlatformGraphicsContext ngc(&painter);
+    GraphicsContext ctx(&ngc);
     for (int i = 0; i < printContext.pageCount(); ++i) {
         printContext.spoolPage(ctx, i, pageRect.width());
         // translate to next page coordinates

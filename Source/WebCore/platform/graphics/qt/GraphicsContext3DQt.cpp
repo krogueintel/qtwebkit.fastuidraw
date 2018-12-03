@@ -281,7 +281,7 @@ void GraphicsContext3DPrivate::paintToTextureMapper(TextureMapper& textureMapper
 
     // Alternatively read pixels to a memory buffer.
     GraphicsContext* context = textureMapper.graphicsContext();
-    QPainter* painter = context->platformContext();
+    QPainter* painter = &context->platformContext()->qt();
     painter->save();
     painter->setTransform(matrix);
     painter->setOpacity(opacity);

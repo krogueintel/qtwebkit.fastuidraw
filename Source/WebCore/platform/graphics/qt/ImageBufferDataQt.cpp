@@ -210,7 +210,7 @@ void ImageBufferDataPrivateAccelerated::draw(GraphicsContext& destContext, const
         invalidateState();
 
         // If accelerated compositing is disabled, this may be the painter of the QGLWidget, which is a QGL2PaintEngineEx.
-        QOpenGL2PaintEngineEx* acceleratedPaintEngine = dynamic_cast<QOpenGL2PaintEngineEx*>(destContext.platformContext()->paintEngine()); // toQOpenGL2PaintEngineEx(destContext.platformContext()->paintEngine());
+        QOpenGL2PaintEngineEx* acceleratedPaintEngine = dynamic_cast<QOpenGL2PaintEngineEx*>(destContext.platformContext()->qt().paintEngine()); // toQOpenGL2PaintEngineEx(destContext.platformContext()->paintEngine());
         if (acceleratedPaintEngine) {
             QPaintDevice* targetPaintDevice = acceleratedPaintEngine->paintDevice();
 
@@ -307,7 +307,7 @@ void ImageBufferDataPrivateAccelerated::paintToTextureMapper(TextureMapper& text
         QImage image = toQImage();
         TransformationMatrix oldTransform = textureMapper.graphicsContext()->get3DTransform();
         textureMapper.graphicsContext()->concat3DTransform(matrix);
-        textureMapper.graphicsContext()->platformContext()->drawImage(targetRect, image);
+        textureMapper.graphicsContext()->platformContext()->qt().drawImage(targetRect, image);
         textureMapper.graphicsContext()->set3DTransform(oldTransform);
         return;
     }
@@ -477,6 +477,7 @@ void ImageBufferDataPrivateUnaccelerated::platformTransformColorSpace(const Vect
 ImageBufferData::ImageBufferData(const FloatSize& size, float resolutionScale)
 {
     m_painter = new QPainter;
+    m_platform_context = new PlatformGraphicsContext(m_painter);
 
     m_impl = new ImageBufferDataPrivateUnaccelerated(size, resolutionScale);
 
@@ -513,6 +514,7 @@ ImageBufferData::~ImageBufferData()
     m_painter->end();
     delete m_painter;
     delete m_impl;
+    delete m_platform_context;
 }
 
 void ImageBufferData::initPainter()

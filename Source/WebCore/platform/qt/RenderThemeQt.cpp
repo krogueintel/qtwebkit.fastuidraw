@@ -900,7 +900,7 @@ void RenderThemeQt::updateCachedSystemFontDescription(CSSValueID, FontCascadeDes
 }
 
 StylePainter::StylePainter(GraphicsContext& context)
-    : painter(context.platformContext())
+    : painter(&context.platformContext()->qt())
 {
     if (painter) {
         // the styles often assume being called with a pristine painter where no brush is set,

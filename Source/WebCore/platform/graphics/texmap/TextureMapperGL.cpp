@@ -198,7 +198,7 @@ void TextureMapperGL::beginPainting(PaintFlags flags)
     data().previousDepthState = m_context3D->isEnabled(GraphicsContext3D::DEPTH_TEST);
 #if PLATFORM(QT)
     if (m_context) {
-        QPainter* painter = m_context->platformContext();
+        QPainter* painter = &m_context->platformContext()->qt();
         painter->save();
         painter->beginNativePainting();
     }
@@ -238,7 +238,7 @@ void TextureMapperGL::endPainting()
 #if PLATFORM(QT)
     if (!m_context)
         return;
-    QPainter* painter = m_context->platformContext();
+    QPainter* painter = &m_context->platformContext()->qt();
     painter->endNativePainting();
     painter->restore();
 #endif

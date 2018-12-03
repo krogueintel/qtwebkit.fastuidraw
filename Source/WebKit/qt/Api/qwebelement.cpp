@@ -1461,7 +1461,8 @@ void QWebElement::render(QPainter* painter, const QRect& clip)
     if (!clip.isEmpty())
         rect.intersect(clip.translated(rect.location()));
 
-    GraphicsContext context(painter);
+    PlatformGraphicsContext ngc(painter);
+    GraphicsContext context(&ngc);
 
     context.save();
     context.translate(-rect.x(), -rect.y());

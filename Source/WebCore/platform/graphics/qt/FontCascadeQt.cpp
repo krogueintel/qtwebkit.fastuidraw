@@ -126,7 +126,7 @@ static QPainterPath pathForGlyphs(const QGlyphRun& glyphRun, const QPointF& offs
 
 static void drawQtGlyphRun(GraphicsContext& context, const QGlyphRun& qtGlyphRun, const QPointF& point, qreal baseLineOffset)
 {
-    QPainter* painter = context.platformContext();
+    QPainter* painter = &context.platformContext()->qt();
 
     QPainterPath textStrokePath;
     if (context.textDrawingMode() & TextModeStroke)
@@ -142,7 +142,7 @@ static void drawQtGlyphRun(GraphicsContext& context, const QGlyphRun& qtGlyphRun
             const QRectF boundingRect(point.x(), point.y() - font.ascent() + baseLineOffset, width, height);
             GraphicsContext* shadowContext = shadow.beginShadowLayer(context, boundingRect);
             if (shadowContext) {
-                QPainter* shadowPainter = shadowContext->platformContext();
+                QPainter* shadowPainter = &shadowContext->platformContext()->qt();
                 shadowPainter->setPen(state.shadowColor);
                 if (shadowContext->textDrawingMode() & TextModeFill)
                     shadowPainter->drawGlyphRun(point, qtGlyphRun);

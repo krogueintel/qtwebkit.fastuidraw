@@ -41,7 +41,7 @@ void BitmapTextureImageBuffer::updateContents(const void* data, const IntRect& t
 #if PLATFORM(QT)
     QImage image(reinterpret_cast<const uchar*>(data), targetRect.width(), targetRect.height(), bytesPerLine, NativeImageQt::defaultFormatForAlphaEnabledImages());
 
-    QPainter* painter = m_image->context().platformContext();
+    QPainter* painter = &m_image->context().platformContext()->qt();
     painter->save();
     painter->setCompositionMode(QPainter::CompositionMode_Source);
     painter->drawImage(targetRect, image, IntRect(sourceOffset, targetRect.size()));

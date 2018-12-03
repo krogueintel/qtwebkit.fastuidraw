@@ -490,7 +490,8 @@ static void coalesceRectsIfPossible(const QRect& clipRect, QVector<QRect>& rects
 
 void QWebFrameAdapter::renderRelativeCoords(QPainter* painter, int layers, const QRegion& clip)
 {
-    GraphicsContext context(painter);
+    PlatformGraphicsContext ngc(painter);
+    GraphicsContext context(&ngc);
     if (context.paintingDisabled() && !context.updatingControlTints())
         return;
 
@@ -546,7 +547,7 @@ void QWebFrameAdapter::renderFrameExtras(GraphicsContext& context, int layers, c
 {
     if (!(layers & (PanIconLayer | ScrollBarLayer)))
         return;
-    QPainter* painter = context.platformContext();
+    QPainter* painter = &context.platformContext()->qt();
     WebCore::FrameView* view = frame->view();
     QVector<QRect> vector = clip.rects();
     for (int i = 0; i < vector.size(); ++i) {

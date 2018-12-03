@@ -42,6 +42,7 @@
 
 namespace WebCore {
 
+class PlatformGraphicsContext;
 class IntSize;
 
 struct ImageBufferDataPrivate {
@@ -71,6 +72,7 @@ public:
 #endif
     ~ImageBufferData();
     QPainter* m_painter;
+    PlatformGraphicsContext *m_platform_context;
     std::unique_ptr<GraphicsContext> m_context;
     ImageBufferDataPrivate* m_impl;
 protected:

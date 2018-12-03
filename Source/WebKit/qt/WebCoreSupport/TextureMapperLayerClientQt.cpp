@@ -111,13 +111,13 @@ void TextureMapperLayerClientQt::renderCompositedLayers(GraphicsContext& context
     // GraphicsContext::imageInterpolationQuality is always InterpolationDefault here,
     // but 'default' may be interpreted differently due to a different backend QPainter,
     // so we need to set an explicit imageInterpolationQuality.
-    if (context.platformContext()->renderHints() & QPainter::SmoothPixmapTransform)
+    if (context.platformContext()->qt().renderHints() & QPainter::SmoothPixmapTransform)
         m_textureMapper->setImageInterpolationQuality(WebCore::InterpolationMedium);
     else
         m_textureMapper->setImageInterpolationQuality(WebCore::InterpolationNone);
 
     m_textureMapper->setTextDrawingMode(context.textDrawingMode());
-    QPainter* painter = context.platformContext();
+    QPainter* painter = &context.platformContext()->qt();
     QTransform transform;
     if (m_textureMapper->accelerationMode() == TextureMapper::OpenGLMode) {
         // TextureMapperGL needs to duplicate the entire transform QPainter would do,

@@ -963,6 +963,11 @@ void QWebView::paintGL(void)
 
       d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
       d->m_painter->begin(d->m_surface, orientation);
+      fastuidraw::PainterBrush brush;
+      brush.pen(1.0f, 0.0f, 0.0f, 0.5f);
+      d->m_painter->draw_rect(fastuidraw::PainterData(&brush),
+                              0.25f * fastuidraw::vec2(width(), height()),
+                              0.5f  * fastuidraw::vec2(width(), height()));
       d->m_painter->end();
 
       fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);

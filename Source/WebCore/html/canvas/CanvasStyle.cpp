@@ -256,11 +256,11 @@ void CanvasStyle::applyStrokeColor(GraphicsContext* context) const
 #if USE(CG)
         CGContextSetCMYKStrokeColor(context->platformContext(), m_cmyka->c, m_cmyka->m, m_cmyka->y, m_cmyka->k, m_cmyka->a);
 #elif PLATFORM(QT)
-        QPen currentPen = context->platformContext()->pen();
+        QPen currentPen = context->platformContext()->qt().pen();
         QColor clr;
         clr.setCmykF(m_cmyka->c, m_cmyka->m, m_cmyka->y, m_cmyka->k, m_cmyka->a);
         currentPen.setColor(clr);
-        context->platformContext()->setPen(currentPen);
+        context->platformContext()->qt().setPen(currentPen);
 #else
         context->setStrokeColor(m_cmyka->rgba);
 #endif
@@ -294,11 +294,11 @@ void CanvasStyle::applyFillColor(GraphicsContext* context) const
 #if USE(CG)
         CGContextSetCMYKFillColor(context->platformContext(), m_cmyka->c, m_cmyka->m, m_cmyka->y, m_cmyka->k, m_cmyka->a);
 #elif PLATFORM(QT)
-        QBrush currentBrush = context->platformContext()->brush();
+        QBrush currentBrush = context->platformContext()->qt().brush();
         QColor clr;
         clr.setCmykF(m_cmyka->c, m_cmyka->m, m_cmyka->y, m_cmyka->k, m_cmyka->a);
         currentBrush.setColor(clr);
-        context->platformContext()->setBrush(currentBrush);
+        context->platformContext()->qt().setBrush(currentBrush);
 #else
         context->setFillColor(m_cmyka->rgba);
 #endif

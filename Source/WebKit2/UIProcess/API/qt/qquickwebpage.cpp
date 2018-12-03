@@ -59,8 +59,9 @@ QQuickWebPagePrivate::QQuickWebPagePrivate(QQuickWebPage* q, QQuickWebView* view
 
 void QQuickWebPagePrivate::paint(QPainter* painter, const WebCore::Color& backgroundColor, bool drawsBackground)
 {
+    WebCore::PlatformGraphicsContext ngc(painter);
     if (CoordinatedGraphicsScene* scene = QQuickWebViewPrivate::get(viewportItem)->coordinatedGraphicsScene())
-        scene->paintToGraphicsContext(painter, backgroundColor, drawsBackground);
+        scene->paintToGraphicsContext(&ngc, backgroundColor, drawsBackground);
 }
 
 
