@@ -21,7 +21,19 @@ Qt WebKit: rendering.
        re-creation of FastUIDraw resources).
     5. Broad strokes:
        a. change PlatformGraphicsContext from QPainter to something that
-          has both a fastuidraw::Painter and a QPainter.
+          has both a fastuidraw::Painter and a QPainter. (done)
+          i. A total of 32 files were touched:
+             - 19 in WebCore
+             -  7 in WebKit
+             -  6 in WebKit2
+          ii. The changes in WebKit2 we can ignore, since we are just
+              doing the WebKit API; However, we need to also pay careful
+              attention to GraphicsContext::isAccelerated() along with
+              all the various Image classes in WebKit to make sure
+              we render all content with one renderer or the other.
+              How "accellerated 2d" (i.e. ACCELERATED_2D_CANVAS)
+              interacts needs to be understood as well; that macro
+              appears in (thankfully) only 19 files.
        b. text
          i. modify GlyphBuffer and/or TextRun to have a fastuidraw structs for text.
          ii. the actual drawing methods in a backend are located in FontCascade
@@ -36,8 +48,3 @@ Qt WebKit: rendering.
           NativeImagePtr will need to change to a pointer that has
           a "something" that points to both a QPixmap and/or a
           fastuidraw::Image as well.
-          
-
-Adding FastUIDraw to build:
-  The best place looks like adding to Source/cmake/WebKitCommon.cmake the necessary includes and links,
-  or pssibly better place is PlatformQt.cmake in Source/WebCore
