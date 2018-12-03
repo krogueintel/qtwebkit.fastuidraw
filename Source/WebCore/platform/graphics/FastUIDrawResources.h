@@ -5,7 +5,7 @@
 #include <fastuidraw/text/glyph_selector.hpp>
 
 namespace WebCore {
-  namespace FastUIDrawResources {
+  namespace FastUIDraw {
 
     /* A GL context must be current when this call is made
      * so that the GL context can be queried to properly

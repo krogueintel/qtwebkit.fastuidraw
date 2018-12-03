@@ -295,7 +295,7 @@ clear_resources(void)
 ///////////////////////////////////////
 // WebCore::FastUIDrawResources methods
 void
-WebCore::FastUIDrawResources::
+WebCore::FastUIDraw::
 initializeResources(void *get_proc_data,
                     void* (*get_proc)(void*, fastuidraw::c_string function_name))
 {
@@ -303,14 +303,14 @@ initializeResources(void *get_proc_data,
 }
 
 void
-WebCore::FastUIDrawResources::
+WebCore::FastUIDraw::
 clearResources(void)   
 {
   AtlasSet::atlas_set().clear_resources();
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
-WebCore::FastUIDrawResources::
+WebCore::FastUIDraw::
 glyphCache(void)
 {
   std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
@@ -318,7 +318,7 @@ glyphCache(void)
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
-WebCore::FastUIDrawResources::
+WebCore::FastUIDraw::
 imageAtlas(void)
 {
   std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
@@ -326,7 +326,7 @@ imageAtlas(void)
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
-WebCore::FastUIDrawResources::
+WebCore::FastUIDraw::
 colorAtlas(void)
 {
   std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
@@ -334,7 +334,7 @@ colorAtlas(void)
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
-WebCore::FastUIDrawResources::
+WebCore::FastUIDraw::
 glyphSelector(void)
 {
   std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
@@ -342,7 +342,7 @@ glyphSelector(void)
 }
 
 fastuidraw::reference_counted_ptr<fastuidraw::Painter>
-WebCore::FastUIDrawResources::
+WebCore::FastUIDraw::
 createPainter(void)
 {
   std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);

@@ -76,40 +76,40 @@ int qWebKitMinorVersion()
 void qFastUIDrawInitializeResources(void *get_proc_data,
                                     void* (*get_proc)(void*, fastuidraw::c_string function_name))
 {
-  WebCore::FastUIDrawResources::initializeResources(get_proc_data, get_proc);
+  WebCore::FastUIDraw::initializeResources(get_proc_data, get_proc);
 }
 
 void qFastUIDrawClearResources(void)
 {
-  WebCore::FastUIDrawResources::clearResources();
+  WebCore::FastUIDraw::clearResources();
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
 qFastUIDrawGlyphCache(void)
 {
-  return WebCore::FastUIDrawResources::glyphCache();
+  return WebCore::FastUIDraw::glyphCache();
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
 qFastUIDrawImageAtlas(void)
 {
-  return WebCore::FastUIDrawResources::imageAtlas();
+  return WebCore::FastUIDraw::imageAtlas();
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
 qFastUIDrawColorAtlas(void)
 {
-  return WebCore::FastUIDrawResources::colorAtlas();
+  return WebCore::FastUIDraw::colorAtlas();
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
 qFastUIDrawGlyphSelector(void)
 {
-  return WebCore::FastUIDrawResources::glyphSelector();
+  return WebCore::FastUIDraw::glyphSelector();
 }
 
 fastuidraw::reference_counted_ptr<fastuidraw::Painter>
 qFastUIDrawCreatePainter(void)
 {
-  return WebCore::FastUIDrawResources::createPainter();
+  return WebCore::FastUIDraw::createPainter();
 }
