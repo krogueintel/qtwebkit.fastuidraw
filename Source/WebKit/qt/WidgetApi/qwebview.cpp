@@ -43,7 +43,62 @@
 #include <iostream>
 
 #include <fastuidraw/gl_backend/ngl_header.hpp>
+#include <fastuidraw/gl_backend/gl_get.hpp>
 #include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+
+template<GLenum state>
+class GLStateRestore
+{
+public:
+  explicit
+  GLStateRestore(void)
+  {
+    m_value = fastuidraw_glIsEnabled(state);
+  }
+
+  ~GLStateRestore()
+  {
+    if (m_value)
+      {
+        fastuidraw_glEnable(state);
+      }
+    else
+      {
+        fastuidraw_glDisable(state);
+      }
+  }
+
+  GLboolean m_value;
+};
+
+template<GLenum state>
+class GLStateRestoreArray
+{
+public:
+  explicit
+  GLStateRestoreArray(unsigned int N):
+    m_values(N)
+  {
+    for (unsigned int i = 0; i < N; ++i) {
+        m_values[i] = fastuidraw_glIsEnabled(state + i);
+    }
+  }
+
+  ~GLStateRestoreArray()
+  {
+    for (unsigned int i = 0; i < m_values.size(); ++i) {
+        if (m_values[i]) {
+            fastuidraw_glEnable(state + i);
+        } else {
+            fastuidraw_glDisable(state + i);
+        }
+    }
+  }
+private:
+  std::vector<GLboolean> m_values;
+};
+
+
 
 class QWebViewPrivate {
 public:
@@ -208,6 +263,7 @@ QWebView::QWebView(QWidget *parent)
 
     setMouseTracking(true);
     setFocusPolicy(Qt::WheelFocus);
+    setAutoFillBackground(true);
 
 #ifndef QT_NO_ACCESSIBILITY
     QAccessible::installFactory(accessibleInterfaceFactory);
@@ -885,34 +941,33 @@ void QWebView::paintGL(void)
       return;
   }
 
-  p.beginNativePainting();
-  //std::string text("Hello World!!");
-  //std::istringstream str(text);
-  enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
-  //float pixel_size("32");
+  p.beginNativePainting(); {
+      /* endNativePainting() fails to restore the enable/disable on
+       * GL_CLIP_DISTANCE, so we need to restore them here ourselves.
+       */
+      GLStateRestoreArray<GL_CLIP_DISTANCE0> clips(fastuidraw::gl::context_get<GLint>(GL_MAX_CLIP_DISTANCES));
+      enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
+      GLuint fbo;
 
-  //fastuidraw::GlyphSequence sequence(pixel_size, orientation, qFastUIDrawGlyphCache());
-  //create_formatted_text(sequence, str, font, m_glyph_selector);
+      fbo = defaultFramebufferObject();
 
-  if (!d->m_surface)
-    {
-      int w(width()), h(height());
-      fastuidraw::PainterBackend::Surface::Viewport vwp(0, 0, w, h);
+      if (!d->m_surface) {
+        int w(width()), h(height());
+        fastuidraw::PainterBackend::Surface::Viewport vwp(0, 0, w, h);
+        
+        d->m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(fastuidraw::ivec2(w, h));
+        d->m_surface->viewport(vwp);
+      }
+  
+      fbo = defaultFramebufferObject();
 
-      d->m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(fastuidraw::ivec2(w, h));
-      d->m_surface->viewport(vwp);
-    }
+      d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
+      d->m_painter->begin(d->m_surface, orientation);
+      d->m_painter->end();
 
-  GLuint fbo;
-  fbo = defaultFramebufferObject();
-
-  d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
-  d->m_painter->begin(d->m_surface, orientation);
-  d->m_painter->end();
-
-  fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-  d->m_surface->blit_surface(GL_NEAREST);
-
+      fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+      d->m_surface->blit_surface(GL_NEAREST);
+  }
   p.endNativePainting();
 }
 
