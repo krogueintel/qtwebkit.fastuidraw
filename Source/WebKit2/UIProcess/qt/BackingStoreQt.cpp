@@ -52,21 +52,16 @@ void BackingStore::incorporateUpdate(ShareableBitmap* bitmap, const UpdateInfo& 
 
     IntPoint updateRectLocation = updateInfo.updateRectBounds.location();
 
-    /* What the hell is going on? leaving the line declaring the
-     * GraphicsContext graphicsContext(&ngc) results in a very wierd
-     * error where the clang++ reports that PlatformGraphicsContext
-     * is typedef'd to QPainter*. Which is insane.
-     */
     QPainter painter(&m_pixmap);
-    PlatformGraphicsContext ngc(&painter);
-    //GraphicsContext graphicsContext(&ngc);
+    WebCore::PlatformGraphicsContext ngc(&painter);
+    GraphicsContext graphicsContext(&ngc);
 
     // Paint all update rects.
     for (size_t i = 0; i < updateInfo.updateRects.size(); ++i) {
         IntRect updateRect = updateInfo.updateRects[i];
         IntRect srcRect = updateRect;
         srcRect.move(-updateRectLocation.x(), -updateRectLocation.y());
-        //bitmap->paint(graphicsContext, updateRect.location(), srcRect);
+        bitmap->paint(graphicsContext, updateRect.location(), srcRect);
     }
 }
 
