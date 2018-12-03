@@ -8,12 +8,35 @@ Qt WebKit: rendering.
 
   QWebView::paint() --> QWebFrame::render() --> QWebFrameAdapter::renderRelativeCoords()
 
-  We can probably do the FastUIDraw magic there where we add a render() method series
-  that passes along a fastuidraw::Painter handle. We can modify the test application,
-  QtTestBrowser, class WebPage to do the work probably, code located in
-  Tools/QtTestBrowser. We can also, go for the GraphicsView stuff which has access
-  to GL (probably). Better to use the QOpenGLWidget code base probably.
-
+  Basic plan:
+    1. WebCore infrastucture: namespaced functions to initialize FastUIDraw
+       resources (atlases, caches) and OpenGL function setup for
+       fastuidraw::gl::gl_binding. (done)
+    2. Change QWebView to derived from QOpenGLWidget where QOpenGLContext
+       of it is GL 4.5 core profile. (done)
+    3. Construct fastuidraw::Painter in QWebView. (done and verified to
+       draw).
+    4. Modify QtTestBrowser to allow selecting FastUIDraw or QPainter to
+       draw. (done for WebViewTraditional and additional stuff to prevent
+       re-creation of FastUIDraw resources).
+    5. Broad strokes:
+       a. change PlatformGraphicsContext from QPainter to something that
+          has both a fastuidraw::Painter and a QPainter.
+       b. text
+         i. modify GlyphBuffer and/or TextRun to have a fastuidraw structs for text.
+         ii. the actual drawing methods in a backend are located in FontCascade
+         iii. NOTE: it is quite possible that fastuidraw::GlyphSequence is
+              not suitable because the interface wants to draw sub-sequences
+              of the passed GlyphBuffer and TextRun object
+       c. GraphicsContext itself has state for how to stroke and filling
+          where each has a color (WebCore::Color), gradient (WebCore::Gradient)
+          and pattern (WebCore::Pattern); hopefully we can emulate Pattern
+          with fastuidraw::PainterBrush. These classes have the methods
+          to fill and draw that take a GraphicsContext. Also related,
+          NativeImagePtr will need to change to a pointer that has
+          a "something" that points to both a QPixmap and/or a
+          fastuidraw::Image as well.
+          
 
 Adding FastUIDraw to build:
   The best place looks like adding to Source/cmake/WebKitCommon.cmake the necessary includes and links,
