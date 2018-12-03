@@ -54,9 +54,9 @@ WindowOptions windowOptions;
 int launcherMain(const QApplication& app)
 {
     int retVal = app.exec();
-    WebViewTraditional::shutDown();
 
-    /* TODO: clean-up FastUIDraw resources */
+    // cleanup FastUIDraw resources
+    WebViewTraditional::shutDown();
 
     #ifndef NDEBUG
       {
@@ -313,6 +313,13 @@ int main(int argc, char **argv)
      * FastUIDraw works (much) better with new GL features
      * but Mesa/i965 only expose version past 3.0 with Core
      * profiles.
+     *
+     * Sighs. We have a basic choice of poison here. If we
+     * do NOT set this, then viewing through a QGraphicsView
+     * with a QOpenGLWidget viewport makes all the glyphs
+     * missing. However, if we do set it, viewing through a
+     * QGraphicsView with a QGLWidget viewport makes Qt
+     * crash. We pick the poison to make QOpenGLWidget work.
      */
     QSurfaceFormat sf(QSurfaceFormat::defaultFormat());
     sf.setMajorVersion(4);
