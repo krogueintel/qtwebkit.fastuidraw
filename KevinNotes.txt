@@ -37,9 +37,8 @@ Qt WebKit: rendering.
        b. text
          i. modify GlyphBuffer and/or TextRun to have a fastuidraw structs for text.
          ii. the actual drawing methods in a backend are located in FontCascade
-         iii. NOTE: it is quite possible that fastuidraw::GlyphSequence is
-              not suitable because the interface wants to draw sub-sequences
-              of the passed GlyphBuffer and TextRun object
+         iii. Use (just created) FastUIDraw class fastuidraw::GlyphRun because
+              WebKit works with ranges of text and does its own culling.
        c. GraphicsContext itself has state for how to stroke and filling
           where each has a color (WebCore::Color), gradient (WebCore::Gradient)
           and pattern (WebCore::Pattern); hopefully we can emulate Pattern
