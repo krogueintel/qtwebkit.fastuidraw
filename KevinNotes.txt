@@ -1,6 +1,10 @@
 Building:
   Tools/Scripts/build-webkit --qt --release --cmakeargs="-DENABLE_MINIBROWSER=ON"
   Tools/Scripts/build-webkit --qt --debug --cmakeargs="-DENABLE_MINIBROWSER=ON"
+  
+  Disable Features:
+    --no-accelerated-2d-canvas --no-video --no-3d-rendering --no-webgl --no-video-track
+  
 
 Qt WebKit: rendering.
   Entry point to drawing with QPainter is QWebFrameAdapter::renderRelativeCoords()
@@ -39,6 +43,15 @@ Qt WebKit: rendering.
          ii. the actual drawing methods in a backend are located in FontCascade
          iii. Use (just created) FastUIDraw class fastuidraw::GlyphRun because
               WebKit works with ranges of text and does its own culling.
+         iv. GlyphSelection is done at GlyphPageTreeNodeQt, GlyphPage::fill().
+             the *hard* nasty part is that a fixed GlyphPage only has one store
+             for what glyph codes to use. In addition, the glyph code is stored
+             as a WebCore::Glyph which is just a typedef to unsigned short (16-bit).
+             The main issues we have to tackle are:
+               - what happens if glype code is greater than 0xFFFF ? This is
+                 not likely since that means a really, really big font.
+               - What happens if the font chosen by qt is different than the
+                 font chosen by FastUIDraw? 
        c. GraphicsContext itself has state for how to stroke and filling
           where each has a color (WebCore::Color), gradient (WebCore::Gradient)
           and pattern (WebCore::Pattern); hopefully we can emulate Pattern
@@ -47,3 +60,14 @@ Qt WebKit: rendering.
           NativeImagePtr will need to change to a pointer that has
           a "something" that points to both a QPixmap and/or a
           fastuidraw::Image as well.
+       d. Compositing Layers.
+          i. WebKit/WebCore has a compositing engine embodied by the classes
+             GraphicsLayerClient and GraphicsLayer. The Qt implementation of
+             GraphicsLayerClient is TextureMapperLayerClientQt which is instanced
+             by ChromeClientQt::attachRootGraphicsLayer().
+          ii. It might be best to disable a bunch of stuff to just avoid it,
+              the file Tools/Scripts/webkitperl/FeatureList.pm lists the features,
+              and likely the easies way is to disable:
+                 - accelerated-2d-canvas
+                 - 3d-rendering
+                 - webgl
