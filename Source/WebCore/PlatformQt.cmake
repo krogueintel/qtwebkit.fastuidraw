@@ -169,6 +169,7 @@ list(APPEND WebCore_SOURCES
     platform/text/qt/TextBreakIteratorInternalICUQt.cpp
 
     platform/graphics/FastUIDrawResources.cpp
+    platform/graphics/FastUIDrawUtil.cpp
 )
 
 QTWEBKIT_GENERATE_MOC_FILES_CPP(WebCore

@@ -26,6 +26,7 @@
 
 #include "FontDescription.h"
 #include "TextFlags.h"
+#include "FastUIDrawUtil.h"
 #include <QFont>
 #include <QHash>
 #include <QRawFont>
@@ -71,7 +72,13 @@ public:
         : isDeletedValue(true)
     { }
 
+    void setFastUIDrawFont()
+    {
+      m_fastuidraw_font = FastUIDraw::select_font(rawFont);
+    }
+
     QRawFont rawFont;
+    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_fastuidraw_font;
     float size;
     bool bold : 1;
     bool oblique : 1;
