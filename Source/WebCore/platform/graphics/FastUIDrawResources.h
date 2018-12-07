@@ -2,7 +2,7 @@
 #define FastUIDrawResources_h
 
 #include <fastuidraw/painter/painter.hpp>
-#include <fastuidraw/text/glyph_selector.hpp>
+#include <fastuidraw/text/font_database.hpp>
 
 namespace WebCore {
   namespace FastUIDraw {
@@ -36,8 +36,14 @@ namespace WebCore {
     const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
     colorAtlas(void);
 
-    const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
-    glyphSelector(void);
+    const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
+    fontDatabase(void);
+
+    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
+    selectFont(int weight, int slant,
+               fastuidraw::c_string style,
+               fastuidraw::c_string family,
+               fastuidraw::c_string foundry);
 
     fastuidraw::reference_counted_ptr<fastuidraw::Painter>
     createPainter(void);

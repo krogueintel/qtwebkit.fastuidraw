@@ -23,7 +23,7 @@
 
 #include <QtCore/qglobal.h>
 #include <QtCore/qstring.h>
-#include <fastuidraw/text/glyph_selector.hpp>
+#include <fastuidraw/text/font_database.hpp>
 #include <fastuidraw/painter/painter.hpp>
 
 #ifndef QT_STATIC
@@ -73,8 +73,8 @@ qFastUIDrawImageAtlas(void);
 QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
 qFastUIDrawColorAtlas(void);
 
-QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
-qFastUIDrawGlyphSelector(void);
+QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
+qFastUIDrawFontDatabase(void);
 
 QWEBKIT_EXPORT fastuidraw::reference_counted_ptr<fastuidraw::Painter>
 qFastUIDrawCreatePainter(void);

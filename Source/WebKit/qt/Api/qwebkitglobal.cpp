@@ -102,10 +102,10 @@ qFastUIDrawColorAtlas(void)
   return WebCore::FastUIDraw::colorAtlas();
 }
 
-const fastuidraw::reference_counted_ptr<fastuidraw::GlyphSelector>&
-qFastUIDrawGlyphSelector(void)
+const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
+qFastUIDrawFontDatabase(void)
 {
-  return WebCore::FastUIDraw::glyphSelector();
+  return WebCore::FastUIDraw::fontDatabase();
 }
 
 fastuidraw::reference_counted_ptr<fastuidraw::Painter>
