@@ -28,6 +28,7 @@
 #include <QObject>
 #include <QPainter>
 #include <QRegion>
+#include <iostream>
 
 namespace WebCore {
     
@@ -111,6 +112,7 @@ Vector<IntRect> TileQt::updateBackBuffer()
     *m_dirtyRegion = QRegion();
     
     QPainter painter(m_backBuffer);
+    std::cout << "TileQt:" << &painter << "\n";
     GraphicsContext context(&painter);
     context.translate(-m_rect.x(), -m_rect.y());
 

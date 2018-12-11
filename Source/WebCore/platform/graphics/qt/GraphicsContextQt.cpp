@@ -295,14 +295,20 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
     if (!platform)
         return;
 
-    if (platform->is_qt()) {
+    if (platform->is_qt()) {      
         // Use the default the QPainter was constructed with.
-      antiAliasingForRectsAndLines = platform->qt().testRenderHint(QPainter::Antialiasing);
+        antiAliasingForRectsAndLines = platform->qt().testRenderHint(QPainter::Antialiasing);
 
-      // Used for default image interpolation quality.
-      initialSmoothPixmapTransformHint = platform->qt().testRenderHint(QPainter::SmoothPixmapTransform);
+        // Used for default image interpolation quality.
+        initialSmoothPixmapTransformHint = platform->qt().testRenderHint(QPainter::SmoothPixmapTransform);
 
-      platform->qt().setRenderHint(QPainter::Antialiasing, true);
+        platform->qt().setRenderHint(QPainter::Antialiasing, true);
+
+        if (platform->qt().paintEngine()
+            && platform->qt().paintEngine()->type() != QPaintEngine::OpenGL2)
+          {
+              std::cout << "NoGL@" << &platform->qt() << "\n";
+          }
     }
 
 }
@@ -1796,12 +1802,6 @@ bool GraphicsContext::isAcceleratedContext() const
       && platformContext()->is_qt()
       && platformContext()->qt().paintEngine()
       && platformContext()->qt().paintEngine()->type() == QPaintEngine::OpenGL2;
-
-    if (return_value) {
-        std::cout << "Y" << std::flush;
-    } else {
-        std::cout << "N" << std::flush;
-    }
 
     return return_value;
 }

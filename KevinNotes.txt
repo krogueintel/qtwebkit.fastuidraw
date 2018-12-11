@@ -71,3 +71,9 @@ Qt WebKit: rendering.
                  - accelerated-2d-canvas
                  - 3d-rendering
                  - webgl
+       e. ImageBuffer. Webkit has a class for offscreen rendering, ImageBuffer
+          (file Source/WebCore/graphics/ImageBuffer), the backing store is
+          platform specific stuff via the class ImageBufferData (with a Qt variant).
+          We will need a FastUIDraw variant, the methods to really handle
+          are ImageBuffer::draw() and ImageBuffer::drawPattern(). Lots of plumbing
+          to walk through.

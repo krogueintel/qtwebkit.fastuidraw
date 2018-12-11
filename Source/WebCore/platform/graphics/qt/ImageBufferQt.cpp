@@ -54,7 +54,7 @@ ImageBuffer::ImageBuffer(const IntSize& size, ColorSpace, QOpenGLContext* compat
     , m_logicalSize(size)
     , m_resolutionScale(1.0)
 {
-    success = m_data.m_painter && m_data.m_painter->isActive();
+    success = m_data.m_platform_context->is_qt() && m_data.m_platform_context->qt().isActive();
     if (!success)
         return;
 
@@ -68,7 +68,7 @@ ImageBuffer::ImageBuffer(const FloatSize& size, float resolutionScale, ColorSpac
     , m_logicalSize(size)
     , m_resolutionScale(resolutionScale)
 {
-    success = m_data.m_painter && m_data.m_painter->isActive();
+    success = m_data.m_platform_context->is_qt() && m_data.m_platform_context->qt().isActive();
     if (!success)
         return;
 
@@ -92,7 +92,7 @@ std::unique_ptr<ImageBuffer> ImageBuffer::createCompatibleBuffer(const IntSize& 
 
 GraphicsContext& ImageBuffer::context() const
 {
-    ASSERT(m_data.m_painter->isActive());
+    ASSERT(m_data.m_platform_context->qt().isActive());
 
     return *m_data.m_context;
 }
@@ -184,16 +184,16 @@ void ImageBuffer::putByteArray(Multiply multiplied, Uint8ClampedArray* source, c
     ASSERT(sourceRect.width() > 0);
     ASSERT(sourceRect.height() > 0);
 
-    bool isPainting = m_data.m_painter->isActive();
+    bool isPainting = m_data.m_platform_context->qt().isActive();
     if (!isPainting)
-        m_data.m_painter->begin(m_data.m_impl->paintDevice());
+        m_data.m_platform_context->qt().begin(m_data.m_impl->paintDevice());
     else {
-        m_data.m_painter->save();
+        m_data.m_platform_context->qt().save();
 
         // putImageData() should be unaffected by painter state
-        m_data.m_painter->resetTransform();
-        m_data.m_painter->setOpacity(1.0);
-        m_data.m_painter->setClipping(false);
+        m_data.m_platform_context->qt().resetTransform();
+        m_data.m_platform_context->qt().setOpacity(1.0);
+        m_data.m_platform_context->qt().setClipping(false);
     }
 
     // source rect & size need scaling from the device coords to image coords
@@ -209,13 +209,13 @@ void ImageBuffer::putByteArray(Multiply multiplied, Uint8ClampedArray* source, c
     QImage image(source->data(), scaledSourceSize.width(), scaledSourceSize.height(), format);
     image.setDevicePixelRatio(m_resolutionScale);
 
-    m_data.m_painter->setCompositionMode(QPainter::CompositionMode_Source);
-    m_data.m_painter->drawImage(destPoint + sourceRect.location(), image, scaledSourceRect);
+    m_data.m_platform_context->qt().setCompositionMode(QPainter::CompositionMode_Source);
+    m_data.m_platform_context->qt().drawImage(destPoint + sourceRect.location(), image, scaledSourceRect);
 
     if (!isPainting)
-        m_data.m_painter->end();
+        m_data.m_platform_context->qt().end();
     else
-        m_data.m_painter->restore();
+        m_data.m_platform_context->qt().restore();
 }
 
 static bool encodeImage(const QPixmap& pixmap, const String& format, const double* quality, QByteArray& data)

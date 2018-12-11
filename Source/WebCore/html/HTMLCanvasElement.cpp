@@ -61,6 +61,8 @@
 #include "WebGLRenderingContextBase.h"
 #endif
 
+#include <iostream>
+
 namespace WebCore {
 
 using namespace HTMLNames;
@@ -91,11 +93,17 @@ HTMLCanvasElement::HTMLCanvasElement(const QualifiedName& tagName, Document& doc
 
 Ref<HTMLCanvasElement> HTMLCanvasElement::create(Document& document)
 {
+    std::cout << "------------------------------\n"
+              << "       HTMLCanvasElement\n"
+              << "------------------------------\n";
     return adoptRef(*new HTMLCanvasElement(canvasTag, document));
 }
 
 Ref<HTMLCanvasElement> HTMLCanvasElement::create(const QualifiedName& tagName, Document& document)
 {
+    std::cout << "------------------------------\n"
+              << "       HTMLCanvasElement\n"
+              << "------------------------------\n";
     return adoptRef(*new HTMLCanvasElement(tagName, document));
 }
 
@@ -671,6 +679,7 @@ void HTMLCanvasElement::createImageBuffer() const
 
     RenderingMode renderingMode = shouldAccelerate(bufferSize) ? Accelerated : Unaccelerated;
 
+    /* FastUIDrawTODO: the craziness needed for rendeding with FastUIDraw */
 #if PLATFORM(QT) && ENABLE(ACCELERATED_2D_CANVAS)
     if (renderingMode == Accelerated) {
         QWebPageClient* client = document().page()->chrome().platformPageClient();

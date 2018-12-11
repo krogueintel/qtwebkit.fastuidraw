@@ -40,6 +40,8 @@
 #include <QPainter>
 #include <QPixmap>
 
+#include <iostream>
+
 #if ENABLE(ACCELERATED_2D_CANVAS)
 #include "QFramebufferPaintDevice.h"
 #include "TextureMapper.h"
@@ -136,6 +138,7 @@ struct ImageBufferDataPrivateAccelerated final : public TextureMapperPlatformLay
     RefPtr<Image> takeImage() final;
     bool isAccelerated() const final { return true; }
     PlatformLayer* platformLayer() final { return this; }
+    bool is_qt(void) const final { return true; }
 
     void invalidateState() const;
     void draw(GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect,
@@ -351,6 +354,7 @@ GraphicsSurfaceToken ImageBufferDataPrivateAccelerated::graphicsSurfaceToken() c
 
 struct ImageBufferDataPrivateUnaccelerated final : public ImageBufferDataPrivate {
     ImageBufferDataPrivateUnaccelerated(const FloatSize&, float scale);
+    bool is_qt(void) const final { return true; }
     QPaintDevice* paintDevice() final { return m_pixmap.isNull() ? 0 : &m_pixmap; }
     QImage toQImage() const final;
     RefPtr<Image> image() const final;
@@ -472,11 +476,16 @@ void ImageBufferDataPrivateUnaccelerated::platformTransformColorSpace(const Vect
         painter->begin(&m_pixmap);
 }
 
+struct ImageBufferDataPrivateFastUIDraw final : public ImageBufferDataPrivate {
+  /* FastUIDrawTODO: implement */
+};
+
 // ---------------------- ImageBufferData
 
 ImageBufferData::ImageBufferData(const FloatSize& size, float resolutionScale)
 {
     m_painter = new QPainter;
+    std::cout << "ImageBufferData:" << m_painter << "\n";
     m_platform_context = new PlatformGraphicsContext(m_painter);
 
     m_impl = new ImageBufferDataPrivateUnaccelerated(size, resolutionScale);
@@ -494,6 +503,7 @@ ImageBufferData::ImageBufferData(const FloatSize& size, QOpenGLContext* compatib
 {
     m_painter = new QPainter;
 
+    std::cout << "ImageBufferData (Accelerated):" << m_painter << "\n";
     m_impl = new ImageBufferDataPrivateAccelerated(size, compatibleContext);
 
     if (!m_impl->paintDevice())

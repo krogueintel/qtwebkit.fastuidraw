@@ -46,12 +46,9 @@ class PlatformGraphicsContext;
 class IntSize;
 
 struct ImageBufferDataPrivate {
+public:
     virtual ~ImageBufferDataPrivate() { }
-    virtual QPaintDevice* paintDevice() = 0;
-    virtual QImage toQImage() const = 0;
-    virtual RefPtr<Image> image() const = 0;
-    virtual RefPtr<Image> copyImage() const = 0;
-    virtual RefPtr<Image> takeImage() = 0;
+
     virtual bool isAccelerated() const = 0;
     virtual PlatformLayer* platformLayer() = 0;
     virtual void draw(GraphicsContext& destContext, const FloatRect& destRect,
@@ -62,6 +59,14 @@ struct ImageBufferDataPrivate {
         const FloatRect& destRect, BlendMode, bool ownContext) = 0;
     virtual void clip(GraphicsContext&, const IntRect& floatRect) const = 0;
     virtual void platformTransformColorSpace(const Vector<int>& lookUpTable) = 0;
+
+    virtual bool is_qt(void) const = 0;
+  
+    virtual QPaintDevice* paintDevice() = 0;
+    virtual QImage toQImage() const = 0;
+    virtual RefPtr<Image> image() const = 0;
+    virtual RefPtr<Image> copyImage() const = 0;
+    virtual RefPtr<Image> takeImage() = 0;
 };
 
 class ImageBufferData {
@@ -71,12 +76,16 @@ public:
     ImageBufferData(const FloatSize&, QOpenGLContext*);
 #endif
     ~ImageBufferData();
-    QPainter* m_painter;
+
     PlatformGraphicsContext *m_platform_context;
     std::unique_ptr<GraphicsContext> m_context;
     ImageBufferDataPrivate* m_impl;
+
 protected:
     void initPainter();
+
+private:
+    QPainter* m_painter;
 };
 
 } // namespace WebCore
