@@ -51,21 +51,39 @@ typedef WebCore::PlatformContextCairo PlatformGraphicsContext;
 namespace WebCore {
 class PlatformGraphicsContext {
 public:
-    PlatformGraphicsContext(::QPainter *qt = nullptr):
+    PlatformGraphicsContext(void):
+      m_qt_painter(nullptr)
+    {}
+
+    PlatformGraphicsContext(::QPainter *qt):
       m_qt_painter(qt)
     {}
 
-    ::QPainter&
-    qt(void)
+    PlatformGraphicsContext(::fastuidraw::reference_counted_ptr<fastuidraw::Painter> f):
+      m_fastuidraw_painter(f)
+    {}
+
+    ::QPainter& qt(void) const
     {
         FASTUIDRAWassert(m_qt_painter);
         return *m_qt_painter;
     }
 
-    bool
-    is_qt(void) const
+    bool is_qt(void) const
     {
-        return m_qt_painter != nullptr;
+        return m_qt_painter;
+    }
+
+    bool is_fastuidraw(void) const
+    {
+        return m_fastuidraw_painter;
+    }
+
+    const ::fastuidraw::reference_counted_ptr<fastuidraw::Painter>&
+    fastuidraw(void) const
+    {
+        FASTUIDRAWassert(m_fastuidraw_painter);
+        return m_fastuidraw_painter;
     }
 
 private:
