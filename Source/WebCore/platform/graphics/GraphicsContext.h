@@ -60,6 +60,7 @@ public:
     {}
 
     PlatformGraphicsContext(::fastuidraw::reference_counted_ptr<fastuidraw::Painter> f):
+      m_qt_painter(nullptr),
       m_fastuidraw_painter(f)
     {}
 
