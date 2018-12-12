@@ -161,6 +161,10 @@ public:
     QString uniqueName() const;
 
     void renderRelativeCoords(QPainter*, int layers, const QRegion& clip);
+    void renderRelativeCoords(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                              int layers, const QRegion& clip);
+
+    void renderRelativeCoords(WebCore::GraphicsContext&, int layers, const QRegion& clip);
     void renderFrameExtras(WebCore::GraphicsContext&, int layers, const QRegion& clip);
     void renderCompositedLayers(WebCore::GraphicsContext&, const WebCore::IntRect& clip);
 #if USE(TILED_BACKING_STORE)

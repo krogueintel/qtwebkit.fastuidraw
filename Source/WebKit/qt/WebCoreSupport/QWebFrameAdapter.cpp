@@ -492,6 +492,19 @@ void QWebFrameAdapter::renderRelativeCoords(QPainter* painter, int layers, const
 {
     PlatformGraphicsContext ngc(painter);
     GraphicsContext context(&ngc);
+    renderRelativeCoords(context, layers, clip);
+}
+
+void QWebFrameAdapter::renderRelativeCoords(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                                            int layers, const QRegion& clip)
+{
+  PlatformGraphicsContext ngc(painter);
+  GraphicsContext context(&ngc);
+  renderRelativeCoords(context, layers, clip);
+}
+
+void QWebFrameAdapter::renderRelativeCoords(WebCore::GraphicsContext &context, int layers, const QRegion& clip)
+{
     if (context.paintingDisabled() && !context.updatingControlTints())
         return;
 
@@ -514,7 +527,7 @@ void QWebFrameAdapter::renderRelativeCoords(QPainter* painter, int layers, const
             QRect rect = clipRect.intersected(view->frameRect());
 
             context.save();
-            painter->setClipRect(clipRect, Qt::IntersectClip);
+            context.clip(WebCore::FloatRect(QRectF(rect)));
 
             int x = view->x();
             int y = view->y();
@@ -547,16 +560,17 @@ void QWebFrameAdapter::renderFrameExtras(GraphicsContext& context, int layers, c
 {
     if (!(layers & (PanIconLayer | ScrollBarLayer)))
         return;
-    QPainter* painter = &context.platformContext()->qt();
+
     WebCore::FrameView* view = frame->view();
     QVector<QRect> vector = clip.rects();
+
     for (int i = 0; i < vector.size(); ++i) {
         const QRect& clipRect = vector.at(i);
 
         QRect intersectedRect = clipRect.intersected(view->frameRect());
 
-        painter->save();
-        painter->setClipRect(clipRect, Qt::IntersectClip);
+        context.save();
+        context.clip(WebCore::FloatRect(QRectF(clipRect)));
 
         int x = view->x();
         int y = view->y();
@@ -576,8 +590,7 @@ void QWebFrameAdapter::renderFrameExtras(GraphicsContext& context, int layers, c
         if (layers & PanIconLayer)
             view->paintPanScrollIcon(context);
 #endif
-
-        painter->restore();
+        context.restore();
     }
 }
 
