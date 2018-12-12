@@ -1,5 +1,8 @@
 #include "FastUIDrawResources.h"
+#include "FastUIDrawPainter.h"
+
 #include <string>
+#include <vector>
 #include <map>
 #include <algorithm>
 #include <mutex>
@@ -39,16 +42,15 @@ namespace {
     fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> m_glyph_cache;
     fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> m_font_database;
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> m_backend;
+    std::vector<fastuidraw::reference_counted_ptr<fastuidraw::Painter> > m_painters;
     std::mutex m_mutex;
     int m_reference_counter;
-    
   private:
     AtlasSet(void):
       m_reference_counter(0)
     {}
   };
 
-  
   class FontConfig
   {
   public:
@@ -248,6 +250,7 @@ clear_resources(void)
       m_font_database.clear();
       m_glyph_cache.clear();
       m_backend.clear();
+      m_painters.clear();
       m_reference_counter = 0;
     }
   else
@@ -512,23 +515,6 @@ fontDatabase(void)
   return AtlasSet::atlas_set().m_font_database;
 }
 
-fastuidraw::reference_counted_ptr<fastuidraw::Painter>
-WebCore::FastUIDraw::
-createPainter(void)
-{
-  std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
-
-  fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> b;
-  fastuidraw::reference_counted_ptr<fastuidraw::Painter> r;
-
-  b = AtlasSet::atlas_set().m_backend;
-  if (b)
-    {
-      r = FASTUIDRAWnew fastuidraw::Painter(b->create_sharing_shaders());
-    }
-  return r;
-}
-
 fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
 WebCore::FastUIDraw::
 selectFont(int weight, int slant,
@@ -537,4 +523,40 @@ selectFont(int weight, int slant,
            fastuidraw::c_string foundry)
 {
   return FontConfig::select_font(weight, slant, style, family, foundry, fontDatabase());
+}
+
+//////////////////////////////////////////////
+// WebCore::FastUIDraw::PainterHolder methods
+WebCore::FastUIDraw::PainterHolder::
+PainterHolder(void)
+{
+  AtlasSet &S(AtlasSet::atlas_set());
+  std::lock_guard<std::mutex> M(S.m_mutex);
+
+  if (S.m_painters.empty())
+    {
+      fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> b;
+
+      b = S.m_backend;
+      FASTUIDRAWassert(b);
+      m_painter = FASTUIDRAWnew fastuidraw::Painter(b->create_sharing_shaders());
+    }
+  else
+    {
+      m_painter = S.m_painters.back();
+      S.m_painters.pop_back();
+    }
+}
+
+WebCore::FastUIDraw::PainterHolder::
+~PainterHolder()
+{
+  AtlasSet &S(AtlasSet::atlas_set());
+  std::lock_guard<std::mutex> M(S.m_mutex);
+
+  if (S.m_backend &&
+      S.m_backend->painter_shader_registrar() == m_painter->painter_shader_registrar())
+    {
+      S.m_painters.push_back(m_painter);
+    }
 }

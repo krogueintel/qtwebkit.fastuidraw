@@ -44,9 +44,6 @@ namespace WebCore {
                fastuidraw::c_string style,
                fastuidraw::c_string family,
                fastuidraw::c_string foundry);
-
-    fastuidraw::reference_counted_ptr<fastuidraw::Painter>
-    createPainter(void);
   }
 }
 

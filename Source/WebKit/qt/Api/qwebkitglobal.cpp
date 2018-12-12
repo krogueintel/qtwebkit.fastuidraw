@@ -107,9 +107,3 @@ qFastUIDrawFontDatabase(void)
 {
   return WebCore::FastUIDraw::fontDatabase();
 }
-
-fastuidraw::reference_counted_ptr<fastuidraw::Painter>
-qFastUIDrawCreatePainter(void)
-{
-  return WebCore::FastUIDraw::createPainter();
-}

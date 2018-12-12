@@ -76,7 +76,4 @@ qFastUIDrawColorAtlas(void);
 QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
 qFastUIDrawFontDatabase(void);
 
-QWEBKIT_EXPORT fastuidraw::reference_counted_ptr<fastuidraw::Painter>
-qFastUIDrawCreatePainter(void);
-
 #endif // QWEBKITGLOBAL_H

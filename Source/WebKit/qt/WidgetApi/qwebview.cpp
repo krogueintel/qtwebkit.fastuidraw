@@ -38,6 +38,9 @@
 #include <qprinter.h>
 #endif
 
+#include "FastUIDrawResources.h"
+#include "FastUIDrawPainter.h"
+
 #include <QOpenGLContext>
 #include <QFunctionPointer>
 #include <iostream>
@@ -98,8 +101,6 @@ private:
   std::vector<GLboolean> m_values;
 };
 
-
-
 class QWebViewPrivate {
 public:
     QWebViewPrivate(QWebView *view)
@@ -120,6 +121,7 @@ public:
 
     QPainter::RenderHints renderHints;
     bool m_drawWithFastUIDraw;
+    fastuidraw::reference_counted_ptr<WebCore::FastUIDraw::PainterHolder> m_painter_holder;
     fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
 };
@@ -902,7 +904,8 @@ void QWebView::initializeGL(void)
      * can be queried when creating the FastUIDraw resources
      */
     qFastUIDrawInitializeResources(context(), get_proc_from_context);
-    d->m_painter = qFastUIDrawCreatePainter();
+    d->m_painter_holder = FASTUIDRAWnew WebCore::FastUIDraw::PainterHolder();
+    d->m_painter = d->m_painter_holder->painter();
 }
 
 bool QWebView::drawWithFastUIDraw(void) const
