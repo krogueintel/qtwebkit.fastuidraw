@@ -633,10 +633,24 @@ void QWebFrame::render(QPainter* painter, RenderLayers layer, const QRegion& cli
         d->renderRelativeCoords(painter, layer, QRegion(d->frameRect()));
 }
 
+void QWebFrame::render(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                       RenderLayers layer, const QRegion& clip)
+{
+    if (!clip.isEmpty())
+        d->renderRelativeCoords(painter, layer, clip);
+    else if (d->hasView())
+        d->renderRelativeCoords(painter, layer, QRegion(d->frameRect()));
+}
+
 /*!
   Render the frame into \a painter clipping to \a clip.
 */
 void QWebFrame::render(QPainter* painter, const QRegion& clip)
+{
+    render(painter, AllLayers, clip);
+}
+void QWebFrame::render(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                       const QRegion& clip)
 {
     render(painter, AllLayers, clip);
 }
