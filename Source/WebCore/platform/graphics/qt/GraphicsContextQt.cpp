@@ -370,63 +370,53 @@ static inline fastuidraw::vec4 FastUIDrawColorValue(Color color, float alpha)
   return return_value;
 }
 
-static inline void FastUIDrawMatrixFromAffine(const AffineTransform &transform,
+static inline void computeToFastUIDrawMatrix(const QTransform &transform,
+                                             fastuidraw::float3x3 *dst)
+{
+  fastuidraw::float3x3 &matrix(*dst);
+  matrix.col_row(0, 0) = transform.m11();
+  matrix.col_row(1, 0) = transform.m21();
+  matrix.col_row(2, 0) = transform.m31();
+
+  matrix.col_row(0, 1) = transform.m12();
+  matrix.col_row(1, 1) = transform.m22();
+  matrix.col_row(2, 1) = transform.m32();
+
+  matrix.col_row(0, 2) = transform.m13();
+  matrix.col_row(1, 2) = transform.m23();
+  matrix.col_row(2, 2) = transform.m33();
+}
+
+static inline void computeFromFastUIDrawMatrix(const fastuidraw::float3x3 &matrix,
+                                               QTransform *dst)
+{
+  *dst = QTransform(matrix.col_row(0, 0), //m11
+                    matrix.col_row(0, 1), //m12
+                    matrix.col_row(0, 2), //m13
+                    matrix.col_row(1, 0), //m21
+                    matrix.col_row(1, 1), //m22
+                    matrix.col_row(1, 2), //m23
+                    matrix.col_row(2, 0), //m31
+                    matrix.col_row(2, 1), //m32
+                    matrix.col_row(2, 2)  //m33
+                    );
+}
+
+template<typename T>
+static inline void computeToFastUIDrawMatrixT(const T &transform,
                                               fastuidraw::float3x3 *dst)
 {
-  fastuidraw::float3x3 &matrix(*dst);
-
-  matrix(0, 0) = transform.a();
-  matrix(0, 1) = transform.b();
-  matrix(0, 2) = transform.e();
-
-  matrix(1, 0) = transform.c();
-  matrix(1, 1) = transform.d();
-  matrix(1, 2) = transform.f();
-
-  matrix(2, 0) = 0.0f;
-  matrix(2, 1) = 0.0f;
-  matrix(2, 2) = 1.0f;
+  QTransform Q = transform;
+  computeToFastUIDrawMatrix(Q, dst);
 }
 
-static inline void AffineFromFastUIDrawMatrix(const fastuidraw::float3x3 &matrix,
-                                              AffineTransform *dst)
+template<typename T>
+static inline void computeFromFastUIDrawMatrixT(const fastuidraw::float3x3 &matrix,
+                                                T *dst)
 {
-  AffineTransform &transform(*dst);
-
-  transform.setA(matrix(0, 0));
-  transform.setB(matrix(0, 1));
-  transform.setE(matrix(0, 2));
-
-  transform.setC(matrix(1, 0));
-  transform.setD(matrix(1, 1));
-  transform.setF(matrix(1, 2));
-}
-
-static inline void FastUIDrawMatrixFromTransformationMatrix(const TransformationMatrix &transform,
-                                                            fastuidraw::float3x3 *dst)
-{
-  fastuidraw::float3x3 &matrix(*dst);
-
-  matrix(0, 0) = transform.m11();
-  matrix(0, 1) = transform.m21();
-  matrix(0, 2) = transform.m41();
-
-  matrix(1, 0) = transform.m12();
-  matrix(1, 1) = transform.m22();
-  matrix(1, 2) = transform.m42();
-
-  matrix(2, 0) = transform.m14();
-  matrix(2, 1) = transform.m14();
-  matrix(2, 2) = transform.m14();
-}
-
-static inline void TransformationMatrixFromFastUIDrawMatrix(const fastuidraw::float3x3 &matrix,
-                                                            TransformationMatrix *dst)
-{
-  dst->setMatrix(matrix(0, 0), matrix(1, 0), 0.0, matrix(2, 0),
-                 matrix(0, 1), matrix(1, 1), 0.0, matrix(2, 1),
-                 0.0         , 0.0         , 1.0,          0.0,
-                 matrix(0, 2), matrix(1, 2), 0.0, matrix(2, 2));
+  QTransform Q;
+  computeFromFastUIDrawMatrix(matrix, &Q);
+  *dst = Q;
 }
 
 template<typename S, typename T = S>
@@ -539,6 +529,35 @@ public:
     MutablePackedValue<fastuidraw::PainterBrush> m_fastuidraw_fill_brush, m_fastuidraw_stroke_brush;
     MutablePackedValue<fastuidraw::PainterStrokeParams, fastuidraw::PainterItemShaderData> m_fastuidraw_stroke_params;
     enum fastuidraw::Painter::shader_anti_alias_t m_fastuidraw_aa;
+
+    inline fastuidraw::float3x3 computeFastUIDrawCTM(void)
+    {
+        const fastuidraw::vec2 &dims(fastuidraw()->surface()->viewport().m_dimensions);
+        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
+        fastuidraw::float3x3 inverse_ortho;
+
+        /* fastuidraw::Painter::transformation() includes the transformation
+         * to normalized device coordiantes, but WebKit wants the transformation
+         * to pixel coordinates, so undo the orthogonal projection.
+         */
+        inverse_ortho.inverse_orthogonal_projection_matrix(ortho);
+        return inverse_ortho * fastuidraw()->transformation();
+    }
+
+    template<typename T> inline void setFastUIDrawCTM(const T &value)
+    {
+        fastuidraw::float3x3 matrix;
+        const fastuidraw::vec2 &dims(fastuidraw()->surface()->viewport().m_dimensions);
+        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
+
+        computeToFastUIDrawMatrixT(value, &matrix);
+        /* fastuidraw::Painter::transformation() includes the transformation
+         * to normalized device coordiantes, but WebKit gives the transformation
+         * to pixel coordinates, so we need to provide the othogonal projection
+         * as well.
+         */
+        fastuidraw()->transformation(fastuidraw::float3x3(ortho) * matrix);
+    }
   
     inline const fastuidraw::reference_counted_ptr<fastuidraw::Painter>&
     fastuidraw(void) const
@@ -664,18 +683,9 @@ AffineTransform GraphicsContext::getCTM(IncludeDeviceScale includeScale) const
         return AffineTransform(matrix.m11(), matrix.m12(), matrix.m21(),
                                matrix.m22(), matrix.dx(), matrix.dy());
     } else {
-        const fastuidraw::vec2 &dims(m_data->fastuidraw()->surface()->viewport().m_dimensions);
-        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
-        fastuidraw::float3x3 inverse_ortho;
         AffineTransform return_value;
 
-        /* FastUIDraw transformation matrix -includes- the coversion
-         * to normalized device coordinates, so to get the real
-         * matrix we multiply by the inverse of the ortho.
-         */
-        inverse_ortho.inverse_orthogonal_projection_matrix(ortho);
-        AffineFromFastUIDrawMatrix(inverse_ortho * m_data->fastuidraw()->transformation().m_item_matrix,
-                                   &return_value);
+        computeFromFastUIDrawMatrixT(m_data->computeFastUIDrawCTM(), &return_value);
         return return_value;
     }    
 }
@@ -2017,7 +2027,7 @@ void GraphicsContext::concatCTM(const AffineTransform& transform)
         m_data->p()->setWorldTransform(transform, true);
     } else {
         fastuidraw::float3x3 matrix;
-        FastUIDrawMatrixFromAffine(transform, &matrix);
+        computeToFastUIDrawMatrix(transform, &matrix);
         m_data->fastuidraw()->concat(matrix);
     }
 }
@@ -2030,17 +2040,7 @@ void GraphicsContext::setCTM(const AffineTransform& transform)
     if (m_data->is_qt()) {
         m_data->p()->setWorldTransform(transform);
     } else {
-        /* fastuidraw::Painter's transformation matrix
-         * includes the conversion to normalized device
-         * coordinates, thus we need to multiply by the
-         * correct orthographic projection matrix too.
-         */
-        fastuidraw::vec2 dims(m_data->fastuidraw()->surface()->viewport().m_dimensions);
-        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
-        fastuidraw::float3x3 ortho_matrix(ortho), matrix;
-
-        FastUIDrawMatrixFromAffine(transform, &matrix);
-        m_data->fastuidraw()->transformation(ortho_matrix * matrix);
+        m_data->setFastUIDrawCTM(transform);
     }
 }
 
@@ -2053,19 +2053,9 @@ TransformationMatrix GraphicsContext::get3DTransform() const
     if (m_data->is_qt()) {
         return platformContext()->qt().worldTransform();
     } else {
-        fastuidraw::float3x3 inverse_ortho;
-        const fastuidraw::vec2 &dims(m_data->fastuidraw()->surface()->viewport().m_dimensions);
-        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
         TransformationMatrix return_value;
 
-        /* FastUIDraw transformation includes the transformation to
-         * normalized device coordinates, thus we need to pre-multiply
-         * by the inverse of that matrix to give WebKit what it really
-         * wants.
-         */
-        inverse_ortho.inverse_orthogonal_projection_matrix(ortho);
-        TransformationMatrixFromFastUIDrawMatrix(inverse_ortho * m_data->fastuidraw()->transformation().m_item_matrix,
-                                                 &return_value);
+        computeFromFastUIDrawMatrixT(m_data->computeFastUIDrawCTM(), &return_value);
         return return_value;
     }
 }
@@ -2079,7 +2069,7 @@ void GraphicsContext::concat3DTransform(const TransformationMatrix& transform)
         m_data->p()->setWorldTransform(transform, true);
     } else {
         fastuidraw::float3x3 matrix;
-        FastUIDrawMatrixFromTransformationMatrix(transform, &matrix);
+        computeToFastUIDrawMatrix(transform, &matrix);
         m_data->fastuidraw()->concat(matrix);
     }
 }
@@ -2092,17 +2082,7 @@ void GraphicsContext::set3DTransform(const TransformationMatrix& transform)
     if (m_data->is_qt()) {
         m_data->p()->setWorldTransform(transform, false);
     } else {
-        /* fastuidraw::Painter's transformation matrix
-         * includes the conversion to normalized device
-         * coordinates, thus we need to multiply by the
-         * correct orthographic projection matrix too.
-         */
-        fastuidraw::vec2 dims(m_data->fastuidraw()->surface()->viewport().m_dimensions);
-        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
-        fastuidraw::float3x3 ortho_matrix(ortho), matrix;
-
-        FastUIDrawMatrixFromTransformationMatrix(transform, &matrix);
-        m_data->fastuidraw()->transformation(ortho_matrix * matrix);
+        m_data->setFastUIDrawCTM(transform);
     }
 }
 #endif

@@ -174,6 +174,7 @@ public:
     operator cairo_matrix_t() const;
 #elif PLATFORM(QT)
     operator QTransform() const;
+    AffineTransform(const QTransform&);
 #endif
 
     static AffineTransform translation(double x, double y)

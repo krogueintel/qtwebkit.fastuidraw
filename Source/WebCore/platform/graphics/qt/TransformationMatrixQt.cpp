@@ -40,6 +40,17 @@ AffineTransform::operator QTransform() const
     return QTransform(a(), b(), c(), d(), e(), f());
 }
 
+AffineTransform::AffineTransform(const QTransform &q)
+{
+    //QTransform(qreal m11, qreal m12, qreal m21, qreal m22, qreal dx, qreal dy)
+    setA(q.m11());
+    setB(q.m12());
+    setC(q.m21());
+    setD(q.m22());
+    setE(q.dx());
+    setF(q.dy());
+}
+
 TransformationMatrix::TransformationMatrix(const QTransform& transform)
 {
     setMatrix(transform.m11(), transform.m12(), 0, transform.m13(),
