@@ -127,6 +127,44 @@ static inline QPainter::CompositionMode toQtCompositionMode(CompositeOperator op
     return QPainter::CompositionMode_SourceOver;
 }
 
+static fastuidraw::Painter::composite_mode_t toFastUIDrawCompositeMode(CompositeOperator op)
+{
+    switch (op) {
+    case CompositeClear:
+        return fastuidraw::Painter::composite_porter_duff_clear;
+    case CompositeCopy:
+        return fastuidraw::Painter::composite_porter_duff_src;
+    case CompositeSourceOver:
+        return fastuidraw::Painter::composite_porter_duff_src_over;
+    case CompositeSourceIn:
+        return fastuidraw::Painter::composite_porter_duff_src_in;
+    case CompositeSourceOut:
+        return fastuidraw::Painter::composite_porter_duff_src_out;
+    case CompositeSourceAtop:
+        return fastuidraw::Painter::composite_porter_duff_src_atop;
+    case CompositeDestinationOver:
+        return fastuidraw::Painter::composite_porter_duff_dst_over;
+    case CompositeDestinationIn:
+        return fastuidraw::Painter::composite_porter_duff_dst_in;
+    case CompositeDestinationOut:
+        return fastuidraw::Painter::composite_porter_duff_dst_out;
+    case CompositeDestinationAtop:
+        return fastuidraw::Painter::composite_porter_duff_dst_atop;
+    case CompositeXOR:
+        return fastuidraw::Painter::composite_porter_duff_xor;
+
+        /* TODO: FastUIDraw needs these additional composite modes */
+    case CompositePlusDarker:
+    case CompositePlusLighter:
+    case CompositeDifference:
+        break;
+    default:
+        ASSERT_NOT_REACHED();
+    }
+
+    return fastuidraw::Painter::composite_porter_duff_src_over;
+}
+
 static inline QPainter::CompositionMode toQtCompositionMode(BlendMode op)
 {
     switch (op) {
@@ -167,6 +205,48 @@ static inline QPainter::CompositionMode toQtCompositionMode(BlendMode op)
     return QPainter::CompositionMode_SourceOver;
 }
 
+static fastuidraw::Painter::blend_w3c_mode_t toFastUIDrawBlendMode(BlendMode op)
+{
+    switch (op) {
+    case BlendModeNormal:
+        return fastuidraw::Painter::blend_w3c_normal;
+    case BlendModeMultiply:
+        return fastuidraw::Painter::blend_w3c_multiply;
+    case BlendModeScreen:
+        return fastuidraw::Painter::blend_w3c_screen;
+    case BlendModeOverlay:
+        return fastuidraw::Painter::blend_w3c_overlay;
+    case BlendModeDarken:
+        return fastuidraw::Painter::blend_w3c_darken;
+    case BlendModeLighten:
+        return fastuidraw::Painter::blend_w3c_lighten;
+    case BlendModeColorDodge:
+        return fastuidraw::Painter::blend_w3c_color_dodge;
+    case BlendModeColorBurn:
+        return fastuidraw::Painter::blend_w3c_color_burn;
+    case BlendModeHardLight:
+        return fastuidraw::Painter::blend_w3c_hardlight;
+    case BlendModeSoftLight:
+        return fastuidraw::Painter::blend_w3c_softlight;
+    case BlendModeDifference:
+        return fastuidraw::Painter::blend_w3c_difference;
+    case BlendModeExclusion:
+        return fastuidraw::Painter::blend_w3c_exclusion;
+    case BlendModeHue:
+        return fastuidraw::Painter::blend_w3c_hue;
+    case BlendModeSaturation:
+        return fastuidraw::Painter::blend_w3c_saturation;
+    case BlendModeColor:
+        return fastuidraw::Painter::blend_w3c_color;
+    case BlendModeLuminosity:
+        return fastuidraw::Painter::blend_w3c_luminosity;
+    default:
+        ASSERT_NOT_REACHED();
+    }
+
+    return fastuidraw::Painter::blend_w3c_normal;
+}
+
 static inline Qt::PenCapStyle toQtLineCap(LineCap lc)
 {
     switch (lc) {
@@ -183,6 +263,22 @@ static inline Qt::PenCapStyle toQtLineCap(LineCap lc)
     return Qt::FlatCap;
 }
 
+static inline enum fastuidraw::Painter::cap_style toFastUIDrawCapStyle(LineCap lc)
+{
+    switch (lc) {
+    case ButtCap:
+        return fastuidraw::Painter::flat_caps;
+    case RoundCap:
+        return fastuidraw::Painter::rounded_caps;
+    case SquareCap:
+        return fastuidraw::Painter::square_caps;
+    default:
+        ASSERT_NOT_REACHED();
+    }
+
+    return fastuidraw::Painter::flat_caps;
+}
+
 static inline Qt::PenJoinStyle toQtLineJoin(LineJoin lj)
 {
     switch (lj) {
@@ -197,6 +293,22 @@ static inline Qt::PenJoinStyle toQtLineJoin(LineJoin lj)
     }
 
     return Qt::SvgMiterJoin;
+}
+
+static inline enum fastuidraw::Painter::join_style toFastUIDrawLineJoin(LineJoin lj)
+{
+    switch (lj) {
+    case MiterJoin:
+        return fastuidraw::Painter::miter_clip_joins;
+    case RoundJoin:
+        return fastuidraw::Painter::rounded_joins;
+    case BevelJoin:
+        return fastuidraw::Painter::bevel_joins;
+    default:
+        ASSERT_NOT_REACHED();
+    }
+
+    return fastuidraw::Painter::miter_clip_joins;
 }
 
 static Qt::PenStyle toQPenStyle(StrokeStyle style)
@@ -235,29 +347,163 @@ static inline Qt::FillRule toQtFillRule(WindRule rule)
     return Qt::OddEvenFill;
 }
 
+static inline enum fastuidraw::Painter::fill_rule_t toFastUIDrawFillRule(WindRule rule)
+{
+    switch (rule) {
+    case RULE_EVENODD:
+        return fastuidraw::Painter::odd_even_fill_rule;
+    case RULE_NONZERO:
+        return fastuidraw::Painter::nonzero_fill_rule;
+    default:
+        ASSERT_NOT_REACHED();
+    }
+    return fastuidraw::Painter::odd_even_fill_rule;
+}
+
+static inline fastuidraw::vec4 FastUIDrawColorValue(Color color, float alpha)
+{
+  fastuidraw::vec4 return_value(color.red(), color.green(), color.blue(), color.alpha());
+
+  return_value /= 255.0f;
+  return_value.w() *= alpha;
+
+  return return_value;
+}
+
+static inline void FastUIDrawMatrixFromAffine(const AffineTransform &transform,
+                                              fastuidraw::float3x3 *dst)
+{
+  fastuidraw::float3x3 &matrix(*dst);
+
+  matrix(0, 0) = transform.a();
+  matrix(0, 1) = transform.b();
+  matrix(0, 2) = transform.e();
+
+  matrix(1, 0) = transform.c();
+  matrix(1, 1) = transform.d();
+  matrix(1, 2) = transform.f();
+
+  matrix(2, 0) = 0.0f;
+  matrix(2, 1) = 0.0f;
+  matrix(2, 2) = 1.0f;
+}
+
+static inline void AffineFromFastUIDrawMatrix(const fastuidraw::float3x3 &matrix,
+                                              AffineTransform *dst)
+{
+  AffineTransform &transform(*dst);
+
+  transform.setA(matrix(0, 0));
+  transform.setB(matrix(0, 1));
+  transform.setE(matrix(0, 2));
+
+  transform.setC(matrix(1, 0));
+  transform.setD(matrix(1, 1));
+  transform.setF(matrix(1, 2));
+}
+
+static inline void FastUIDrawMatrixFromTransformationMatrix(const TransformationMatrix &transform,
+                                                            fastuidraw::float3x3 *dst)
+{
+  fastuidraw::float3x3 &matrix(*dst);
+
+  matrix(0, 0) = transform.m11();
+  matrix(0, 1) = transform.m21();
+  matrix(0, 2) = transform.m41();
+
+  matrix(1, 0) = transform.m12();
+  matrix(1, 1) = transform.m22();
+  matrix(1, 2) = transform.m42();
+
+  matrix(2, 0) = transform.m14();
+  matrix(2, 1) = transform.m14();
+  matrix(2, 2) = transform.m14();
+}
+
+static inline void TransformationMatrixFromFastUIDrawMatrix(const fastuidraw::float3x3 &matrix,
+                                                            TransformationMatrix *dst)
+{
+  dst->setMatrix(matrix(0, 0), matrix(1, 0), 0.0, matrix(2, 0),
+                 matrix(0, 1), matrix(1, 1), 0.0, matrix(2, 1),
+                 0.0         , 0.0         , 1.0,          0.0,
+                 matrix(0, 2), matrix(1, 2), 0.0, matrix(2, 2));
+}
+
+template<typename S, typename T = S>
+class MutablePackedValue
+{
+public:
+    MutablePackedValue(PlatformGraphicsContext *gc)
+      : m_pool(gc && gc->is_fastuidraw() ? &gc->fastuidraw()->packed_value_pool() : nullptr)
+    {}
+  
+    const S&
+    constant_value(void) const { return m_value; }
+
+    S&
+    change_value(void) { m_packed_value.reset(); return m_value; }
+
+    const fastuidraw::PainterPackedValue<T>&
+    packed_value(void)
+    {
+        if (!m_packed_value) {
+            m_packed_value = m_pool->create_packed_value(m_value);
+        }
+        return m_packed_value;
+    }
+
+private:
+    fastuidraw::PainterPackedValuePool *m_pool;
+    S m_value;
+    fastuidraw::PainterPackedValue<T> m_packed_value;
+};
+
+static inline enum fastuidraw::PainterBrush::image_filter computeFastUIImageFilter(InterpolationQuality quality,
+                                                                                   fastuidraw::reference_counted_ptr<const fastuidraw::Image> image)
+{
+    enum fastuidraw::PainterBrush::image_filter filter;
+
+    switch (quality) {
+    case InterpolationNone:
+    case InterpolationLow:
+        filter = fastuidraw::PainterBrush::image_filter_nearest;
+        break;
+    case InterpolationDefault:
+    case InterpolationMedium:
+        filter = fastuidraw::PainterBrush::image_filter_linear;
+        break;
+    case InterpolationHigh:
+        filter = fastuidraw::PainterBrush::image_filter_cubic;
+        break;
+    }
+    
+    if (image) {
+        filter = fastuidraw::PainterBrush::filter_for_image(image, filter);
+    }
+    return filter;
+}
+
 class GraphicsContextPlatformPrivate {
     WTF_MAKE_NONCOPYABLE(GraphicsContextPlatformPrivate); WTF_MAKE_FAST_ALLOCATED;
 public:
     GraphicsContextPlatformPrivate(PlatformGraphicsContext*, const QColor& initialSolidColor);
     ~GraphicsContextPlatformPrivate();
 
-    inline QPainter* p() const
-    {
-        if (layers.isEmpty())
-            return &platform->qt();
-        return &layers.top()->painter;
-    }
-
     inline PlatformGraphicsContext *platform_gc() const
     {
-      if (platform->is_qt() && !layers.isEmpty()) {
-          return &layers.top()->platform_gc;
-      }
-      else {
-          return platform;
-      }
+        if (platform->is_qt() && !layers.isEmpty()) {
+            return &layers.top()->platform_gc;
+        }
+        else {
+            return platform;
+        }
     }
 
+    bool is_qt(void) const { return platform->is_qt(); }
+    bool is_fastuidraw(void) const { return platform->is_fastuidraw(); }
+
+  /////////////////////////////////////
+  // Stuff for Qt
     bool antiAliasingForRectsAndLines;
 
     QStack<TransparencyLayer*> layers;
@@ -268,8 +514,13 @@ public:
     // reuse this brush for solid color (to prevent expensive QBrush construction)
     QBrush solidColor;
 
-    InterpolationQuality imageInterpolationQuality;
-    bool initialSmoothPixmapTransformHint;
+    inline QPainter* p() const
+    {
+        FASTUIDRAWassert(is_qt());
+        if (layers.isEmpty())
+            return &platform->qt();
+        return &layers.top()->painter;
+    }
 
     QRectF clipBoundingRect() const
     {
@@ -278,17 +529,39 @@ public:
 
     void takeOwnershipOfPlatformContext() { platformContextIsOwned = true; }
 
+    InterpolationQuality imageInterpolationQuality;
+    bool initialSmoothPixmapTransformHint;
+
+  //////////////////////////////////////////////
+  // Stuff for FastUIDraw
+    fastuidraw::Path m_fastuidraw_square_path;
+    fastuidraw::StrokingStyle m_fastuidraw_stroke_style;
+    MutablePackedValue<fastuidraw::PainterBrush> m_fastuidraw_fill_brush, m_fastuidraw_stroke_brush;
+    MutablePackedValue<fastuidraw::PainterStrokeParams, fastuidraw::PainterItemShaderData> m_fastuidraw_stroke_params;
+    enum fastuidraw::Painter::shader_anti_alias_t m_fastuidraw_aa;
+  
+    inline const fastuidraw::reference_counted_ptr<fastuidraw::Painter>&
+    fastuidraw(void) const
+    {
+        return platform->fastuidraw();
+    }
 private:
     PlatformGraphicsContext *platform;
     bool platformContextIsOwned;
 };
 
+/////////////////////////////////////////////
+// GraphicsContextPlatformPrivate methods
 GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsContext* p, const QColor& initialSolidColor)
     : antiAliasingForRectsAndLines(false)
     , layerCount(0)
     , solidColor(initialSolidColor)
     , imageInterpolationQuality(InterpolationDefault)
     , initialSmoothPixmapTransformHint(false)
+    , m_fastuidraw_fill_brush(p)
+    , m_fastuidraw_stroke_brush(p)
+    , m_fastuidraw_stroke_params(p)
+    , m_fastuidraw_aa(fastuidraw::Painter::shader_anti_alias_auto)
     , platform(p)
     , platformContextIsOwned(false)
 {
@@ -309,8 +582,13 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
           {
               std::cout << "NoGL@" << &platform->qt() << "\n";
           }
+    } else {
+        m_fastuidraw_square_path << fastuidraw::vec2(0.0f, 0.0f)
+                                 << fastuidraw::vec2(0.0f, 1.0f)
+                                 << fastuidraw::vec2(1.0f, 1.0f)
+                                 << fastuidraw::vec2(1.0f, 0.0f)
+                                 << fastuidraw::Path::contour_close();
     }
-
 }
 
 GraphicsContextPlatformPrivate::~GraphicsContextPlatformPrivate()
@@ -318,14 +596,18 @@ GraphicsContextPlatformPrivate::~GraphicsContextPlatformPrivate()
     if (!platformContextIsOwned)
         return;
 
-    QPainter *painter = &platform->qt();
-    QPaintDevice* device = painter->device();
-    painter->end();
-    delete painter;
-    delete device;
+    if (is_qt()) {
+        QPainter *painter = &platform->qt();
+        QPaintDevice* device = painter->device();
+        painter->end();
+        delete painter;
+        delete device;
+    }
     delete platform;
 }
 
+///////////////////////////////////
+// GraphicsContext methods
 void GraphicsContext::platformInit(PlatformGraphicsContext *painter)
 {
     if (!painter)
@@ -333,19 +615,31 @@ void GraphicsContext::platformInit(PlatformGraphicsContext *painter)
 
     m_data = new GraphicsContextPlatformPrivate(painter, fillColor());
 
-    // solidColor is initialized with the fillColor().
-    painter->qt().setBrush(m_data->solidColor);
+    if (painter->is_qt()) {
+        // solidColor is initialized with the fillColor().
+        painter->qt().setBrush(m_data->solidColor);
 
-    QPen pen(painter->qt().pen());
-    pen.setColor(strokeColor());
-    pen.setJoinStyle(toQtLineJoin(MiterJoin));
-    pen.setCapStyle(Qt::FlatCap);
-    painter->qt().setPen(pen);
+        QPen pen(painter->qt().pen());
+        pen.setColor(strokeColor());
+        pen.setJoinStyle(toQtLineJoin(MiterJoin));
+        pen.setCapStyle(Qt::FlatCap);
+        painter->qt().setPen(pen);
+    } else {
+        m_data->m_fastuidraw_stroke_style
+          .cap_style(toFastUIDrawCapStyle(ButtCap))
+          .join_style(toFastUIDrawLineJoin(MiterJoin));
+
+        m_data->m_fastuidraw_fill_brush.change_value()
+          .pen(FastUIDrawColorValue(fillColor(), alpha()));
+
+        m_data->m_fastuidraw_stroke_brush.change_value()
+          .pen(FastUIDrawColorValue(strokeColor(), alpha()));
+    }
 }
 
 void GraphicsContext::platformDestroy()
 {
-    if (m_data) {
+    if (m_data && m_data->is_qt()) {
         while (!m_data->layers.isEmpty())
             endTransparencyLayer();
     }
@@ -363,27 +657,51 @@ AffineTransform GraphicsContext::getCTM(IncludeDeviceScale includeScale) const
     if (paintingDisabled())
         return AffineTransform();
 
-    const QTransform& matrix = (includeScale == DefinitelyIncludeDeviceScale)
-        ? platformContext()->qt().combinedTransform()
-        : platformContext()->qt().worldTransform();
-    return AffineTransform(matrix.m11(), matrix.m12(), matrix.m21(),
-                           matrix.m22(), matrix.dx(), matrix.dy());
+    if (m_data->is_qt()) {
+        const QTransform& matrix = (includeScale == DefinitelyIncludeDeviceScale)
+          ? platformContext()->qt().combinedTransform()
+          : platformContext()->qt().worldTransform();
+        return AffineTransform(matrix.m11(), matrix.m12(), matrix.m21(),
+                               matrix.m22(), matrix.dx(), matrix.dy());
+    } else {
+        const fastuidraw::vec2 &dims(m_data->fastuidraw()->surface()->viewport().m_dimensions);
+        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
+        fastuidraw::float3x3 inverse_ortho;
+        AffineTransform return_value;
+
+        /* FastUIDraw transformation matrix -includes- the coversion
+         * to normalized device coordinates, so to get the real
+         * matrix we multiply by the inverse of the ortho.
+         */
+        inverse_ortho.inverse_orthogonal_projection_matrix(ortho);
+        AffineFromFastUIDrawMatrix(inverse_ortho * m_data->fastuidraw()->transformation().m_item_matrix,
+                                   &return_value);
+        return return_value;
+    }    
 }
 
 void GraphicsContext::savePlatformState()
 {
-    if (!m_data->layers.isEmpty() && !m_data->layers.top()->alphaMask.isNull())
-        ++m_data->layers.top()->saveCounter;
-    m_data->p()->save();
+    if (m_data->is_qt()) {
+        if (!m_data->layers.isEmpty() && !m_data->layers.top()->alphaMask.isNull())
+            ++m_data->layers.top()->saveCounter;
+        m_data->p()->save();
+    } else {
+        m_data->fastuidraw()->save();
+    }
 }
 
 void GraphicsContext::restorePlatformState()
 {
-    if (!m_data->layers.isEmpty() && !m_data->layers.top()->alphaMask.isNull())
-        if (!--m_data->layers.top()->saveCounter)
-            popTransparencyLayerInternal();
+    if (m_data->is_qt()) {
+        if (!m_data->layers.isEmpty() && !m_data->layers.top()->alphaMask.isNull())
+            if (!--m_data->layers.top()->saveCounter)
+                popTransparencyLayerInternal();
 
-    m_data->p()->restore();
+        m_data->p()->restore();
+    } else {
+        m_data->fastuidraw()->restore();
+    }
 }
 
 // Draws a filled rectangle with a stroked border.
@@ -396,20 +714,55 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
 
     ASSERT(!rect.isEmpty());
 
-    QPainter* p = m_data->p();
-    const bool antiAlias = p->testRenderHint(QPainter::Antialiasing);
-    p->setRenderHint(QPainter::Antialiasing, m_data->antiAliasingForRectsAndLines);
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        const bool antiAlias = p->testRenderHint(QPainter::Antialiasing);
+        p->setRenderHint(QPainter::Antialiasing, m_data->antiAliasingForRectsAndLines);
 
-    // strokeThickness() is disregarded
-    QPen oldPen(p->pen());
-    QPen newPen(oldPen);
-    newPen.setWidthF(borderThickness);
-    p->setPen(newPen);
+        // strokeThickness() is disregarded
+        QPen oldPen(p->pen());
+        QPen newPen(oldPen);
+        newPen.setWidthF(borderThickness);
+        p->setPen(newPen);
 
-    p->drawRect(rect);
+        p->drawRect(rect);
 
-    p->setPen(oldPen);
-    p->setRenderHint(QPainter::Antialiasing, antiAlias);
+        p->setPen(oldPen);
+        p->setRenderHint(QPainter::Antialiasing, antiAlias);
+    } else {
+        /*
+         * fill and stroke the border of the rect given by FloatRect;
+         * we avoid re-creating paths by shearing and translating
+         * so that the unit square maps to rect.
+         */
+        m_data->fastuidraw()->save();
+        m_data->fastuidraw()->translate(fastuidraw::vec2(rect.x(), rect.y()));
+        m_data->fastuidraw()->shear(rect.width(), rect.height());
+
+        /* stroke the rect with the rect clipped-out */
+        fastuidraw::PainterStrokeParams stroke_params;
+
+        stroke_params
+          .width(borderThickness)
+          .stroking_units(fastuidraw::PainterStrokeParams::path_stroking_units);
+
+        m_data->fastuidraw()->save();
+        m_data->fastuidraw()->clip_out_path(m_data->m_fastuidraw_square_path, fastuidraw::Painter::odd_even_fill_rule);
+        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->m_fastuidraw_stroke_brush.packed_value(),
+                                                                  &stroke_params),
+                                          m_data->m_fastuidraw_square_path,
+                                          m_data->m_fastuidraw_stroke_style,
+                                          m_data->m_fastuidraw_aa);
+        m_data->fastuidraw()->restore();
+
+        /* now fill the rect */
+        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->m_fastuidraw_fill_brush.packed_value()),
+                                        m_data->m_fastuidraw_square_path,
+                                        fastuidraw::Painter::odd_even_fill_rule,
+                                        m_data->m_fastuidraw_aa);
+        
+        m_data->fastuidraw()->restore();
+    }
 }
 
 // This is only used to draw borders.
@@ -950,20 +1303,34 @@ void GraphicsContext::clip(const FloatRect& rect)
     if (paintingDisabled())
         return;
 
-    m_data->p()->setClipRect(rect, Qt::IntersectClip);
+    if (m_data->is_qt()) {
+        m_data->p()->setClipRect(rect, Qt::IntersectClip);
+    } else {
+        m_data->fastuidraw()->clip_in_rect(fastuidraw::vec2(rect.x(), rect.y()),
+                                           fastuidraw::vec2(rect.width(), rect.height()));
+    }
 }
 
 IntRect GraphicsContext::clipBounds() const
 {
-    QPainter* p = m_data->p();
-    QRectF clipRect;
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        QRectF clipRect;
 
-    clipRect = p->transform().inverted().mapRect(p->window());
+        clipRect = p->transform().inverted().mapRect(p->window());
 
-    if (p->hasClipping())
-        clipRect = clipRect.intersected(m_data->clipBoundingRect());
+        if (p->hasClipping())
+            clipRect = clipRect.intersected(m_data->clipBoundingRect());
 
-    return enclosingIntRect(clipRect);
+        return enclosingIntRect(clipRect);
+    } else {
+        fastuidraw::vec2 min_bb, max_bb, size_bb;
+
+        m_data->fastuidraw()->clip_region_bounds(&min_bb, &max_bb);
+        size_bb = max_bb - min_bb;
+        return enclosingIntRect(QRectF(min_bb.x(), min_bb.y(),
+                                       size_bb.x(), size_bb.y()));
+    }
 }
 
 void GraphicsContext::clipPath(const Path& path, WindRule clipRule)
@@ -971,10 +1338,14 @@ void GraphicsContext::clipPath(const Path& path, WindRule clipRule)
     if (paintingDisabled())
         return;
 
-    QPainter* p = m_data->p();
-    QPainterPath platformPath = path.platformPath();
-    platformPath.setFillRule(clipRule == RULE_EVENODD ? Qt::OddEvenFill : Qt::WindingFill);
-    p->setClipPath(platformPath, Qt::IntersectClip);
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        QPainterPath platformPath = path.platformPath();
+        platformPath.setFillRule(clipRule == RULE_EVENODD ? Qt::OddEvenFill : Qt::WindingFill);
+        p->setClipPath(platformPath, Qt::IntersectClip);
+    } else {
+        m_data->fastuidraw()->clip_in_path(path.FastUIDrawPath(), toFastUIDrawFillRule(clipRule));
+    }
 }
 
 void GraphicsContext::clipToImageBuffer(ImageBuffer& buffer, const FloatRect& destRect)
@@ -1298,16 +1669,27 @@ void GraphicsContext::clearPlatformShadow()
 
 void GraphicsContext::pushTransparencyLayerInternal(const QRect &rect, qreal opacity, QPixmap& alphaMask)
 {
-    QPainter* p = m_data->p();
+    /*
+     * this method is only used to implement clipping when rendering to an
+     * an offscreen buffer (the stack is
+     *   GraphicsContext::clip()
+     *   ImageBufferDataPrivate::clip() which is one of
+     *      ImageBufferDataPrivateUnaccelerated::clip() or
+     *      ImageBufferDataPrivateAccelerated::clip()
+     */
+    FASTUIDRAWunused(opacity);
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
 
-    QTransform deviceTransform = p->transform();
-    QRect deviceClip = deviceTransform.mapRect(rect);
+        QTransform deviceTransform = p->transform();
+        QRect deviceClip = deviceTransform.mapRect(rect);
 
-    alphaMask = alphaMask.transformed(deviceTransform);
-    if (alphaMask.width() != deviceClip.width() || alphaMask.height() != deviceClip.height())
-        alphaMask = alphaMask.scaled(deviceClip.width(), deviceClip.height());
+        alphaMask = alphaMask.transformed(deviceTransform);
+        if (alphaMask.width() != deviceClip.width() || alphaMask.height() != deviceClip.height())
+            alphaMask = alphaMask.scaled(deviceClip.width(), deviceClip.height());
 
-    m_data->layers.push(new TransparencyLayer(p, deviceClip, 1.0, alphaMask));
+        m_data->layers.push(new TransparencyLayer(p, deviceClip, 1.0, alphaMask));
+    }
 }
 
 void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
@@ -1315,29 +1697,37 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
     if (paintingDisabled())
         return;
 
-    int x, y, w, h;
-    x = y = 0;
-    QPainter* p = m_data->p();
-    const QPaintDevice* device = p->device();
-    w = device->width();
-    h = device->height();
+    // FastUIDrawTODO: FastUIDraw analgoue of transparency
+    if (m_data->is_qt()) {
+        int x, y, w, h;
+        x = y = 0;
+        QPainter* p = m_data->p();
+        const QPaintDevice* device = p->device();
+        w = device->width();
+        h = device->height();
 
-    if (p->hasClipping()) {
-        QRectF clip = m_data->clipBoundingRect();
-        QRectF deviceClip = p->transform().mapRect(clip);
-        x = int(qBound(qreal(0), deviceClip.x(), (qreal)w));
-        y = int(qBound(qreal(0), deviceClip.y(), (qreal)h));
-        w = int(qBound(qreal(0), deviceClip.width(), (qreal)w) + 2);
-        h = int(qBound(qreal(0), deviceClip.height(), (qreal)h) + 2);
+        if (p->hasClipping()) {
+            QRectF clip = m_data->clipBoundingRect();
+            QRectF deviceClip = p->transform().mapRect(clip);
+            x = int(qBound(qreal(0), deviceClip.x(), (qreal)w));
+            y = int(qBound(qreal(0), deviceClip.y(), (qreal)h));
+            w = int(qBound(qreal(0), deviceClip.width(), (qreal)w) + 2);
+            h = int(qBound(qreal(0), deviceClip.height(), (qreal)h) + 2);
+        }
+
+        QPixmap emptyAlphaMask;
+        m_data->layers.push(new TransparencyLayer(p, QRect(x, y, w, h), opacity, emptyAlphaMask));
+        ++m_data->layerCount;
     }
-
-    QPixmap emptyAlphaMask;
-    m_data->layers.push(new TransparencyLayer(p, QRect(x, y, w, h), opacity, emptyAlphaMask));
-    ++m_data->layerCount;
 }
 
 void GraphicsContext::popTransparencyLayerInternal()
 {
+    /*
+     * this method is only used internally in imlpementing
+     * endPlatformTransparencyLayer() when popping transparency
+     * in Qt.
+     */
     TransparencyLayer* layer = m_data->layers.pop();
     ASSERT(!layer->alphaMask.isNull());
     ASSERT(layer->saveCounter == 0);
@@ -1361,24 +1751,28 @@ void GraphicsContext::endPlatformTransparencyLayer()
     if (paintingDisabled())
         return;
 
-    while ( ! m_data->layers.top()->alphaMask.isNull() ){
-        --m_data->layers.top()->saveCounter;
-        popTransparencyLayerInternal();
-        if (m_data->layers.isEmpty())
-            return;
+    // FastUIDrawTODO: FastUIDraw analgoue of transparency
+    if (m_data->is_qt()) {
+        while ( ! m_data->layers.top()->alphaMask.isNull() ){
+            --m_data->layers.top()->saveCounter;
+            popTransparencyLayerInternal();
+            if (m_data->layers.isEmpty())
+                return;
+        }
+
+        TransparencyLayer* layer = m_data->layers.pop();
+        --m_data->layerCount; // see the comment for layerCount
+        layer->painter.end();
+
+        QPainter* p = m_data->p();
+        p->save();
+        p->resetTransform();
+        p->setOpacity(layer->opacity);
+        p->drawPixmap(layer->offset, layer->pixmap);
+        p->restore();
+
+        delete layer;
     }
-    TransparencyLayer* layer = m_data->layers.pop();
-    --m_data->layerCount; // see the comment for layerCount
-    layer->painter.end();
-
-    QPainter* p = m_data->p();
-    p->save();
-    p->resetTransform();
-    p->setOpacity(layer->opacity);
-    p->drawPixmap(layer->offset, layer->pixmap);
-    p->restore();
-
-    delete layer;
 }
 
 bool GraphicsContext::supportsTransparencyLayers()
@@ -1479,8 +1873,17 @@ void GraphicsContext::setPlatformAlpha(float opacity)
 {
     if (paintingDisabled())
         return;
-    QPainter* p = m_data->p();
-    p->setOpacity(opacity);
+
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        p->setOpacity(opacity);
+    } else {
+        m_data->m_fastuidraw_fill_brush.change_value()
+          .pen(FastUIDrawColorValue(fillColor(), opacity));
+
+        m_data->m_fastuidraw_stroke_brush.change_value()
+          .pen(FastUIDrawColorValue(strokeColor(), opacity));
+    }
 }
 
 void GraphicsContext::setPlatformCompositeOperation(CompositeOperator op, BlendMode blendMode)
@@ -1488,12 +1891,17 @@ void GraphicsContext::setPlatformCompositeOperation(CompositeOperator op, BlendM
     if (paintingDisabled())
         return;
 
-    ASSERT(op == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
+    if (m_data->is_qt()) {
+        ASSERT(op == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
 
-    if (op == WebCore::CompositeSourceOver)
-        m_data->p()->setCompositionMode(toQtCompositionMode(blendMode));
-    else
-        m_data->p()->setCompositionMode(toQtCompositionMode(op));
+        if (op == WebCore::CompositeSourceOver)
+            m_data->p()->setCompositionMode(toQtCompositionMode(blendMode));
+        else
+            m_data->p()->setCompositionMode(toQtCompositionMode(op));
+    } else {
+        m_data->fastuidraw()->composite_shader(toFastUIDrawCompositeMode(op));
+        m_data->fastuidraw()->blend_shader(toFastUIDrawBlendMode(blendMode));
+    }
 }
 
 void GraphicsContext::canvasClip(const Path& path, WindRule windRule)
@@ -1501,9 +1909,13 @@ void GraphicsContext::canvasClip(const Path& path, WindRule windRule)
     if (paintingDisabled())
         return;
 
-    QPainterPath clipPath = path.platformPath();
-    clipPath.setFillRule(toQtFillRule(windRule));
-    m_data->p()->setClipPath(clipPath, Qt::IntersectClip);
+    if (m_data->is_qt()) {
+        QPainterPath clipPath = path.platformPath();
+        clipPath.setFillRule(toQtFillRule(windRule));
+        m_data->p()->setClipPath(clipPath, Qt::IntersectClip);
+    } else {
+        m_data->fastuidraw()->clip_in_path(path.FastUIDrawPath(), toFastUIDrawFillRule(windRule));
+    }
 }
 
 void GraphicsContext::clipOut(const Path& path)
@@ -1511,19 +1923,24 @@ void GraphicsContext::clipOut(const Path& path)
     if (paintingDisabled())
         return;
 
-    QPainter* p = m_data->p();
-    QPainterPath clippedOut = path.platformPath();
-    QPainterPath newClip;
-    newClip.setFillRule(Qt::OddEvenFill);
-    if (p->hasClipping()) {
-        newClip.addRect(m_data->clipBoundingRect());
-        newClip.addPath(clippedOut);
-        p->setClipPath(newClip, Qt::IntersectClip);
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        QPainterPath clippedOut = path.platformPath();
+        QPainterPath newClip;
+        newClip.setFillRule(Qt::OddEvenFill);
+        if (p->hasClipping()) {
+            newClip.addRect(m_data->clipBoundingRect());
+            newClip.addPath(clippedOut);
+            p->setClipPath(newClip, Qt::IntersectClip);
+        } else {
+            QRect windowRect = p->transform().inverted().mapRect(p->window());
+            newClip.addRect(windowRect);
+            newClip.addPath(clippedOut.intersected(newClip));
+            p->setClipPath(newClip);
+        }
     } else {
-        QRect windowRect = p->transform().inverted().mapRect(p->window());
-        newClip.addRect(windowRect);
-        newClip.addPath(clippedOut.intersected(newClip));
-        p->setClipPath(newClip);
+        m_data->fastuidraw()->clip_out_path(path.FastUIDrawPath(),
+                                            fastuidraw::Painter::odd_even_fill_rule);
     }
 }
 
@@ -1532,7 +1949,11 @@ void GraphicsContext::translate(float x, float y)
     if (paintingDisabled())
         return;
 
-    m_data->p()->translate(x, y);
+    if (m_data->is_qt()) {
+        m_data->p()->translate(x, y);
+    } else {
+        m_data->fastuidraw()->translate(fastuidraw::vec2(x, y));
+    }
 }
 
 void GraphicsContext::rotate(float radians)
@@ -1540,8 +1961,12 @@ void GraphicsContext::rotate(float radians)
     if (paintingDisabled())
         return;
 
-    QTransform rotation = QTransform().rotateRadians(radians);
-    m_data->p()->setTransform(rotation, true);
+    if (m_data->is_qt()) {
+        QTransform rotation = QTransform().rotateRadians(radians);
+        m_data->p()->setTransform(rotation, true);
+    } else {
+        m_data->fastuidraw()->rotate(radians);
+    }
 }
 
 void GraphicsContext::scale(const FloatSize& s)
@@ -1549,7 +1974,11 @@ void GraphicsContext::scale(const FloatSize& s)
     if (paintingDisabled())
         return;
 
-    m_data->p()->scale(s.width(), s.height());
+    if (m_data->is_qt()) {
+        m_data->p()->scale(s.width(), s.height());
+    } else {
+        m_data->fastuidraw()->shear(s.width(), s.height());
+    }
 }
 
 void GraphicsContext::clipOut(const FloatRect& rect)
@@ -1557,20 +1986,25 @@ void GraphicsContext::clipOut(const FloatRect& rect)
     if (paintingDisabled())
         return;
 
-    QPainter* p = m_data->p();
-    QPainterPath newClip;
-    newClip.setFillRule(Qt::OddEvenFill);
-    if (p->hasClipping()) {
-        newClip.addRect(m_data->clipBoundingRect());
-        newClip.addRect(QRectF(rect));
-        p->setClipPath(newClip, Qt::IntersectClip);
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        QPainterPath newClip;
+        newClip.setFillRule(Qt::OddEvenFill);
+        if (p->hasClipping()) {
+            newClip.addRect(m_data->clipBoundingRect());
+            newClip.addRect(QRectF(rect));
+            p->setClipPath(newClip, Qt::IntersectClip);
+        } else {
+            QRectF clipOutRect(rect);
+            QRect window = p->transform().inverted().mapRect(p->window());
+            clipOutRect &= window;
+            newClip.addRect(window);
+            newClip.addRect(clipOutRect);
+            p->setClipPath(newClip);
+        }
     } else {
-        QRectF clipOutRect(rect);
-        QRect window = p->transform().inverted().mapRect(p->window());
-        clipOutRect &= window;
-        newClip.addRect(window);
-        newClip.addRect(clipOutRect);
-        p->setClipPath(newClip);
+        m_data->fastuidraw()->clip_out_rect(fastuidraw::vec2(rect.x(), rect.y()),
+                                            fastuidraw::vec2(rect.width(), rect.height()));
     }
 }
 
@@ -1579,7 +2013,13 @@ void GraphicsContext::concatCTM(const AffineTransform& transform)
     if (paintingDisabled())
         return;
 
-    m_data->p()->setWorldTransform(transform, true);
+    if (m_data->is_qt()) {
+        m_data->p()->setWorldTransform(transform, true);
+    } else {
+        fastuidraw::float3x3 matrix;
+        FastUIDrawMatrixFromAffine(transform, &matrix);
+        m_data->fastuidraw()->concat(matrix);
+    }
 }
 
 void GraphicsContext::setCTM(const AffineTransform& transform)
@@ -1587,7 +2027,21 @@ void GraphicsContext::setCTM(const AffineTransform& transform)
     if (paintingDisabled())
         return;
 
-    m_data->p()->setWorldTransform(transform);
+    if (m_data->is_qt()) {
+        m_data->p()->setWorldTransform(transform);
+    } else {
+        /* fastuidraw::Painter's transformation matrix
+         * includes the conversion to normalized device
+         * coordinates, thus we need to multiply by the
+         * correct orthographic projection matrix too.
+         */
+        fastuidraw::vec2 dims(m_data->fastuidraw()->surface()->viewport().m_dimensions);
+        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
+        fastuidraw::float3x3 ortho_matrix(ortho), matrix;
+
+        FastUIDrawMatrixFromAffine(transform, &matrix);
+        m_data->fastuidraw()->transformation(ortho_matrix * matrix);
+    }
 }
 
 #if ENABLE(3D_TRANSFORMS)
@@ -1596,7 +2050,24 @@ TransformationMatrix GraphicsContext::get3DTransform() const
     if (paintingDisabled())
         return TransformationMatrix();
 
-    return platformContext()->qt().worldTransform();
+    if (m_data->is_qt()) {
+        return platformContext()->qt().worldTransform();
+    } else {
+        fastuidraw::float3x3 inverse_ortho;
+        const fastuidraw::vec2 &dims(m_data->fastuidraw()->surface()->viewport().m_dimensions);
+        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
+        TransformationMatrix return_value;
+
+        /* FastUIDraw transformation includes the transformation to
+         * normalized device coordinates, thus we need to pre-multiply
+         * by the inverse of that matrix to give WebKit what it really
+         * wants.
+         */
+        inverse_ortho.inverse_orthogonal_projection_matrix(ortho);
+        TransformationMatrixFromFastUIDrawMatrix(inverse_ortho * m_data->fastuidraw()->transformation().m_item_matrix,
+                                                 &return_value);
+        return return_value;
+    }
 }
 
 void GraphicsContext::concat3DTransform(const TransformationMatrix& transform)
@@ -1604,7 +2075,13 @@ void GraphicsContext::concat3DTransform(const TransformationMatrix& transform)
     if (paintingDisabled())
         return;
 
-    m_data->p()->setWorldTransform(transform, true);
+    if (m_data->is_qt()) {
+        m_data->p()->setWorldTransform(transform, true);
+    } else {
+        fastuidraw::float3x3 matrix;
+        FastUIDrawMatrixFromTransformationMatrix(transform, &matrix);
+        m_data->fastuidraw()->concat(matrix);
+    }
 }
 
 void GraphicsContext::set3DTransform(const TransformationMatrix& transform)
@@ -1612,7 +2089,21 @@ void GraphicsContext::set3DTransform(const TransformationMatrix& transform)
     if (paintingDisabled())
         return;
 
-    m_data->p()->setWorldTransform(transform, false);
+    if (m_data->is_qt()) {
+        m_data->p()->setWorldTransform(transform, false);
+    } else {
+        /* fastuidraw::Painter's transformation matrix
+         * includes the conversion to normalized device
+         * coordinates, thus we need to multiply by the
+         * correct orthographic projection matrix too.
+         */
+        fastuidraw::vec2 dims(m_data->fastuidraw()->surface()->viewport().m_dimensions);
+        fastuidraw::float_orthogonal_projection_params ortho(0.0f, dims.x(), dims.y(), 0.0f);
+        fastuidraw::float3x3 ortho_matrix(ortho), matrix;
+
+        FastUIDrawMatrixFromTransformationMatrix(transform, &matrix);
+        m_data->fastuidraw()->transformation(ortho_matrix * matrix);
+    }
 }
 #endif
 
@@ -1622,9 +2113,11 @@ void GraphicsContext::setURLForRect(const URL& url, const IntRect& rect)
     if (paintingDisabled())
         return;
 
-    QPainter* p = m_data->p();
-    if (p->paintEngine()->type() == QPaintEngine::Pdf)
-        static_cast<QPdfEngine *>(p->paintEngine())->drawHyperlink(p->worldTransform().mapRect(rect), url);
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        if (p->paintEngine()->type() == QPaintEngine::Pdf)
+            static_cast<QPdfEngine *>(p->paintEngine())->drawHyperlink(p->worldTransform().mapRect(rect), url);
+    }
 #else
     UNUSED_PARAM(url);
     UNUSED_PARAM(rect);
@@ -1636,31 +2129,46 @@ void GraphicsContext::setPlatformStrokeColor(const Color& color)
     if (paintingDisabled() || !color.isValid())
         return;
 
-    QPainter* p = m_data->p();
-    QPen newPen(p->pen());
-    m_data->solidColor.setColor(color);
-    newPen.setBrush(m_data->solidColor);
-    p->setPen(newPen);
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        QPen newPen(p->pen());
+        m_data->solidColor.setColor(color);
+        newPen.setBrush(m_data->solidColor);
+        p->setPen(newPen);
+    } else {
+        m_data->m_fastuidraw_stroke_brush.change_value()
+          .pen(FastUIDrawColorValue(color, alpha()));
+    }
 }
 
 void GraphicsContext::setPlatformStrokeStyle(StrokeStyle strokeStyle)
 {
     if (paintingDisabled())
         return;
-    QPainter* p = m_data->p();
-    QPen newPen(p->pen());
-    newPen.setStyle(toQPenStyle(strokeStyle));
-    p->setPen(newPen);
+
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        QPen newPen(p->pen());
+        newPen.setStyle(toQPenStyle(strokeStyle));
+        p->setPen(newPen);
+    } else {
+        /* TODO: set dashed style params for named stroking style */
+    }
 }
 
 void GraphicsContext::setPlatformStrokeThickness(float thickness)
 {
     if (paintingDisabled())
         return;
-    QPainter* p = m_data->p();
-    QPen newPen(p->pen());
-    newPen.setWidthF(thickness);
-    p->setPen(newPen);
+
+    if (m_data->is_qt()) {
+        QPainter* p = m_data->p();
+        QPen newPen(p->pen());
+        newPen.setWidthF(thickness);
+        p->setPen(newPen);
+    } else {
+        m_data->m_fastuidraw_stroke_params.change_value().width(thickness);
+    }
 }
 
 void GraphicsContext::setPlatformFillColor(const Color& color)
@@ -1668,15 +2176,26 @@ void GraphicsContext::setPlatformFillColor(const Color& color)
     if (paintingDisabled() || !color.isValid())
         return;
 
-    m_data->solidColor.setColor(color);
-    m_data->p()->setBrush(m_data->solidColor);
+    if (m_data->is_qt()) {
+        m_data->solidColor.setColor(color);
+        m_data->p()->setBrush(m_data->solidColor);
+    } else {
+        m_data->m_fastuidraw_fill_brush.change_value()
+          .pen(FastUIDrawColorValue(color, alpha()));
+    }
 }
 
 void GraphicsContext::setPlatformShouldAntialias(bool enable)
 {
     if (paintingDisabled())
         return;
-    m_data->p()->setRenderHint(QPainter::Antialiasing, enable);
+    if (m_data->is_qt()) {
+        m_data->p()->setRenderHint(QPainter::Antialiasing, enable);
+    } else {
+        m_data->m_fastuidraw_aa = (enable) ?
+          fastuidraw::Painter::shader_anti_alias_auto :
+          fastuidraw::Painter::shader_anti_alias_none;
+    }
 }
 
 #if OS(WINDOWS)
@@ -1767,27 +2286,33 @@ void GraphicsContext::releaseWindowsContext(HDC hdc, const IntRect& dstRect, boo
 
 void GraphicsContext::setPlatformImageInterpolationQuality(InterpolationQuality quality)
 {
-    // FIXME
     m_data->imageInterpolationQuality = quality;
+    if (m_data->is_qt()) {
+        // FIXME
+        switch (quality) {
+        case InterpolationNone:
+        case InterpolationLow:
+            // use nearest-neigbor
+            m_data->p()->setRenderHint(QPainter::SmoothPixmapTransform, false);
+            break;
 
-    switch (quality) {
-    case InterpolationNone:
-    case InterpolationLow:
-        // use nearest-neigbor
-        m_data->p()->setRenderHint(QPainter::SmoothPixmapTransform, false);
-        break;
+        case InterpolationMedium:
+        case InterpolationHigh:
+            // use the filter
+            m_data->p()->setRenderHint(QPainter::SmoothPixmapTransform, true);
+            break;
 
-    case InterpolationMedium:
-    case InterpolationHigh:
-        // use the filter
-        m_data->p()->setRenderHint(QPainter::SmoothPixmapTransform, true);
-        break;
-
-    case InterpolationDefault:
-    default:
-        m_data->p()->setRenderHint(QPainter::SmoothPixmapTransform, m_data->initialSmoothPixmapTransformHint);
-        break;
-    };
+        case InterpolationDefault:
+        default:
+            m_data->p()->setRenderHint(QPainter::SmoothPixmapTransform, m_data->initialSmoothPixmapTransformHint);
+            break;
+        }
+    } else {
+        /* FastUIDraw: we delay setting the interpolation value in
+         * the fill or stroke brush until we get the image that is
+         * used. 
+         */
+    }
 }
 
 void GraphicsContext::takeOwnershipOfPlatformContext()
@@ -1797,13 +2322,14 @@ void GraphicsContext::takeOwnershipOfPlatformContext()
 
 bool GraphicsContext::isAcceleratedContext() const
 {
-    bool return_value;
-    return_value = platformContext()
-      && platformContext()->is_qt()
-      && platformContext()->qt().paintEngine()
-      && platformContext()->qt().paintEngine()->type() == QPaintEngine::OpenGL2;
+    if (!platformContext())
+        return false;
 
-    return return_value;
+    if (platformContext()->is_fastuidraw())
+        return true;
+  
+    return platformContext()->qt().paintEngine() &&
+        (platformContext()->qt().paintEngine()->type() == QPaintEngine::OpenGL2);
 }
 
 }

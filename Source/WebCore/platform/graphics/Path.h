@@ -44,6 +44,7 @@ typedef struct CGPath PlatformPath;
 #elif PLATFORM(QT)
 
 #include <qpainterpath.h>
+#include <fastuidraw/path.hpp>
 typedef QPainterPath PlatformPath;
 
 #elif USE(CAIRO)
@@ -170,6 +171,7 @@ namespace WebCore {
         // To keep Path() cheap, it does not allocate a PlatformPath immediately
         // meaning Path::platformPath() can return null (except on Qt).
         PlatformPathPtr platformPath() const { return m_path; }
+        const fastuidraw::Path &FastUIDrawPath() const;
 #if PLATFORM(QT)
         PlatformPathPtr ensurePlatformPath() { return platformPath(); }
 #else
@@ -192,6 +194,8 @@ namespace WebCore {
 
     private:
         PlatformPathPtr m_path;
+        mutable bool m_fastuidraw_path_ready;
+        mutable fastuidraw::Path m_fastuidraw_path;
     };
 
 TextStream& operator<<(TextStream&, const Path&);

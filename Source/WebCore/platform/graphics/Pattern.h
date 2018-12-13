@@ -42,6 +42,7 @@ typedef CGPatternRef PlatformPatternPtr;
 typedef cairo_pattern_t* PlatformPatternPtr;
 #elif PLATFORM(QT)
 #include <QBrush>
+#include <fastuidraw/painter/painter_brush.hpp>
 typedef QBrush PlatformPatternPtr;
 #elif USE(WINGDI)
 typedef void* PlatformPatternPtr;
@@ -65,6 +66,7 @@ public:
 #if PLATFORM(QT)
     // Qt ignores user space transformation and uses pattern's instead
     PlatformPatternPtr createPlatformPattern() const;
+    fastuidraw::PainterBrush createFastUIDrawBrush(void) const;
 #else
     PlatformPatternPtr createPlatformPattern(const AffineTransform& userSpaceTransformation) const;
 #endif

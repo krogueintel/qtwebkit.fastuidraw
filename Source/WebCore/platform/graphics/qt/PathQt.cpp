@@ -45,7 +45,20 @@
 
 namespace WebCore {
 
+static bool indicatesClosePath(const QPainterPath &path, unsigned int lastMoveToI, unsigned int currentI)
+{
+    if (lastMoveToI == -1)
+        return false;
+
+    const QPainterPath::Element &lastMoveTo(path.elementAt(lastMoveToI));
+    const QPainterPath::Element &current(path.elementAt(currentI));
+
+    return qFuzzyCompare(lastMoveTo.x, current.x)
+      && qFuzzyCompare(lastMoveTo.y, current.y);
+}
+
 Path::Path()
+  : m_fastuidraw_path_ready(true)
 {
 }
 
@@ -55,12 +68,16 @@ Path::~Path()
 
 Path::Path(const Path& other)
     : m_path(other.m_path)
+    , m_fastuidraw_path_ready(other.m_fastuidraw_path_ready)
+    , m_fastuidraw_path(other.m_fastuidraw_path)
 {
 }
 
 Path& Path::operator=(const Path& other)
 {
     m_path = other.m_path;
+    m_fastuidraw_path_ready = other.m_fastuidraw_path_ready;
+    m_fastuidraw_path = other.m_fastuidraw_path;
     return *this;
 }
 
@@ -147,6 +164,7 @@ bool Path::strokeContains(StrokeStyleApplier* applier, const FloatPoint& point) 
 
 void Path::translate(const FloatSize& size)
 {
+    m_fastuidraw_path_ready = false;
     m_path.translate(size.width(), size.height());
 }
 
@@ -180,26 +198,32 @@ FloatRect Path::strokeBoundingRect(StrokeStyleApplier* applier) const
 
 void Path::moveTo(const FloatPoint& point)
 {
+    m_fastuidraw_path_ready = false;
     m_path.moveTo(point);
 }
 
 void Path::addLineTo(const FloatPoint& p)
 {
+    m_fastuidraw_path_ready = false;
     m_path.lineTo(p);
 }
 
 void Path::addQuadCurveTo(const FloatPoint& cp, const FloatPoint& p)
 {
+    m_fastuidraw_path_ready = false;
     m_path.quadTo(cp, p);
 }
 
 void Path::addBezierCurveTo(const FloatPoint& cp1, const FloatPoint& cp2, const FloatPoint& p)
 {
+    m_fastuidraw_path_ready = false;
     m_path.cubicTo(cp1, cp2, p);
 }
 
 void Path::addArcTo(const FloatPoint& p1, const FloatPoint& p2, float radius)
 {
+    m_fastuidraw_path_ready = false;
+
     FloatPoint p0(m_path.currentPosition());
 
     FloatPoint p1p0((p0.x() - p1.x()), (p0.y() - p1.y()));
@@ -260,6 +284,7 @@ void Path::addArcTo(const FloatPoint& p1, const FloatPoint& p2, float radius)
 
 void Path::closeSubpath()
 {
+    m_fastuidraw_path_ready = false;
     m_path.closeSubpath();
 }
 
@@ -321,16 +346,19 @@ static void addEllipticArc(QPainterPath &path, qreal xc, qreal yc, qreal radiusX
 
 void Path::addArc(const FloatPoint& p, float r, float sar, float ear, bool anticlockwise)
 {
+    m_fastuidraw_path_ready = false;
     addEllipticArc(m_path, p.x(), p.y(), r, r, sar, ear, anticlockwise);
 }
 
 void Path::addRect(const FloatRect& r)
 {
+    m_fastuidraw_path_ready = false;
     m_path.addRect(r.x(), r.y(), r.width(), r.height());
 }
 
 void Path::addEllipse(FloatPoint p, float radiusX, float radiusY, float rotation, float startAngle, float endAngle, bool anticlockwise)
 {
+    m_fastuidraw_path_ready = false;
     if (!qFuzzyIsNull(rotation)) {
         QPainterPath subPath;
         QTransform t;
@@ -358,11 +386,13 @@ void Path::addEllipse(FloatPoint p, float radiusX, float radiusY, float rotation
 
 void Path::addEllipse(const FloatRect& r)
 {
+    m_fastuidraw_path_ready = false;
     m_path.addEllipse(r.x(), r.y(), r.width(), r.height());
 }
 
 void Path::addPath(const Path& path, const AffineTransform& transform)
 {
+    m_fastuidraw_path_ready = false;
     if (!transform.isInvertible())
         return;
 
@@ -374,6 +404,7 @@ void Path::clear()
 {
     if (!m_path.elementCount())
         return;
+    m_fastuidraw_path_ready = false;
     m_path = QPainterPath();
 }
 
@@ -439,6 +470,7 @@ void Path::apply(const PathApplierFunction& function) const
 void Path::transform(const AffineTransform& transform)
 {
     QTransform qTransform(transform);
+    m_fastuidraw_path_ready = false;
     m_path = qTransform.map(m_path);
 }
 
@@ -473,6 +505,58 @@ float Path::normalAngleAtLength(float length, bool& ok) const
     if (angle > 0)
         angle = 360 - angle;
     return angle;
+}
+
+const fastuidraw::Path &Path::FastUIDrawPath() const
+{
+    if (!m_fastuidraw_path_ready) {
+        int lastMoveToAt(-1);
+      
+        m_fastuidraw_path_ready = true;
+        m_fastuidraw_path.clear();
+
+        for (int i = 0; i < m_path.elementCount(); ++i) {
+            const QPainterPath::Element& cur = m_path.elementAt(i);
+
+            switch (cur.type) {
+                case QPainterPath::MoveToElement:
+                    m_fastuidraw_path.move(fastuidraw::vec2(cur.x, cur.y));
+                    lastMoveToAt = i;
+                    break;
+                case QPainterPath::LineToElement:
+                    if (indicatesClosePath(m_path, lastMoveToAt, i)) {
+                        m_fastuidraw_path.line_to(fastuidraw::vec2(cur.x, cur.y));
+                    } else {
+                        m_fastuidraw_path.close_contour();
+                    }
+                    break;
+                case QPainterPath::CurveToElement:
+                {
+                    const QPainterPath::Element& c1 = m_path.elementAt(i + 1);
+                    const QPainterPath::Element& c2 = m_path.elementAt(i + 2);
+
+                    Q_ASSERT(c1.type == QPainterPath::CurveToDataElement);
+                    Q_ASSERT(c2.type == QPainterPath::CurveToDataElement);
+
+                    if (indicatesClosePath(m_path, lastMoveToAt, i + 2)) {
+                        m_fastuidraw_path.close_contour_cubic(fastuidraw::vec2(cur.x, cur.y),
+                                                              fastuidraw::vec2(c1.x, c1.y));
+                    } else {
+                        m_fastuidraw_path.cubic_to(fastuidraw::vec2(cur.x, cur.y),
+                                                   fastuidraw::vec2(c1.x, c1.y),
+                                                   fastuidraw::vec2(c2.x, c2.y));
+                    }
+
+                    i += 2;
+                    break;
+                }
+              case QPainterPath::CurveToDataElement:
+                  Q_ASSERT(false);
+            }
+        }
+    }
+
+    return m_fastuidraw_path;
 }
 
 }
