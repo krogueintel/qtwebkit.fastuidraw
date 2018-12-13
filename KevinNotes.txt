@@ -38,6 +38,42 @@ Qt WebKit: rendering.
               How "accellerated 2d" (i.e. ACCELERATED_2D_CANVAS)
               interacts needs to be understood as well; that macro
               appears in (thankfully) only 19 files.
+          iii. GraphicsContext draw-state:
+              - stroke thickness (m_state.strokeThickness)
+              - stroke style (m_state.strokeStyle)
+              - stroke dash-pattern (m_state.strokePattern)
+              - stroke color (m_state.strokeColor)
+              - stroke gradient (m_state.strokeGradient)
+              - stroke pattern (m_state.strokePattern)
+              - fill rule (m_state.fillRule)
+              - fill color (m_state.fillColor)
+              - fill pattern (m_state.fillPattern)
+              - fill gradient (m_state.fillGradient)
+          iv. drawing methods (a Pattern in WebCore is an image with repeat arguments and a transformation attached)
+              - drawRect: fill a rectangle and stroke its border with the given thickness (instead of state's stroke width)
+              - drawLine: stroke a line
+              - drawEllipse: fill and stroke an ellipse
+              - fillPath: fill a path (do NOT stroke it)
+              - strokePath: stroke a path
+              - fillElipse: fill an elipse (do NOT stroke it)
+              - strokeElipse: stroke an elipse
+              - fillRect: fill a rect (do NOT stroke it)
+              - fillRoundedRect: fill a rounded rect (do NOT stroke it)
+              - clearRect (???)
+              - strokeRect: onyl stroke a rect
+              - drawImage: draw a rect where brush is an image
+              - drawPattern
+           v. Types:
+              - Image represents a static image, but appears to be a virtual base class
+                the derived types appear to be
+                  * BitmapImage for offscreen rendering (?)
+                  * GeneratedImage which is also a pure-virtual base-class
+                       ^ GradientImage is for caching a gradient render; 
+                       ^ NamedImageGeneratedImage, appears to be used for theme rendering; likely not active (?)
+                  * StillImage appears to be for rending an image that does not change
+                  * NativeImagePtr is likely the type to pass around for drawing images;
+                    for most platforms PassNativeImagePtr is an alias to NativeImagePtr
+                    (including Qt).
        b. text
          i. modify GlyphBuffer and/or TextRun to have a fastuidraw structs for text.
          ii. the actual drawing methods in a backend are located in FontCascade
