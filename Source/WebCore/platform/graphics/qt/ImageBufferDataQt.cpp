@@ -306,6 +306,7 @@ void ImageBufferDataPrivateAccelerated::paintToTextureMapper(TextureMapper& text
         }
     }
 
+#if ENABLE(3D_TRANSFORMS) && USE(TEXTURE_MAPPER)
     if (!canRenderDirectly) {
         QImage image = toQImage();
         TransformationMatrix oldTransform = textureMapper.graphicsContext()->get3DTransform();
@@ -314,6 +315,7 @@ void ImageBufferDataPrivateAccelerated::paintToTextureMapper(TextureMapper& text
         textureMapper.graphicsContext()->set3DTransform(oldTransform);
         return;
     }
+#endif
 
     invalidateState();
 #if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
@@ -476,19 +478,14 @@ void ImageBufferDataPrivateUnaccelerated::platformTransformColorSpace(const Vect
         painter->begin(&m_pixmap);
 }
 
-struct ImageBufferDataPrivateFastUIDraw final : public ImageBufferDataPrivate {
-  /* FastUIDrawTODO: implement */
-};
-
 // ---------------------- ImageBufferData
 
 ImageBufferData::ImageBufferData(const FloatSize& size, float resolutionScale)
 {
     m_painter = new QPainter;
-    std::cout << "ImageBufferData:" << m_painter << "\n";
     m_platform_context = new PlatformGraphicsContext(m_painter);
-
     m_impl = new ImageBufferDataPrivateUnaccelerated(size, resolutionScale);
+    std::cout << "ImageBufferData:" << m_painter << "\n";
 
     if (!m_impl->paintDevice())
         return;
@@ -502,9 +499,9 @@ ImageBufferData::ImageBufferData(const FloatSize& size, float resolutionScale)
 ImageBufferData::ImageBufferData(const FloatSize& size, QOpenGLContext* compatibleContext)
 {
     m_painter = new QPainter;
-
-    std::cout << "ImageBufferData (Accelerated):" << m_painter << "\n";
+    m_platform_context = new PlatformGraphicsContext(m_painter);
     m_impl = new ImageBufferDataPrivateAccelerated(size, compatibleContext);
+    std::cout << "ImageBufferData (Accelerated):" << m_painter << "\n";
 
     if (!m_impl->paintDevice())
         return;
