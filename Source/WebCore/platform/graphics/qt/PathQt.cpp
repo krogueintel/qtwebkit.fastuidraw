@@ -520,7 +520,7 @@ static void printQtPath(const QPainterPath &path)
         std::cout << "\tElement #" << i << ":";
         switch (cur.type) {
             case QPainterPath::MoveToElement:
-                std::cout << "MoveTo (" << cur.x << ", " << cur.x << ")\n";
+                std::cout << "MoveTo (" << cur.x << ", " << cur.y << ")\n";
                 lastMoveToAt = i;
                 break;
             case QPainterPath::LineToElement:
@@ -562,7 +562,7 @@ const fastuidraw::Path &Path::FastUIDrawPath() const
         m_fastuidraw_path_ready = true;
         m_fastuidraw_path.clear();
 
-        printQtPath(m_path);
+        //printQtPath(m_path);
 
         for (int i = 0; i < m_path.elementCount(); ++i) {
             const QPainterPath::Element& cur = m_path.elementAt(i);
