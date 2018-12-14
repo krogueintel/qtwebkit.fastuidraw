@@ -915,7 +915,10 @@ bool QWebView::drawWithFastUIDraw(void) const
 
 void QWebView::drawWithFastUIDraw(bool v)
 {
-    d->m_drawWithFastUIDraw = v;
+    if (v != d->m_drawWithFastUIDraw) {
+        d->m_drawWithFastUIDraw = v;
+        update();
+    }
 }
 
 void QWebView::resizeGL(int w, int h)
@@ -936,10 +939,10 @@ void QWebView::resizeGL(int w, int h)
 void QWebView::paintGL(void)
 {
   QPainter p(this);
+  QWebFrame *frame = d->page->mainFrame();
+
   if (!d->m_drawWithFastUIDraw || !d->m_painter) {
-      QWebFrame *frame = d->page->mainFrame();
       p.setRenderHints(d->renderHints);
-    
       frame->render(&p);
       return;
   }
@@ -966,11 +969,7 @@ void QWebView::paintGL(void)
 
       d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
       d->m_painter->begin(d->m_surface, orientation);
-      fastuidraw::PainterBrush brush;
-      brush.pen(1.0f, 0.0f, 0.0f, 0.5f);
-      d->m_painter->draw_rect(fastuidraw::PainterData(&brush),
-                              0.25f * fastuidraw::vec2(width(), height()),
-                              0.5f  * fastuidraw::vec2(width(), height()));
+      frame->render(d->m_painter);
       d->m_painter->end();
 
       fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
