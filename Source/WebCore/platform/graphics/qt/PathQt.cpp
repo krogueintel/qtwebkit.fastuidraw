@@ -140,7 +140,6 @@ static GraphicsContext* scratchContext()
 {
     static QImage image(1, 1, NativeImageQt::defaultFormatForAlphaEnabledImages());
     static QPainter painter(&image);
-    std::cout << "PathQt:" << &painter << "\n";
     static PlatformGraphicsContext ngc(&painter);
     static GraphicsContext* context = new GraphicsContext(&ngc);
     return context;
