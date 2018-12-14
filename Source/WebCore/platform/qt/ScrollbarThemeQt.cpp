@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "ScrollbarTheme.h"
+#include "ScrollbarThemeMock.h"
 
 #include "RenderThemeQt.h"
 
@@ -37,7 +38,14 @@ ScrollbarTheme& ScrollbarTheme::nativeTheme()
     static ScrollbarTheme* theme = 0;
     if (theme)
         return *theme;
-    theme = RenderThemeQt::customScrollbarTheme();
+
+    /* Such a hassle: the drawing of scrollbars via
+     * Qt is delegated directly to Qt's QPainter;
+     * However, ScrollbarThemeMock paints with
+     * GraphicsContext (though it is somewhat ugly)
+     */
+    //theme = RenderThemeQt::customScrollbarTheme();
+    theme = new ScrollbarThemeMock();
     if (!theme)
         theme = new ScrollbarTheme();
     return *theme;
