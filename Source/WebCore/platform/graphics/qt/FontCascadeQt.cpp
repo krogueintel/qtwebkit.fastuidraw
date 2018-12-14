@@ -32,6 +32,7 @@
 #include "Pattern.h"
 #include "ShadowBlur.h"
 #include "TextRun.h"
+#include "FastUIDrawResources.h"
 
 #include <QBrush>
 #include <QPainter>
@@ -177,17 +178,21 @@ static void drawQtGlyphRun(GraphicsContext& context, const QGlyphRun& qtGlyphRun
 
 void FontCascade::drawComplexText(GraphicsContext& ctx, const TextRun& run, const FloatPoint& point, int from, int to) const
 {
-    QString string = toNormalizedQString(run);
+    if (ctx.platformContext()->is_qt()) {
+        QString string = toNormalizedQString(run);
 
-    QTextLayout layout(string);
-    layout.setRawFont(rawFont());
-    initFormatForTextLayout(&layout, run);
-    QTextLine line = setupLayout(&layout, run);
-    const QPointF adjustedPoint(point.x(), point.y() - line.ascent());
+        QTextLayout layout(string);
+        layout.setRawFont(rawFont());
+        initFormatForTextLayout(&layout, run);
+        QTextLine line = setupLayout(&layout, run);
+        const QPointF adjustedPoint(point.x(), point.y() - line.ascent());
 
-    QList<QGlyphRun> runs = line.glyphRuns(from, to - from);
-    Q_FOREACH(QGlyphRun glyphRun, runs)
-        drawQtGlyphRun(ctx, glyphRun, adjustedPoint, line.ascent());
+        QList<QGlyphRun> runs = line.glyphRuns(from, to - from);
+        Q_FOREACH(QGlyphRun glyphRun, runs)
+            drawQtGlyphRun(ctx, glyphRun, adjustedPoint, line.ascent());
+    } else {
+        unimplementedFastUIDraw();
+    }
 }
 
 float FontCascade::floatWidthForComplexText(const TextRun& run, HashSet<const Font*>*, GlyphOverflow*) const
@@ -302,31 +307,35 @@ void FontCascade::drawGlyphs(GraphicsContext& context, const Font& font, const G
     if (!shouldFill && !shouldStroke)
         return;
 
-    QVector<quint32> glyphIndexes;
-    QVector<QPointF> positions;
+    if (context.platformContext()->is_qt()) {
+          QVector<quint32> glyphIndexes;
+          QVector<QPointF> positions;
 
-    glyphIndexes.reserve(numGlyphs);
-    positions.reserve(numGlyphs);
-    const QRawFont& rawFont = font.getQtRawFont();
+          glyphIndexes.reserve(numGlyphs);
+          positions.reserve(numGlyphs);
+          const QRawFont& rawFont = font.getQtRawFont();
 
-    float width = 0;
+          float width = 0;
 
-    for (int i = 0; i < numGlyphs; ++i) {
-        Glyph glyph = glyphBuffer.glyphAt(from + i);
-        float advance = glyphBuffer.advanceAt(from + i).width();
-        if (!glyph)
-            continue;
-        glyphIndexes.append(glyph);
-        positions.append(QPointF(width, 0));
-        width += advance;
+          for (int i = 0; i < numGlyphs; ++i) {
+              Glyph glyph = glyphBuffer.glyphAt(from + i);
+              float advance = glyphBuffer.advanceAt(from + i).width();
+              if (!glyph)
+                  continue;
+              glyphIndexes.append(glyph);
+              positions.append(QPointF(width, 0));
+              width += advance;
+          }
+
+          QGlyphRun qtGlyphs;
+          qtGlyphs.setGlyphIndexes(glyphIndexes);
+          qtGlyphs.setPositions(positions);
+          qtGlyphs.setRawFont(rawFont);
+
+          drawQtGlyphRun(context, qtGlyphs, point, /* baselineOffset = */0);
+    } else {
+        unimplementedFastUIDraw();
     }
-
-    QGlyphRun qtGlyphs;
-    qtGlyphs.setGlyphIndexes(glyphIndexes);
-    qtGlyphs.setPositions(positions);
-    qtGlyphs.setRawFont(rawFont);
-
-    drawQtGlyphRun(context, qtGlyphs, point, /* baselineOffset = */0);
 }
 
 

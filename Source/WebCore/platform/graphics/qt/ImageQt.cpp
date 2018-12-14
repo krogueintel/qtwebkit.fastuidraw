@@ -40,6 +40,7 @@
 #include "ShadowBlur.h"
 #include "StillImageQt.h"
 #include "Timer.h"
+#include "FastUIDrawResources.h"
 
 #include <QCoreApplication>
 #include <QImage>
@@ -260,42 +261,46 @@ void BitmapImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
     if (normalizedSrc.isEmpty() || normalizedDst.isEmpty())
         return;
 
-    QPixmap* image = nativeImageForCurrentFrame();
-    if (!image)
-        return;
+    if (ctxt.platformContext()->is_qt()) {
+        QPixmap* image = nativeImageForCurrentFrame();
+        if (!image)
+            return;
 
-    if (mayFillWithSolidColor()) {
-        fillWithSolidColor(ctxt, normalizedDst, solidColor(), op);
-        return;
-    }
+        if (mayFillWithSolidColor()) {
+            fillWithSolidColor(ctxt, normalizedDst, solidColor(), op);
+            return;
+        }
 
 #if ENABLE(IMAGE_DECODER_DOWN_SAMPLING)
-    normalizedSrc = adjustSourceRectForDownSampling(normalizedSrc, image->size());
+        normalizedSrc = adjustSourceRectForDownSampling(normalizedSrc, image->size());
 #endif
 
-    QPixmap prescaledBuffer;
-    image = prescaleImageIfRequired(&ctxt.platformContext()->qt(), image, &prescaledBuffer, normalizedDst, &normalizedSrc);
+        QPixmap prescaledBuffer;
+        image = prescaleImageIfRequired(&ctxt.platformContext()->qt(), image, &prescaledBuffer, normalizedDst, &normalizedSrc);
 
-    CompositeOperator previousOperator = ctxt.compositeOperation();
-    BlendMode previousBlendMode = ctxt.blendModeOperation();
-    ctxt.setCompositeOperation(!image->hasAlpha() && op == CompositeSourceOver && blendMode == BlendModeNormal ? CompositeCopy : op, blendMode);
+        CompositeOperator previousOperator = ctxt.compositeOperation();
+        BlendMode previousBlendMode = ctxt.blendModeOperation();
+        ctxt.setCompositeOperation(!image->hasAlpha() && op == CompositeSourceOver && blendMode == BlendModeNormal ? CompositeCopy : op, blendMode);
 
-    if (ctxt.hasShadow()) {
-        ShadowBlur shadow(ctxt.state());
-        GraphicsContext* shadowContext = shadow.beginShadowLayer(ctxt, normalizedDst);
-        if (shadowContext) {
-            QPainter* shadowPainter = &shadowContext->platformContext()->qt();
-            shadowPainter->drawPixmap(normalizedDst, *image, normalizedSrc);
-            shadow.endShadowLayer(ctxt);
+        if (ctxt.hasShadow()) {
+            ShadowBlur shadow(ctxt.state());
+            GraphicsContext* shadowContext = shadow.beginShadowLayer(ctxt, normalizedDst);
+            if (shadowContext) {
+                QPainter* shadowPainter = &shadowContext->platformContext()->qt();
+                shadowPainter->drawPixmap(normalizedDst, *image, normalizedSrc);
+                shadow.endShadowLayer(ctxt);
+            }
         }
+
+        ctxt.platformContext()->qt().drawPixmap(normalizedDst, *image, normalizedSrc);
+
+        ctxt.setCompositeOperation(previousOperator, previousBlendMode);
+
+        if (imageObserver())
+            imageObserver()->didDraw(this);
+    } else {
+        unimplementedFastUIDraw();
     }
-
-    ctxt.platformContext()->qt().drawPixmap(normalizedDst, *image, normalizedSrc);
-
-    ctxt.setCompositeOperation(previousOperator, previousBlendMode);
-
-    if (imageObserver())
-        imageObserver()->didDraw(this);
 }
 
 void BitmapImage::determineMinimumSubsamplingLevel() const

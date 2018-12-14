@@ -525,6 +525,13 @@ selectFont(int weight, int slant,
   return FontConfig::select_font(weight, slant, style, family, foundry, fontDatabase());
 }
 
+void
+WebCore::FastUIDraw::
+unimplementedFastUIDrawFunc(const char *file, int line, const char *function)
+{
+  std::cerr << "[" << file << ", " << line << ": " << function << "] unimplemented \n";
+}
+
 //////////////////////////////////////////////
 // WebCore::FastUIDraw::PainterHolder methods
 WebCore::FastUIDraw::PainterHolder::

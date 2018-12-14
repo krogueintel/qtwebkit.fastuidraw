@@ -44,7 +44,18 @@ namespace WebCore {
                fastuidraw::c_string style,
                fastuidraw::c_string family,
                fastuidraw::c_string foundry);
+
+    void
+    unimplementedFastUIDrawFunc(const char *file, int line, const char *function);
   }
 }
+
+#define unimplementedFastUIDraw() do {                                  \
+    static bool have_printed = false;                                   \
+    if (!have_printed) {                                                \
+       WebCore::FastUIDraw::unimplementedFastUIDrawFunc(__FILE__, __LINE__, __PRETTY_FUNCTION__); \
+       have_printed = true;                                             \
+    }                                                                   \
+  } while(0)
 
 #endif

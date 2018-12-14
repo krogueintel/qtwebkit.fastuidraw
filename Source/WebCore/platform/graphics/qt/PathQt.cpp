@@ -45,9 +45,12 @@
 
 namespace WebCore {
 
-static bool indicatesClosePath(const QPainterPath &path, unsigned int lastMoveToI, unsigned int currentI)
+static bool indicatesClosePath(const QPainterPath &path, int lastMoveToI, int currentI)
 {
     if (lastMoveToI == -1)
+        return false;
+
+    if (currentI + 1 < path.elementCount() && path.elementAt(currentI + 1).type != QPainterPath::MoveToElement)
         return false;
 
     const QPainterPath::Element &lastMoveTo(path.elementAt(lastMoveToI));
@@ -507,6 +510,50 @@ float Path::normalAngleAtLength(float length, bool& ok) const
     return angle;
 }
 
+static void printQtPath(const QPainterPath &path)
+{
+    int lastMoveToAt(-1);
+    std::cout << "Decompose Path:\n";
+    for (int i = 0; i < path.elementCount(); ++i) {
+        const QPainterPath::Element& cur = path.elementAt(i);
+
+        std::cout << "\tElement #" << i << ":";
+        switch (cur.type) {
+            case QPainterPath::MoveToElement:
+                std::cout << "MoveTo (" << cur.x << ", " << cur.x << ")\n";
+                lastMoveToAt = i;
+                break;
+            case QPainterPath::LineToElement:
+                if (indicatesClosePath(path, lastMoveToAt, i)) {
+                    std::cout << "*Closes Path*";
+                }
+                std::cout << "LineTo (" << cur.x << ", " << cur.y << ")\n";
+                break;
+            case QPainterPath::CurveToElement:
+            {
+                const QPainterPath::Element& c1 = path.elementAt(i + 1);
+                const QPainterPath::Element& c2 = path.elementAt(i + 2);
+
+                Q_ASSERT(c1.type == QPainterPath::CurveToDataElement);
+                Q_ASSERT(c2.type == QPainterPath::CurveToDataElement);
+
+                if (indicatesClosePath(path, lastMoveToAt, i + 2)) {
+                    std::cout << "*Closes Path*";
+                }
+
+                std::cout << "CubicTo (" << cur.x << ", " << cur.y
+                          << ") (" << c1.x << ", " << c1.y << ") ("
+                          << c2.x << ", " << c2.y << ")\n";
+
+                i += 2;
+                break;
+            }
+            case QPainterPath::CurveToDataElement:
+                Q_ASSERT(false);
+            }
+    }
+}
+
 const fastuidraw::Path &Path::FastUIDrawPath() const
 {
     if (!m_fastuidraw_path_ready) {
@@ -514,6 +561,8 @@ const fastuidraw::Path &Path::FastUIDrawPath() const
       
         m_fastuidraw_path_ready = true;
         m_fastuidraw_path.clear();
+
+        printQtPath(m_path);
 
         for (int i = 0; i < m_path.elementCount(); ++i) {
             const QPainterPath::Element& cur = m_path.elementAt(i);
@@ -525,9 +574,9 @@ const fastuidraw::Path &Path::FastUIDrawPath() const
                     break;
                 case QPainterPath::LineToElement:
                     if (indicatesClosePath(m_path, lastMoveToAt, i)) {
-                        m_fastuidraw_path.line_to(fastuidraw::vec2(cur.x, cur.y));
-                    } else {
                         m_fastuidraw_path.close_contour();
+                    } else {
+                        m_fastuidraw_path.line_to(fastuidraw::vec2(cur.x, cur.y));
                     }
                     break;
                 case QPainterPath::CurveToElement:
