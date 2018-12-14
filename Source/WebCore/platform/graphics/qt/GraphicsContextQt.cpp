@@ -1285,7 +1285,21 @@ void GraphicsContext::fillRect(const FloatRect& rect, const Color& color)
         }
         p->fillRect(platformRect, QColor(color));
     } else {
-        unimplementedFastUIDraw();
+        if (hasShadow()) {
+            fastuidraw::PainterBrush shadowBrush;
+            shadowBrush.pen(FastUIDrawColorValue(m_state.shadowColor, alpha()));
+            m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&shadowBrush),
+                                            fastuidraw::vec2(rect.x() + m_state.shadowOffset.width(),
+                                                             rect.y() + m_state.shadowOffset.height()),
+                                            fastuidraw::vec2(rect.width(), rect.height()),
+                                            m_data->m_fastuidraw_aa);
+        }
+        fastuidraw::PainterBrush fillBrush;
+        fillBrush.pen(FastUIDrawColorValue(color, alpha()));
+        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&fillBrush),
+                                        fastuidraw::vec2(rect.x(), rect.y()),
+                                        fastuidraw::vec2(rect.width(), rect.height()),
+                                        m_data->m_fastuidraw_aa);
     }
 }
 
