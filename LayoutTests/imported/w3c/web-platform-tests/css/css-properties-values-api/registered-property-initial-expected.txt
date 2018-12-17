@@ -1,0 +1,3 @@
+
+FAIL Initial values of registered properties can be referenced when no custom properties are explicitly set. The given initial value does not parse for the given syntax.
+
