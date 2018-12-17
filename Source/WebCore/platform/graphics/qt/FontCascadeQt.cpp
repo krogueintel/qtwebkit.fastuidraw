@@ -195,22 +195,46 @@ static void drawFastUIDrawGlyphRun(GraphicsContext& context, const fastuidraw::G
     context.restore();
 }
 
+static void addQtGlyphRunToFastUIDrawGlyphRun(const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &fastuidraw_font,
+                                              const QGlyphRun& inGlyphRun,
+                                              fastuidraw::GlyphRun& outGlyphRun)
+{
+    const QVector<quint32> &inIndices(inGlyphRun.glyphIndexes());
+    const QVector<QPointF> &inPositions(inGlyphRun.positions());
+
+    for (unsigned int i = 0, endi = inIndices.size(); i < endi; ++i) {
+        outGlyphRun.add_glyph(fastuidraw::GlyphSource(fastuidraw_font, inIndices[i]),
+                              fastuidraw::vec2(inPositions[i].x(), inPositions[i].y()));
+    }
+}
+
 void FontCascade::drawComplexText(GraphicsContext& ctx, const TextRun& run, const FloatPoint& point, int from, int to) const
 {
+    QString string = toNormalizedQString(run);
+
+    QTextLayout layout(string);
+    layout.setRawFont(rawFont());
+    initFormatForTextLayout(&layout, run);
+    QTextLine line = setupLayout(&layout, run);
+    const QPointF adjustedPoint(point.x(), point.y() - line.ascent());
+
+    QList<QGlyphRun> runs = line.glyphRuns(from, to - from);
+
     if (ctx.platformContext()->is_qt()) {
-        QString string = toNormalizedQString(run);
-
-        QTextLayout layout(string);
-        layout.setRawFont(rawFont());
-        initFormatForTextLayout(&layout, run);
-        QTextLine line = setupLayout(&layout, run);
-        const QPointF adjustedPoint(point.x(), point.y() - line.ascent());
-
-        QList<QGlyphRun> runs = line.glyphRuns(from, to - from);
         Q_FOREACH(QGlyphRun glyphRun, runs)
             drawQtGlyphRun(ctx, glyphRun, adjustedPoint, line.ascent());
     } else {
-        unimplementedFastUIDraw();
+        const QRawFont &qfont(rawFont());
+        fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> fastuidraw_font(FastUIDraw::select_font(qfont));
+        float pixel_size(qfont.pixelSize());
+        enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
+        enum fastuidraw::Painter::glyph_layout_type layout(fastuidraw::Painter::glyph_layout_horizontal);
+
+        Q_FOREACH(QGlyphRun glyphRun, runs) {
+            fastuidraw::GlyphRun fastuidraw_run(pixel_size, orientation, FastUIDraw::glyphCache(), layout);
+            addQtGlyphRunToFastUIDrawGlyphRun(fastuidraw_font, glyphRun, fastuidraw_run);
+            drawFastUIDrawGlyphRun(ctx, fastuidraw_run, adjustedPoint, line.ascent());
+        }
     }
 }
 
