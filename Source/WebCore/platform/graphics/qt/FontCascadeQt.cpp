@@ -201,11 +201,24 @@ static void addQtGlyphRunToFastUIDrawGlyphRun(const fastuidraw::reference_counte
 {
     const QVector<quint32> &inIndices(inGlyphRun.glyphIndexes());
     const QVector<QPointF> &inPositions(inGlyphRun.positions());
+    std::vector<fastuidraw::vec2> pts(inPositions.size());
+    std::vector<uint32_t> indices(inIndices.size());
+
+    FASTUIDRAWassert(pts.size() == indices.size());
+    if (indices.empty())
+      {
+        return;
+      }
 
     for (unsigned int i = 0, endi = inIndices.size(); i < endi; ++i) {
-        outGlyphRun.add_glyph(fastuidraw::GlyphSource(fastuidraw_font, inIndices[i]),
-                              fastuidraw::vec2(inPositions[i].x(), inPositions[i].y()));
+        pts[i].x() = inPositions[i].x();
+        pts[i].y() = inPositions[i].y();
+        indices[i] = inIndices[i];
     }
+
+    outGlyphRun.add_glyphs(fastuidraw_font,
+                           fastuidraw::c_array<const uint32_t>(&indices[0], indices.size()),
+                           fastuidraw::c_array<const fastuidraw::vec2>(&pts[0], pts.size()));
 }
 
 void FontCascade::drawComplexText(GraphicsContext& ctx, const TextRun& run, const FloatPoint& point, int from, int to) const
@@ -338,7 +351,7 @@ void FontCascade::drawEmphasisMarksForComplexText(GraphicsContext& /* context */
 
 void FontCascade::drawGlyphs(GraphicsContext& context, const Font& font, const GlyphBuffer& glyphBuffer, int from, int numGlyphs, const FloatPoint& point, FontSmoothingMode)
 {
-    if (!font.platformData().size())
+    if (!font.platformData().size() || numGlyphs <= 0)
         return;
 
     if (context.paintingDisabled())
@@ -383,6 +396,11 @@ void FontCascade::drawGlyphs(GraphicsContext& context, const Font& font, const G
           enum fastuidraw::Painter::glyph_layout_type layout(fastuidraw::Painter::glyph_layout_horizontal);
           fastuidraw::GlyphRun fud_run(pixel_size, orientation, FastUIDraw::glyphCache(), layout);
           float width(0.0f);
+          std::vector<uint32_t> glyph_codes;
+          std::vector<fastuidraw::vec2> glyph_positions;
+
+          glyph_codes.reserve(numGlyphs);
+          glyph_positions.reserve(numGlyphs);
 
           for (int i = 0; i < numGlyphs; ++i) {
               Glyph glyph = glyphBuffer.glyphAt(from + i);
@@ -390,10 +408,14 @@ void FontCascade::drawGlyphs(GraphicsContext& context, const Font& font, const G
               if (!glyph)
                   continue;
 
-              fud_run.add_glyph(fastuidraw::GlyphSource(fud_font, glyph),
-                                fastuidraw::vec2(width, 0.0f));
+              glyph_codes.push_back(glyph);
+              glyph_positions.push_back(fastuidraw::vec2(width, 0.0f));
               width += advance;
           }
+
+          fud_run.add_glyphs(fud_font,
+                             fastuidraw::c_array<const uint32_t>(&glyph_codes[0], glyph_codes.size()),
+                             fastuidraw::c_array<const fastuidraw::vec2>(&glyph_positions[0], glyph_positions.size()));
           drawFastUIDrawGlyphRun(context, fud_run, point, /* baselineOffset = */0.0f);
     }
 }
