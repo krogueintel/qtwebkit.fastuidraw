@@ -219,6 +219,7 @@ public:
 
 #if PLATFORM(QT)
     QRawFont getQtRawFont() const { return m_platformData.rawFont(); }
+    const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &fastuidraw_font() const { return m_platformData.fastuidraw_font(); }
 #endif
 
 #if PLATFORM(WIN)

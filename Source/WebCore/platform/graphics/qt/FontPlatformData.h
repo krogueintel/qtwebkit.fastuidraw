@@ -115,6 +115,14 @@ public:
         return m_data->rawFont;
     }
 
+    const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &fastuidraw_font(void) const
+    {
+        static fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> null;
+        if (!m_data)
+            return null;
+        return m_data->m_fastuidraw_font;
+    }
+
     float size() const
     {
         Q_ASSERT(!isHashTableDeletedValue());
