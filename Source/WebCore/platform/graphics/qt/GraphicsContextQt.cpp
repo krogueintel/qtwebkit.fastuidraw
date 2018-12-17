@@ -2446,5 +2446,19 @@ bool GraphicsContext::isAcceleratedContext() const
         (platformContext()->qt().paintEngine()->type() == QPaintEngine::OpenGL2);
 }
 
+void GraphicsContext::strokeText(const fastuidraw::GlyphRun& glyphRun)
+{
+    FASTUIDRAWassert(m_data && m_data->is_fastuidraw());
+    unimplementedFastUIDraw();
+}
+
+void GraphicsContext::fillText(const fastuidraw::GlyphRun& glyphRun)
+{
+    FASTUIDRAWassert(m_data && m_data->is_fastuidraw());
+
+    fastuidraw::PainterData pd(m_data->m_fastuidraw_fill_brush.packed_value());
+    m_data->fastuidraw()->draw_glyphs(pd, glyphRun, fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph));
+}
+
 }
 // vim: ts=4 sw=4 et

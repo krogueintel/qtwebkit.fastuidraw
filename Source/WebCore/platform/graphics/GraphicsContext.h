@@ -489,6 +489,11 @@ public:
     bool mustUseShadowBlur() const;
 #endif
 
+#if PLATFORM(QT)
+    void strokeText(const fastuidraw::GlyphRun& glyphRun);
+    void fillText(const fastuidraw::GlyphRun& glyphRun);
+#endif
+
     void drawFocusRing(const Vector<FloatRect>&, float width, float offset, const Color&);
     void drawFocusRing(const Path&, float width, float offset, const Color&);
 #if PLATFORM(MAC)
