@@ -23,6 +23,7 @@
 #include "BitmapTexturePool.h"
 #include "GraphicsLayer.h"
 #include "NotImplemented.h"
+#include "FastUIDrawResources.h"
 
 #if USE(TEXTURE_MAPPER)
 namespace WebCore {
@@ -129,13 +130,16 @@ void TextureMapperImageBuffer::drawBorder(const Color& color, float borderWidth 
     context->concatCTM(matrix.toAffineTransform());
 #endif
 
-    QPainter& painter = context->platformContext()->qt();
-    painter.setBrush(Qt::NoBrush);
-    QPen newPen(color);
-    newPen.setWidthF(borderWidth);
-    painter.setPen(newPen);
-    painter.drawRect(rect);
-
+    if (context->platformContext()->is_qt()) {
+        QPainter& painter = context->platformContext()->qt();
+        painter.setBrush(Qt::NoBrush);
+        QPen newPen(color);
+        newPen.setWidthF(borderWidth);
+        painter.setPen(newPen);
+        painter.drawRect(rect);
+    } else {
+        unimplementedFastUIDraw();
+    }
     context->restore();
 #endif
 }

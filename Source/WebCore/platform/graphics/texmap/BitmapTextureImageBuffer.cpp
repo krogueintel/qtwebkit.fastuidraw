@@ -39,6 +39,9 @@ namespace WebCore {
 void BitmapTextureImageBuffer::updateContents(const void* data, const IntRect& targetRect, const IntPoint& sourceOffset, int bytesPerLine, UpdateContentsFlag)
 {
 #if PLATFORM(QT)
+    if (!m_image->context().platformContext()->is_qt())
+        return;
+  
     QImage image(reinterpret_cast<const uchar*>(data), targetRect.width(), targetRect.height(), bytesPerLine, NativeImageQt::defaultFormatForAlphaEnabledImages());
 
     QPainter* painter = &m_image->context().platformContext()->qt();

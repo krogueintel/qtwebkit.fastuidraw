@@ -28,6 +28,7 @@
 #include "Gradient.h"
 
 #include "GraphicsContext.h"
+#include "FastUIDrawResources.h"
 
 #include <QGradient>
 #include <QPainter>
@@ -112,7 +113,11 @@ QGradient* Gradient::platformGradient()
 
 void Gradient::fill(GraphicsContext* context, const FloatRect& rect)
 {
-    context->platformContext()->qt().fillRect(rect, *platformGradient());
+    if (context->platformContext()->is_qt()) {
+        context->platformContext()->qt().fillRect(rect, *platformGradient());
+    } else {
+        unimplementedFastUIDraw();
+    }
 }
 
 } //namespace

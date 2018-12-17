@@ -198,9 +198,14 @@ void TextureMapperGL::beginPainting(PaintFlags flags)
     data().previousDepthState = m_context3D->isEnabled(GraphicsContext3D::DEPTH_TEST);
 #if PLATFORM(QT)
     if (m_context) {
-        QPainter* painter = &m_context->platformContext()->qt();
-        painter->save();
-        painter->beginNativePainting();
+        if(m_context->platformContext()->is_qt()) {
+            QPainter* painter = &m_context->platformContext()->qt();
+            painter->save();
+            painter->beginNativePainting();
+        } else {
+          //this is ugly because the operations of drawing with GL
+          //should be added as operations to be executed...
+        }
     }
 #endif
     m_context3D->disable(GraphicsContext3D::DEPTH_TEST);
@@ -238,9 +243,11 @@ void TextureMapperGL::endPainting()
 #if PLATFORM(QT)
     if (!m_context)
         return;
-    QPainter* painter = &m_context->platformContext()->qt();
-    painter->endNativePainting();
-    painter->restore();
+    if(m_context->platformContext()->is_qt()) {
+        QPainter* painter = &m_context->platformContext()->qt();
+        painter->endNativePainting();
+        painter->restore();
+    }
 #endif
 }
 

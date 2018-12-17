@@ -23,6 +23,7 @@
 
 #include "GraphicsContext.h"
 #include "IntRect.h"
+#include "FastUIDrawResources.h"
 #include <QMimeDatabase>
 #include <wtf/text/WTFString.h>
 
@@ -79,7 +80,11 @@ void Icon::paint(GraphicsContext& context, const FloatRect& rect)
     if (m_icon.isNull() || context.paintingDisabled())
         return;
 
-    m_icon.paint(&context.platformContext()->qt(), enclosingIntRect(rect));
+    if (context.platformContext()->is_qt()) {
+        m_icon.paint(&context.platformContext()->qt(), enclosingIntRect(rect));
+    } else {
+        unimplementedFastUIDraw();
+    }
 }
 
 }
