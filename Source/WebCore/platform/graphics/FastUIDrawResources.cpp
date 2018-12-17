@@ -527,9 +527,13 @@ selectFont(int weight, int slant,
 
 void
 WebCore::FastUIDraw::
-unimplementedFastUIDrawFunc(const char *file, int line, const char *function)
+unimplementedFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p)
 {
-  std::cerr << "[" << file << ", " << line << ": " << function << "] unimplemented \n";
+  if (count < 1000)
+    {
+      std::cerr << "[" << file << ", " << line << ": " << function << p << "] unimplemented \n";
+    }
+  ++count;
 }
 
 //////////////////////////////////////////////

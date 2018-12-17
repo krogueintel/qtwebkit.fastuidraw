@@ -420,6 +420,42 @@ static inline void computeFromFastUIDrawMatrixT(const fastuidraw::float3x3 &matr
   *dst = Q;
 }
 
+static inline fastuidraw::vec2 vec2FromFloatPoint(const FloatPoint &sz)
+{
+  return fastuidraw::vec2(sz.x(), sz.y());
+}
+
+static inline fastuidraw::vec2 vec2FromFloatSize(const FloatSize &sz)
+{
+  return fastuidraw::vec2(sz.width(), sz.height());
+}
+
+static inline void rectFromFloatRect(const FloatRect &inRect,
+                                     fastuidraw::Rect *out_rect)
+{
+  out_rect->m_min_point.x() = inRect.x();
+  out_rect->m_min_point.y() = inRect.y();
+  out_rect->m_max_point.x() = inRect.maxX();
+  out_rect->m_max_point.y() = inRect.maxY();
+}
+
+static inline fastuidraw::Rect rectFromFloatRect(const FloatRect &inRect)
+{
+  fastuidraw::Rect R;
+  rectFromFloatRect(inRect, &R);
+  return R;
+}
+
+static inline void createFastUIDrawRoundedRect(const FloatRoundedRect &inRect,
+                                               fastuidraw::RoundedRect *out_rect)
+{
+  rectFromFloatRect(inRect.rect(), out_rect);
+  out_rect->m_corner_radii[fastuidraw::Rect::minx_miny_corner] = vec2FromFloatSize(inRect.radii().topLeft());
+  out_rect->m_corner_radii[fastuidraw::Rect::maxx_miny_corner] = vec2FromFloatSize(inRect.radii().topRight());
+  out_rect->m_corner_radii[fastuidraw::Rect::minx_maxy_corner] = vec2FromFloatSize(inRect.radii().bottomLeft());
+  out_rect->m_corner_radii[fastuidraw::Rect::maxx_maxy_corner] = vec2FromFloatSize(inRect.radii().bottomRight());
+}
+
 template<typename S, typename T = S>
 class MutablePackedValue
 {
@@ -796,21 +832,22 @@ void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point
         return;
     }
 
-    if (m_data->is_qt()) {
-        const Color& strokeColor = this->strokeColor();
-        float thickness = strokeThickness();
-        bool isVerticalLine = (point1.x() + thickness == point2.x());
-        float strokeWidth = isVerticalLine ? point2.y() - point1.y() : point2.x() - point1.x();
-        if (!thickness || !strokeWidth)
-            return;
+    const Color& strokeColor = this->strokeColor();
+    float thickness = strokeThickness();
+    bool isVerticalLine = (point1.x() + thickness == point2.x());
+    float strokeWidth = isVerticalLine ? point2.y() - point1.y() : point2.x() - point1.x();
+    if (!thickness || !strokeWidth)
+        return;
 
+    StrokeStyle strokeStyle = this->strokeStyle();
+    bool drawsDashedLine = strokeStyle == DottedStroke || strokeStyle == DashedStroke;
+
+    if (m_data->is_qt()) {
         QPainter* p = &platformContext()->qt();
         const bool savedAntiAlias = p->testRenderHint(QPainter::Antialiasing);
         p->setRenderHint(QPainter::Antialiasing, m_data->antiAliasingForRectsAndLines);
 
-        StrokeStyle strokeStyle = this->strokeStyle();
         float cornerWidth = 0;
-        bool drawsDashedLine = strokeStyle == DottedStroke || strokeStyle == DashedStroke;
 
         if (drawsDashedLine) {
             p->save();
@@ -881,7 +918,20 @@ void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point
 
         p->setRenderHint(QPainter::Antialiasing, savedAntiAlias);
     } else {
-        unimplementedFastUIDraw();
+        if (drawsDashedLine) {
+            unimplementedFastUIDrawMessage("-Dashed");
+        }
+        fastuidraw::vec2 pts[2];
+
+        pts[0] = vec2FromFloatPoint(point1);
+        pts[1] = vec2FromFloatPoint(point2);
+        m_data->fastuidraw()->stroke_line_strip(fastuidraw::PainterData(m_data->m_fastuidraw_stroke_brush.packed_value(),
+                                                                        m_data->m_fastuidraw_stroke_params.packed_value()),
+                                                fastuidraw::c_array<const fastuidraw::vec2>(pts, 2),
+                                                m_data->m_fastuidraw_stroke_style,
+                                                m_data->m_fastuidraw_aa);
+                                           
+        
     }
 }
 
@@ -1286,19 +1336,12 @@ void GraphicsContext::fillRect(const FloatRect& rect, const Color& color)
         p->fillRect(platformRect, QColor(color));
     } else {
         if (hasShadow()) {
-            fastuidraw::PainterBrush shadowBrush;
-            shadowBrush.pen(FastUIDrawColorValue(m_state.shadowColor, alpha()));
-            m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&shadowBrush),
-                                            fastuidraw::vec2(rect.x() + m_state.shadowOffset.width(),
-                                                             rect.y() + m_state.shadowOffset.height()),
-                                            fastuidraw::vec2(rect.width(), rect.height()),
-                                            m_data->m_fastuidraw_aa);
+            unimplementedFastUIDrawMessage("->Shadow");
         }
         fastuidraw::PainterBrush fillBrush;
         fillBrush.pen(FastUIDrawColorValue(color, alpha()));
         m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&fillBrush),
-                                        fastuidraw::vec2(rect.x(), rect.y()),
-                                        fastuidraw::vec2(rect.width(), rect.height()),
+                                        rectFromFloatRect(rect),
                                         m_data->m_fastuidraw_aa);
     }
 }
@@ -1325,7 +1368,15 @@ void GraphicsContext::platformFillRoundedRect(const FloatRoundedRect& rect, cons
         }
         p->fillPath(path.platformPath(), QColor(color));
     } else {
-        unimplementedFastUIDraw();
+        fastuidraw::RoundedRect fud_rect;
+
+        createFastUIDrawRoundedRect(rect, &fud_rect);
+        if (hasShadow()) {
+            unimplementedFastUIDrawMessage("->Shadow");
+        }
+        m_data->fastuidraw()->fill_rounded_rect(fastuidraw::PainterData(m_data->m_fastuidraw_fill_brush.packed_value()),
+                                                fud_rect,
+                                                m_data->m_fastuidraw_aa);
     }
 }
 
@@ -1360,7 +1411,13 @@ void GraphicsContext::fillRectWithRoundedHole(const FloatRect& rect, const Float
 
         p->fillPath(platformPath, QColor(color));
     } else {
-        unimplementedFastUIDraw();
+        if (hasShadow()) {
+            unimplementedFastUIDrawMessage("-Shadow");
+        }
+        save();
+        platformClipOutRoundedRect(roundedHoleRect);
+        fillRect(rect, color);
+        restore();
     }
 }
 
@@ -1372,8 +1429,7 @@ void GraphicsContext::clip(const FloatRect& rect)
     if (m_data->is_qt()) {
         m_data->p()->setClipRect(rect, Qt::IntersectClip);
     } else {
-        m_data->fastuidraw()->clip_in_rect(fastuidraw::vec2(rect.x(), rect.y()),
-                                           fastuidraw::vec2(rect.width(), rect.height()));
+        m_data->fastuidraw()->clip_in_rect(rectFromFloatRect(rect));
     }
 }
 
@@ -1397,6 +1453,30 @@ IntRect GraphicsContext::clipBounds() const
         return enclosingIntRect(QRectF(min_bb.x(), min_bb.y(),
                                        size_bb.x(), size_bb.y()));
     }
+}
+
+bool GraphicsContext::platformClipRoundedRect(const FloatRoundedRect &rect)
+{
+    if (m_data->is_qt())
+        return false;
+
+    fastuidraw::RoundedRect fud_rect;
+    createFastUIDrawRoundedRect(rect, &fud_rect);
+    m_data->fastuidraw()->clip_in_rounded_rect(fud_rect);
+    
+    return true;
+}
+
+bool GraphicsContext::platformClipOutRoundedRect(const FloatRoundedRect &rect)
+{
+    if (m_data->is_qt())
+        return false;
+
+    fastuidraw::RoundedRect fud_rect;
+    createFastUIDrawRoundedRect(rect, &fud_rect);
+    m_data->fastuidraw()->clip_out_rounded_rect(fud_rect);
+
+    return true;
 }
 
 void GraphicsContext::clipPath(const Path& path, WindRule clipRule)
@@ -1893,8 +1973,7 @@ void GraphicsContext::clearRect(const FloatRect& rect)
         m_data->fastuidraw()->composite_shader(fastuidraw::Painter::composite_porter_duff_src);
         m_data->fastuidraw()->blend_shader(fastuidraw::Painter::blend_w3c_normal);
         m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->m_packed_black_brush),
-                                        fastuidraw::vec2(rect.x(), rect.y()),
-                                        fastuidraw::vec2(rect.width(), rect.height()),
+                                        rectFromFloatRect(rect),
                                         fastuidraw::Painter::shader_anti_alias_none);
         m_data->fastuidraw()->restore();
     }
@@ -2147,8 +2226,7 @@ void GraphicsContext::clipOut(const FloatRect& rect)
             p->setClipPath(newClip);
         }
     } else {
-        m_data->fastuidraw()->clip_out_rect(fastuidraw::vec2(rect.x(), rect.y()),
-                                            fastuidraw::vec2(rect.width(), rect.height()));
+        m_data->fastuidraw()->clip_out_rect(rectFromFloatRect(rect));
     }
 }
 

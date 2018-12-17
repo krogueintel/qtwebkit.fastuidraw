@@ -831,9 +831,11 @@ void GraphicsContext::clipRoundedRect(const FloatRoundedRect& rect)
     if (paintingDisabled())
         return;
 
-    Path path;
-    path.addRoundedRect(rect);
-    clipPath(path);
+    if (!platformClipRoundedRect(rect)) {
+        Path path;
+        path.addRoundedRect(rect);
+        clipPath(path);
+    }
 }
 
 void GraphicsContext::clipOutRoundedRect(const FloatRoundedRect& rect)
@@ -846,9 +848,11 @@ void GraphicsContext::clipOutRoundedRect(const FloatRoundedRect& rect)
         return;
     }
 
-    Path path;
-    path.addRoundedRect(rect);
-    clipOut(path);
+    if (!platformClipOutRoundedRect(rect)) {
+        Path path;
+        path.addRoundedRect(rect);
+        clipOut(path);
+    }
 }
 
 #if !USE(CG) && !PLATFORM(QT) && !USE(CAIRO)

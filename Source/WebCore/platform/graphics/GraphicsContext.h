@@ -664,6 +664,8 @@ private:
     void platformStrokeEllipse(const FloatRect&);
 
     void platformFillRoundedRect(const FloatRoundedRect&, const Color&);
+    bool platformClipRoundedRect(const FloatRoundedRect&);
+    bool platformClipOutRoundedRect(const FloatRoundedRect&);
 
     FloatRect computeLineBoundsAndAntialiasingModeForText(const FloatPoint&, float width, bool printing,  Color&);
 
