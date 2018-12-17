@@ -43,6 +43,7 @@
 #include <qalgorithms.h>
 
 #include <limits.h>
+#include <fastuidraw/painter/glyph_run.hpp>
 
 namespace WebCore {
 
@@ -174,6 +175,24 @@ static void drawQtGlyphRun(GraphicsContext& context, const QGlyphRun& qtGlyphRun
         painter->drawGlyphRun(point, qtGlyphRun);
         painter->setPen(previousPen);
     }
+}
+
+static void drawFastUIDrawGlyphRun(GraphicsContext& context, const fastuidraw::GlyphRun& glyphRun, const FloatPoint& point, float baseLineOffset)
+{
+    if (context.hasShadow()) {
+        unimplementedFastUIDraw();
+    }
+
+    context.save();
+    context.translate(point.x(), point.y());
+    if (context.textDrawingMode() & TextModeStroke) {
+        context.strokeText(glyphRun);
+    }
+
+    if (context.textDrawingMode() & TextModeFill) {
+        context.fillText(glyphRun);
+    }
+    context.restore();
 }
 
 void FontCascade::drawComplexText(GraphicsContext& ctx, const TextRun& run, const FloatPoint& point, int from, int to) const
@@ -334,7 +353,24 @@ void FontCascade::drawGlyphs(GraphicsContext& context, const Font& font, const G
 
           drawQtGlyphRun(context, qtGlyphs, point, /* baselineOffset = */0);
     } else {
-        unimplementedFastUIDraw();
+          const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &fud_font(font.fastuidraw_font());
+          float pixel_size(font.getQtRawFont().pixelSize());
+          enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
+          enum fastuidraw::Painter::glyph_layout_type layout(fastuidraw::Painter::glyph_layout_horizontal);
+          fastuidraw::GlyphRun fud_run(pixel_size, orientation, FastUIDraw::glyphCache(), layout);
+          float width(0.0f);
+
+          for (int i = 0; i < numGlyphs; ++i) {
+              Glyph glyph = glyphBuffer.glyphAt(from + i);
+              float advance = glyphBuffer.advanceAt(from + i).width();
+              if (!glyph)
+                  continue;
+
+              fud_run.add_glyph(fastuidraw::GlyphSource(fud_font, glyph),
+                                fastuidraw::vec2(width, 0.0f));
+              width += advance;
+          }
+          drawFastUIDrawGlyphRun(context, fud_run, point, /* baselineOffset = */0.0f);
     }
 }
 
