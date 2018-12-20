@@ -880,6 +880,7 @@ void GraphicsContext::setTextDrawingMode(TextDrawingModeFlags mode)
     setPlatformTextDrawingMode(mode);
 }
 
+#if 0
 void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
 {
     if (paintingDisabled())
@@ -892,6 +893,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
 
     gradient.fill(this, rect);
 }
+#endif
 
 void GraphicsContext::fillRect(const FloatRect& rect, const Color& color, CompositeOperator op, BlendMode blendMode)
 {
