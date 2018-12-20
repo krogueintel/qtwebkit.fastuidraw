@@ -202,9 +202,9 @@ initialize_resources(void *get_proc_data,
   fastuidraw::reference_counted_ptr<fastuidraw::gl::ColorStopAtlasGL> gl_colorstop_atlas;
 
   fastuidraw::gl_binding::get_proc_function(get_proc_data, get_proc, true);
-  gl_image_atlas = FASTUIDRAWnew fastuidraw::gl::ImageAtlasGL(fastuidraw::gl::ImageAtlasGL::params());
-  gl_glyph_atlas = FASTUIDRAWnew fastuidraw::gl::GlyphAtlasGL(fastuidraw::gl::GlyphAtlasGL::params());
-  gl_colorstop_atlas = FASTUIDRAWnew fastuidraw::gl::ColorStopAtlasGL(fastuidraw::gl::ColorStopAtlasGL::params());
+  gl_image_atlas = FASTUIDRAWnew fastuidraw::gl::ImageAtlasGL(fastuidraw::gl::ImageAtlasGL::params().delayed(true));
+  gl_glyph_atlas = FASTUIDRAWnew fastuidraw::gl::GlyphAtlasGL(fastuidraw::gl::GlyphAtlasGL::params().delayed(true));
+  gl_colorstop_atlas = FASTUIDRAWnew fastuidraw::gl::ColorStopAtlasGL(fastuidraw::gl::ColorStopAtlasGL::params().delayed(true));
 
   fastuidraw::gl::PainterBackendGL::ConfigurationGL painter_params;
   painter_params
@@ -529,7 +529,7 @@ void
 WebCore::FastUIDraw::
 unimplementedFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p)
 {
-  if (count < 1000)
+  if (count < 1)
     {
       std::cerr << "[" << file << ", " << line << ": " << function << p << "] unimplemented \n";
     }
