@@ -37,7 +37,7 @@
  */
 
 #define EnableGraphicsContextTransparencyLayer true
-#define EnableFastUIDrawFillAntiAliasing true
+#define EnableFastUIDrawFillAntiAliasing false
 #define EnableFastUIDrawStrokeAntiAliasing true
 
 #include "config.h"
@@ -727,7 +727,7 @@ public:
 
   //////////////////////////////////////////////
   // Stuff for FastUIDraw
-    fastuidraw::Path m_fastuidraw_square_path;
+    fastuidraw::Path m_fastuidraw_square_path, m_fastuidraw_circle_path;
     fastuidraw::PainterPackedValue<fastuidraw::PainterBrush> m_packed_black_brush;
     std::vector<FastUIDrawStateElement> m_fastuidraw_state_stack;
     FastUIDrawStateElement &fastuidraw_state(void) { return m_fastuidraw_state_stack.back(); }
@@ -805,7 +805,7 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
         if (platform->qt().paintEngine()
             && platform->qt().paintEngine()->type() != QPaintEngine::OpenGL2)
           {
-              std::cout << "NoGL@" << &platform->qt() << "\n";
+            //std::cout << "NoGL@" << &platform->qt() << "\n";
           }
     } else {
         fastuidraw::PainterPackedValuePool &pool(fastuidraw()->packed_value_pool());
@@ -818,6 +818,12 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
                                  << fastuidraw::vec2(1.0f, 1.0f)
                                  << fastuidraw::vec2(1.0f, 0.0f)
                                  << fastuidraw::Path::contour_close();
+
+        m_fastuidraw_circle_path << fastuidraw::vec2(1.0f, 0.0f)
+                                 << fastuidraw::Path::arc(M_PI * 0.5f, fastuidraw::vec2( 0.0f, +1.0f))
+                                 << fastuidraw::Path::arc(M_PI * 0.5f, fastuidraw::vec2(-1.0f,  0.0f))
+                                 << fastuidraw::Path::arc(M_PI * 0.5f, fastuidraw::vec2( 0.0f, -1.0f))
+                                 << fastuidraw::Path::contour_close_arc(M_PI * 0.5f);
     }
 }
 
@@ -953,9 +959,10 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
         p->setRenderHint(QPainter::Antialiasing, antiAlias);
     } else {
         fastuidraw::Rect fRect(rectFromFloatRect(rect));
+
+        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.m_color.packed_value()),
+                                        fRect, m_data->fastuidraw_state().m_fill_aa);
       
-        /* stroke the rect with the rect clipped-out */
-        /**/
         fastuidraw::Path P;
         fastuidraw::PainterStrokeParams stroke_params;
 
@@ -969,19 +976,11 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
           .width(borderThickness)
           .stroking_units(fastuidraw::PainterStrokeParams::path_stroking_units);
 
-        //m_data->fastuidraw()->save();
-        // m_data->fastuidraw()->clip_out_rect(fRect);
         m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brushes.m_color.packed_value(),
                                                                   &stroke_params),
                                           P,
                                           m_data->fastuidraw_state().m_stroke_style,
                                           m_data->fastuidraw_state().m_stroke_aa);
-        //m_data->fastuidraw()->restore();
-        /**/
-
-        /* now fill the rect */
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.m_color.packed_value()),
-                                        fRect, m_data->fastuidraw_state().m_fill_aa);
     }
 }
 
@@ -1112,7 +1111,34 @@ void GraphicsContext::drawEllipse(const FloatRect& rect)
     if (m_data->is_qt()) {
         m_data->p()->drawEllipse(rect);
     } else {
-        unimplementedFastUIDraw();
+        /* This can be realized as drawing a circle, with the
+         * main caveat that the stroking won't be quite right.
+         */
+        m_data->fastuidraw()->save();
+        m_data->fastuidraw()->translate(vec2FromFloatPoint(rect.location()));
+        m_data->fastuidraw()->shear(rect.width(), rect.height());
+
+        /* we are going to cheat on the stroking params;
+         * we will just take the geometric average of the
+         * inverse of the shearing factors.
+         */
+        fastuidraw::PainterStrokeParams stroke_params;
+        float w;
+
+        w = m_data->fastuidraw_state().m_stroke_params.constant_value().width();
+        w /= fastuidraw::t_sqrt(fastuidraw::t_abs(rect.width() * rect.height()));
+        stroke_params.width(w);
+        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brushes.brush(state()).packed_value(),
+                                                                  &stroke_params),
+                                          m_data->m_fastuidraw_circle_path,
+                                          m_data->fastuidraw_state().m_stroke_style,
+                                          m_data->fastuidraw_state().m_stroke_aa);
+        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.brush(state()).packed_value()),
+                                        m_data->m_fastuidraw_circle_path,
+                                        fastuidraw::Painter::nonzero_fill_rule,
+                                        m_data->fastuidraw_state().m_fill_aa);
+                
+        m_data->fastuidraw()->restore();
     }
 }
 
@@ -1256,8 +1282,6 @@ void GraphicsContext::fillPath(const Path& path)
 {
     if (paintingDisabled())
         return;
-
-    std::cout << "fillPath(color = " << fillColor() << "\n";
 
     if (m_data->is_qt()) {
         QPainter* p = m_data->p();
@@ -2186,7 +2210,7 @@ void GraphicsContext::clearRect(const FloatRect& rect)
         m_data->fastuidraw()->blend_shader(fastuidraw::Painter::blend_w3c_normal);
         m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->m_packed_black_brush),
                                         rectFromFloatRect(rect),
-                                        fastuidraw::Painter::shader_anti_alias_none);
+                                        m_data->fastuidraw_state().m_fill_aa);
         m_data->fastuidraw()->restore();
     }
 }
