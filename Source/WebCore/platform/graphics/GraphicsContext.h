@@ -640,8 +640,10 @@ private:
     void setPlatformStrokeColor(const Color&);
     void setPlatformStrokeStyle(StrokeStyle);
     void setPlatformStrokeThickness(float);
+    void setPlatformStrokePatternGradient(const RefPtr<Pattern>&, const RefPtr<Gradient>&);
 
     void setPlatformFillColor(const Color&);
+    void setPlatformFillPatternGradient(const RefPtr<Pattern>&, const RefPtr<Gradient>&);
 
     void setPlatformShouldAntialias(bool);
     void setPlatformShouldSmoothFonts(bool);

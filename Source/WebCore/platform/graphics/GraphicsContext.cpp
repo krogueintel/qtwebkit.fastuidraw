@@ -599,6 +599,7 @@ void GraphicsContext::setStrokePattern(Ref<Pattern>&& pattern)
     m_state.strokePattern = WTFMove(pattern);
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::StrokePatternChange);
+    setPlatformStrokePatternGradient(m_state.strokePattern, m_state.strokeGradient);
 }
 
 void GraphicsContext::setFillPattern(Ref<Pattern>&& pattern)
@@ -607,6 +608,7 @@ void GraphicsContext::setFillPattern(Ref<Pattern>&& pattern)
     m_state.fillPattern = WTFMove(pattern);
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::FillPatternChange);
+    setPlatformFillPatternGradient(m_state.fillPattern, m_state.fillGradient);
 }
 
 void GraphicsContext::setStrokeGradient(Ref<Gradient>&& gradient)
@@ -615,6 +617,7 @@ void GraphicsContext::setStrokeGradient(Ref<Gradient>&& gradient)
     m_state.strokePattern = nullptr;
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::StrokeGradientChange);
+    setPlatformStrokePatternGradient(m_state.strokePattern, m_state.strokeGradient);
 }
 
 void GraphicsContext::setFillRule(WindRule fillRule)
@@ -630,6 +633,7 @@ void GraphicsContext::setFillGradient(Ref<Gradient>&& gradient)
     m_state.fillPattern = nullptr;
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::FillGradientChange); // FIXME: also fill pattern?
+    setPlatformFillPatternGradient(m_state.fillPattern, m_state.fillGradient);
 }
 
 void GraphicsContext::beginTransparencyLayer(float opacity)
