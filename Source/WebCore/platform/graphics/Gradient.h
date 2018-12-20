@@ -35,6 +35,8 @@
 #include <wtf/RefCounted.h>
 #include <wtf/Vector.h>
 
+#include <fastuidraw/painter/painter_brush.hpp>
+
 #if USE(CG)
 
 typedef struct CGContext* CGContextRef;
@@ -134,6 +136,7 @@ namespace WebCore {
 #else
         PlatformGradient platformGradient();
 #endif
+        const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>& fastuidrawGradient(void) const;
 
         struct ColorStop {
             float stop;
@@ -193,6 +196,7 @@ namespace WebCore {
         mutable unsigned m_cachedHash;
 
         PlatformGradient m_gradient;
+        mutable fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> m_fastuidraw_cs;
 
 #if USE(CAIRO)
         float m_platformGradientAlpha;

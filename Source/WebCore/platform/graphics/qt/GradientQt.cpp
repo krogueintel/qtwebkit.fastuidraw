@@ -33,11 +33,17 @@
 #include <QGradient>
 #include <QPainter>
 
+#include <fastuidraw/painter/painter_brush.hpp>
+#include <fastuidraw/util/util.hpp>
+
+#include <iostream>
+
 namespace WebCore {
 
 void Gradient::platformDestroy()
 {
     delete m_gradient;
+    m_fastuidraw_cs.clear();
     m_gradient = 0;
 }
 
@@ -111,13 +117,62 @@ QGradient* Gradient::platformGradient()
     return m_gradient;
 }
 
+const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>& Gradient::fastuidrawGradient(void) const
+{
+    if (!m_fastuidraw_cs) {
+        fastuidraw::ColorStopSequence sq;
+        unsigned int width(32);
+        float last_time(-1.0f);
+
+        for(const auto &colorStop: m_stops) {
+            fastuidraw::u8vec4 color;
+            float t;
+
+            color.x() = static_cast<uint8_t>(255.0f * colorStop.red);
+            color.y() = static_cast<uint8_t>(255.0f * colorStop.green);
+            color.z() = static_cast<uint8_t>(255.0f * colorStop.blue);
+            color.w() = static_cast<uint8_t>(255.0f * colorStop.alpha);
+            t = colorStop.stop;
+
+            if (last_time >= colorStop.stop) {
+              t = last_time + 1.0f / 64.0f;
+              width = fastuidraw::t_max(width, 64u);
+            } else {
+                float delta(colorStop.stop - last_time);
+                float recip(1.0f / delta);
+                /* we need atleast one texel between the two times. */
+                width = fastuidraw::t_max(width, static_cast<unsigned int>(recip));
+            }
+
+            sq.add(fastuidraw::ColorStop(color, t));
+            last_time = t;
+        }
+        if (m_stops.isEmpty()) {
+            sq.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0), 0.0f));
+            sq.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0), 1.0f));
+        }
+
+        std::cout << "Create ColorStopSequenceOnAtlas(width = "
+                  << width << ")\n";
+        for (const auto S : sq.values()) {
+            std::cout << "\t" << "@ " << S.m_place << ": ("
+                      << int(S.m_color.x()) << ", "
+                      << int(S.m_color.y()) << ", "
+                      << int(S.m_color.z()) << ", "
+                      << int(S.m_color.w()) << ")\n";
+        }
+        
+        m_fastuidraw_cs = FASTUIDRAWnew fastuidraw::ColorStopSequenceOnAtlas(sq,
+                                                                             FastUIDraw::colorAtlas(),
+                                                                             width);
+    }
+
+    return m_fastuidraw_cs;
+}
+
 void Gradient::fill(GraphicsContext* context, const FloatRect& rect)
 {
-    if (context->platformContext()->is_qt()) {
-        context->platformContext()->qt().fillRect(rect, *platformGradient());
-    } else {
-        unimplementedFastUIDraw();
-    }
+    context->fillRect(rect, *this);
 }
 
 } //namespace
