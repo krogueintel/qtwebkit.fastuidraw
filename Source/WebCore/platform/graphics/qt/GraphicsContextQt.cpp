@@ -560,21 +560,7 @@ private:
 void setGradientOfFastUIDrawBrush(Gradient &gr, fastuidraw::PainterBrush &brush)
 {
   const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> &cs(gr.fastuidrawGradient());
-  std::cout << "Create gradient: " << gr.p0() << ":" << gr.p1();
-  
-  if(gr.isRadial()) {
-    std::cout << " - " << gr.startRadius() << " - " << gr.endRadius();
-      brush.radial_gradient(cs,
-                            vec2FromFloatPoint(gr.p0()), gr.startRadius(),
-                            vec2FromFloatPoint(gr.p1()), gr.endRadius(),
-                            gr.spreadMethod() != SpreadMethodPad);
-  } else {
-      brush.linear_gradient(cs,
-                            vec2FromFloatPoint(gr.p0()),
-                            vec2FromFloatPoint(gr.p1()),
-                            gr.spreadMethod() != SpreadMethodPad);
-  }
-
+  fastuidraw::vec2 q0(vec2FromFloatPoint(gr.p0())), q1(vec2FromFloatPoint(gr.p1()));
   fastuidraw::float3x3 A, M;
   fastuidraw::float2x2 N;
   fastuidraw::vec2 T;
@@ -585,15 +571,21 @@ void setGradientOfFastUIDrawBrush(Gradient &gr, fastuidraw::PainterBrush &brush)
   N(0, 1) = M(0, 1);
   N(1, 0) = M(1, 0);
   N(1, 1) = M(1, 1);
-  T.x() = N(0, 2);
-  T.y() = N(1, 2);
-
-  std::cout << ", T = " << T
-            << ", N = " << N.raw_data()
-            << "\n";
+  T.x() = M(0, 2);
+  T.y() = M(1, 2);
   
-  brush.transformation_translate(T);
-  brush.transformation_matrix(N);
+  if(gr.isRadial()) {
+      brush.radial_gradient(cs,
+                            q0, gr.startRadius(),
+                            q1, gr.endRadius(),
+                            gr.spreadMethod() != SpreadMethodPad);
+  } else {
+      brush.linear_gradient(cs, q0, q1, gr.spreadMethod() != SpreadMethodPad);
+  }
+
+  brush
+    .transformation_matrix(N)
+    .transformation_translate(T);
 }
 
 void setPatternGradientOfFastUIDrawBrush(const RefPtr<Pattern> &pattern, const RefPtr<Gradient> &gr,

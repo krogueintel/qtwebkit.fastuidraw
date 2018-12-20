@@ -121,7 +121,7 @@ const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtl
 {
     if (!m_fastuidraw_cs) {
         fastuidraw::ColorStopSequence sq;
-        unsigned int width(32);
+        unsigned int width(256);
         float last_time(-1.0f);
 
         for(const auto &colorStop: m_stops) {
@@ -135,8 +135,8 @@ const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtl
             t = colorStop.stop;
 
             if (last_time >= colorStop.stop) {
-              t = last_time + 1.0f / 64.0f;
-              width = fastuidraw::t_max(width, 64u);
+              t = last_time + 1.0f / 256.0f;
+              width = fastuidraw::t_max(width, 256u);
             } else {
                 float delta(colorStop.stop - last_time);
                 float recip(1.0f / delta);
@@ -150,16 +150,6 @@ const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtl
         if (m_stops.isEmpty()) {
             sq.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0), 0.0f));
             sq.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0), 1.0f));
-        }
-
-        std::cout << "Create ColorStopSequenceOnAtlas(width = "
-                  << width << ")\n";
-        for (const auto S : sq.values()) {
-            std::cout << "\t" << "@ " << S.m_place << ": ("
-                      << int(S.m_color.x()) << ", "
-                      << int(S.m_color.y()) << ", "
-                      << int(S.m_color.z()) << ", "
-                      << int(S.m_color.w()) << ")\n";
         }
         
         m_fastuidraw_cs = FASTUIDRAWnew fastuidraw::ColorStopSequenceOnAtlas(sq,
