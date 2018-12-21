@@ -634,8 +634,11 @@ public:
   MutablePackedValue<fastuidraw::PainterBrush>&
   brush(const GraphicsContextState &state)
   {
-      if (state.fillPattern || state.fillGradient) {
+      if (state.fillGradient) {
           return m_gradient_pattern;
+      } else if (state.fillPattern) {
+          unimplementedFastUIDrawMessage("-PatternBrush");
+          return m_color;
       } else {
           return m_color;
       }
@@ -703,6 +706,7 @@ public:
     m_image = fastuidraw::gl::ImageAtlasGL::TextureImage::create(FastUIDraw::imageAtlas(), sz.x(), sz.y(), GL_LINEAR);
     m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
     m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(sz, m_image->texture());
+    m_surface->clear_color(fastuidraw::vec4(0.0f, 0.0f, 0.0f, 0.0f));
     m_surface->viewport(vwp);
     m_opacity = opacity;
 
@@ -1172,8 +1176,6 @@ void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point
                                                 fastuidraw::c_array<const fastuidraw::vec2>(pts, 2),
                                                 m_data->fastuidraw_state().m_stroke_style,
                                                 m_data->fastuidraw_state().m_stroke_aa);
-                                           
-        
     }
 }
 
@@ -2180,7 +2182,7 @@ void GraphicsContext::pushTransparencyLayerInternal(const QRect &rect, qreal opa
 
 void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
 {
-    if (paintingDisabled() && EnableGraphicsContextTransparencyLayer)
+    if (paintingDisabled() || !EnableGraphicsContextTransparencyLayer)
         return;
 
     if (m_data->is_qt()) {
@@ -2208,6 +2210,11 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
 
         // ctor calls begin for us.
         m_data->m_fastuidraw_layers.push_back(FastUIDrawTransparencyLayer(m_data->m_root_surface, p, opacity));
+        m_data->m_fastuidraw_state_stack.push_back(m_data->fastuidraw_state());
+
+        std::cout << m_data->printPrefix() << "Begin Transparent layer at "
+                  << m_data->m_fastuidraw_layers.back().m_blit_rect
+                  << " with opacity = " << opacity << "\n";
     }
 }
 
@@ -2238,7 +2245,7 @@ void GraphicsContext::popTransparencyLayerInternal()
 
 void GraphicsContext::endPlatformTransparencyLayer()
 {
-    if (paintingDisabled() && EnableGraphicsContextTransparencyLayer)
+    if (paintingDisabled() || !EnableGraphicsContextTransparencyLayer)
         return;
 
     if (m_data->is_qt()) {
@@ -2265,6 +2272,11 @@ void GraphicsContext::endPlatformTransparencyLayer()
         FastUIDrawTransparencyLayer layer(m_data->m_fastuidraw_layers.back());
         const fastuidraw::PainterBackend::Surface::Viewport vwp(m_data->m_root_surface->viewport());
 
+        std::cout << m_data->printPrefix() << "End transparency layer at "
+                  << m_data->m_fastuidraw_layers.back().m_blit_rect
+                  << "\n";
+
+        m_data->m_fastuidraw_state_stack.pop_back();
         m_data->m_fastuidraw_layers.pop_back();
         layer.m_painter->painter()->end();
 
@@ -2287,7 +2299,7 @@ void GraphicsContext::endPlatformTransparencyLayer()
 
 bool GraphicsContext::supportsTransparencyLayers()
 {
-    return true;
+    return EnableGraphicsContextTransparencyLayer;
 }
 
 void GraphicsContext::clearRect(const FloatRect& rect)
@@ -2303,7 +2315,7 @@ void GraphicsContext::clearRect(const FloatRect& rect)
         p->setCompositionMode(currentCompositionMode);
     } else {
         m_data->fastuidraw()->save();
-        m_data->fastuidraw()->composite_shader(fastuidraw::Painter::composite_porter_duff_src);
+        m_data->fastuidraw()->composite_shader(fastuidraw::Painter::composite_porter_duff_clear);
         m_data->fastuidraw()->blend_shader(fastuidraw::Painter::blend_w3c_normal);
         m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->m_packed_black_brush),
                                         rectFromFloatRect(rect),
