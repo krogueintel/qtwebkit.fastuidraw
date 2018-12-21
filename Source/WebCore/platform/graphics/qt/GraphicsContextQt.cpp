@@ -551,8 +551,8 @@ template<typename S, typename T = S>
 class MutablePackedValue
 {
 public:
-    MutablePackedValue(PlatformGraphicsContext *gc)
-      : m_pool(gc && gc->is_fastuidraw() ? &gc->fastuidraw()->packed_value_pool() : nullptr)
+    MutablePackedValue(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p)
+      : m_pool(p ? &p->packed_value_pool() : nullptr)
     {}
   
     const S&
@@ -626,7 +626,7 @@ void setPatternGradientOfFastUIDrawBrush(const RefPtr<Pattern> &pattern, const R
 class FastUIDrawBrushSet
 {
 public:
-  FastUIDrawBrushSet(PlatformGraphicsContext* p)
+  FastUIDrawBrushSet(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p)
     : m_color(p)
     , m_gradient_pattern(p)
   {}
@@ -657,7 +657,7 @@ public:
 class FastUIDrawStateElement
 {
 public:
-  FastUIDrawStateElement(PlatformGraphicsContext* p)
+  FastUIDrawStateElement(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p)
     : m_fill_aa(EnableFastUIDrawFillAntiAliasing ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
     , m_stroke_aa(EnableFastUIDrawStrokeAntiAliasing ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
     , m_stroke_brushes(p)
@@ -691,17 +691,18 @@ public:
     b = parent->clip_region_bounds(&fm, &fM);
     M = fastuidraw::ivec2(fM);
     m = fastuidraw::ivec2(fm);
+    
     sz = M - m;
     sz.x() = fastuidraw::t_max(1, sz.x());
     sz.y() = fastuidraw::t_max(1, sz.y());
 
-    m_blit_rect
-      .min_point(fastuidraw::vec2(m))
-      .size(fastuidraw::vec2(sz));
-
     /* make the viewport so that the parent transformation maps correctly */
     vwp = root_surface->viewport();
     vwp.m_origin -= m;
+
+    m_blit_rect
+      .min_point(fastuidraw::vec2(m))
+      .size(fastuidraw::vec2(sz));
 
     m_image = fastuidraw::gl::ImageAtlasGL::TextureImage::create(FastUIDraw::imageAtlas(), sz.x(), sz.y(), GL_LINEAR);
     m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
@@ -710,7 +711,17 @@ public:
     m_surface->viewport(vwp);
     m_opacity = opacity;
 
+    fastuidraw::float_orthogonal_projection_params pp(0, vwp.m_dimensions.x(), 0, vwp.m_dimensions.y());
+
+    /* The clip-region provided by FastUIDraw is in coordinates where (0, 0)
+     * is the -BOTTOM- left corner (instead of the top left). Thus we set the
+     * transformation with that convention when we initialize the clipping
+     * region and then we set the transformation as the parent fastuidraw::painter
+     * had it.
+     */
     m_painter->painter()->begin(m_surface, fastuidraw::Painter::y_increases_downwards, true);
+    m_painter->painter()->transformation(pp);
+    m_painter->painter()->clip_in_rect(m_blit_rect);
     m_painter->painter()->transformation(parent->transformation());
     m_painter->painter()->composite_shader(parent->composite_shader(), parent->composite_mode());
     m_painter->painter()->blend_shader(parent->blend_shader());
@@ -811,7 +822,7 @@ public:
     {
       int cnt;
 
-      cnt = (is_qt()) ? qtStateStackDepth : m_fastuidraw_state_stack.size() - 1;
+      cnt = (is_qt()) ? layers.size() : m_fastuidraw_layers.size();
       return std::string(2 * cnt, ' ');
     }
 
@@ -889,7 +900,7 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
         fastuidraw::PainterPackedValuePool &pool(platform->fastuidraw()->packed_value_pool());
 
         m_root_surface = platform->fastuidraw()->surface();
-        m_fastuidraw_state_stack.push_back(FastUIDrawStateElement(p));
+        m_fastuidraw_state_stack.push_back(FastUIDrawStateElement(platform->fastuidraw()));
         m_packed_black_brush = pool.create_packed_value(fastuidraw::PainterBrush()
                                                         .color(0.0f, 0.0f, 0.0f, 0.0f));
         m_fastuidraw_square_path << fastuidraw::vec2(0.0f, 0.0f)
@@ -2202,19 +2213,26 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
             h = int(qBound(qreal(0), deviceClip.height(), (qreal)h) + 2);
         }
 
+        std::cout << "Begin Transparent layer at (" << x << ", "
+                  << y << "), size = (" << w << ", " << h << ")\n";
+
         QPixmap emptyAlphaMask;
         m_data->layers.push(new TransparencyLayer(p, QRect(x, y, w, h), opacity, emptyAlphaMask));
         ++m_data->layerCount;
     } else {
         fastuidraw::reference_counted_ptr<fastuidraw::Painter> p(m_data->fastuidraw());
+        fastuidraw::vec2 m, M;
 
         // ctor calls begin for us.
         m_data->m_fastuidraw_layers.push_back(FastUIDrawTransparencyLayer(m_data->m_root_surface, p, opacity));
         m_data->m_fastuidraw_state_stack.push_back(m_data->fastuidraw_state());
 
+        m_data->fastuidraw()->clip_region_bounds(&m, &M);
+
         std::cout << m_data->printPrefix() << "Begin Transparent layer at "
                   << m_data->m_fastuidraw_layers.back().m_blit_rect
-                  << " with opacity = " << opacity << "\n";
+                  << " with opacity = " << opacity << "{"
+                  << m << ", " << M << "}\n";
     }
 }
 
@@ -2267,6 +2285,8 @@ void GraphicsContext::endPlatformTransparencyLayer()
         p->drawPixmap(layer->offset, layer->pixmap);
         p->restore();
 
+        std::cout << "End transparent layer\n";
+
         delete layer;
     } else {
         FastUIDrawTransparencyLayer layer(m_data->m_fastuidraw_layers.back());
@@ -2282,16 +2302,30 @@ void GraphicsContext::endPlatformTransparencyLayer()
 
         /* now add the necesary draw-image command; the image
          * is to be drawn only with the transformation of from
-         * pixel to normalized device coordinates.
+         * pixel to normalized device coordinates. Note that
+         * the projection we are providing is where y increases
+         * upwards; this is because we are doing a blit and
+         * the rectangle provided by FastUIDraw from
+         * painter::clip_region_bounds() is oriented with (0, 0)
+         * being the -bottom- left corner.
          */
         m_data->fastuidraw()->save();
-        fastuidraw::float_orthogonal_projection_params(0, vwp.m_dimensions.x(), vwp.m_dimensions.y(), 0);
+        fastuidraw::float_orthogonal_projection_params pp(0, vwp.m_dimensions.x(), 0, vwp.m_dimensions.y());
         fastuidraw::PainterBrush brush;
 
-        brush.image(layer.m_image).color(1.0f, 1.0f, 1.0f, layer.m_opacity);
+        /* Note that we translate() the fastuidraw::Painter so that the rect to
+         * be drawn is at the origin. We do this because we want the coordinates
+         * fed to the brush to be from (0, 0) to layer.m_blit_rect.size().
+         */
+        brush
+          .image(layer.m_image)
+          .color(1.0f, 1.0f, 1.0f, layer.m_opacity);
+        m_data->fastuidraw()->transformation(pp);
         m_data->fastuidraw()->composite_shader(fastuidraw::Painter::composite_porter_duff_src_over);
         m_data->fastuidraw()->blend_shader(fastuidraw::Painter::blend_w3c_normal);
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush), layer.m_blit_rect,
+        m_data->fastuidraw()->translate(layer.m_blit_rect.m_min_point);
+        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
+                                        fastuidraw::Rect().size(layer.m_blit_rect.size()),
                                         fastuidraw::Painter::shader_anti_alias_none);
         m_data->fastuidraw()->restore();
     }
