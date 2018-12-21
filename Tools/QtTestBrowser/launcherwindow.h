@@ -92,7 +92,7 @@ public:
     QUrl inspectorUrl;
     quint16 remoteInspectorPort { 0 };
     bool startMaximized { false };
-    bool useFastUIDraw { false };
+    bool useFastUIDraw { true };
 };
 
 class LauncherWindow final : public MainWindow {

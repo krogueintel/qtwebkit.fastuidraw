@@ -174,8 +174,10 @@ void LauncherApplication::handleUserOptions()
     }
 
     const bool defaultForAnimations = args.contains("-default-animations");
-    if (args.contains("-graphicsbased") || defaultForAnimations)
+    if (args.contains("-graphicsbased") || defaultForAnimations) {
         windowOptions.useGraphicsView = true;
+        windowOptions.useFastUIDraw = false;
+    }
 
     if (args.contains("-no-compositing")) {
         windowOptions.useCompositing = false;
@@ -184,6 +186,15 @@ void LauncherApplication::handleUserOptions()
     if (args.contains("-show-fps")) {
         requiresGraphicsView("-show-fps");
         windowOptions.showFrameRate = true;
+    }
+
+    if (args.contains("-fastuidraw")) {
+        windowOptions.useFastUIDraw = true;
+        windowOptions.useGraphicsView = false;
+    }
+
+    if (args.contains("-qt")) {
+        windowOptions.useFastUIDraw = false;
     }
 
     if (args.contains("-disk-cache")) {
