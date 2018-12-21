@@ -117,6 +117,7 @@ select_font(const QRawFont &desc)
                             family,
                             foundry);
 
+  /**
   std::cout << "Chose: ";
   if (return_value)
     {
@@ -140,6 +141,7 @@ select_font(const QRawFont &desc)
       std::cout << "null";
     }
   std::cout << "\n";
+  **/
   
   return return_value;
 }
