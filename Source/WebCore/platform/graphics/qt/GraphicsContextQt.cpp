@@ -37,7 +37,7 @@
  */
 
 #define EnableGraphicsContextTransparencyLayer true
-#define EnableFastUIDrawFillAntiAliasing false
+#define EnableFastUIDrawFillAntiAliasing true
 #define EnableFastUIDrawStrokeAntiAliasing true
 
 #include "config.h"
@@ -432,6 +432,21 @@ static inline enum fastuidraw::Painter::fill_rule_t toFastUIDrawFillRule(WindRul
     return fastuidraw::Painter::odd_even_fill_rule;
 }
 
+static inline enum fastuidraw::PainterBrush::gradient_spread_type_t toFastUIDrawGradientSpreadType(enum GradientSpreadMethod spread)
+{
+    switch(spread) {
+    case SpreadMethodPad:
+        return fastuidraw::PainterBrush::gradient_clamp;
+        break;
+    case SpreadMethodRepeat:
+        return fastuidraw::PainterBrush::gradient_repeat;
+        break;
+    case SpreadMethodReflect:
+        return fastuidraw::PainterBrush::gradient_mirror_repeat;
+        break;
+    }
+}
+
 static inline fastuidraw::vec4 FastUIDrawColorValue(Color color, float alpha)
 {
   fastuidraw::vec4 return_value(color.red(), color.green(), color.blue(), color.alpha());
@@ -578,9 +593,10 @@ void setGradientOfFastUIDrawBrush(Gradient &gr, fastuidraw::PainterBrush &brush)
       brush.radial_gradient(cs,
                             q0, gr.startRadius(),
                             q1, gr.endRadius(),
-                            gr.spreadMethod() != SpreadMethodPad);
+                            toFastUIDrawGradientSpreadType(gr.spreadMethod()));
   } else {
-      brush.linear_gradient(cs, q0, q1, gr.spreadMethod() != SpreadMethodPad);
+      brush.linear_gradient(cs, q0, q1,
+                            toFastUIDrawGradientSpreadType(gr.spreadMethod()));
   }
 
   brush
