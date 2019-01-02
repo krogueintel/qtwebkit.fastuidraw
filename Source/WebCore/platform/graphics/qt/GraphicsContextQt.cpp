@@ -688,16 +688,20 @@ public:
     fastuidraw::PainterBackend::Surface::Viewport vwp;
     bool b;
 
+    vwp = root_surface->viewport();    
     b = parent->clip_region_bounds(&fm, &fM);
-    M = fastuidraw::ivec2(fM);
-    m = fastuidraw::ivec2(fm);
+    /* fastuidraw::Painter delivers the coordinates
+     * in normalize device coordinates, transform
+     * it into pixel coordinates.
+     */
+    m = to_pixel_coordinates(fm, vwp.m_dimensions);
+    M = to_pixel_coordinates(fM, vwp.m_dimensions);
     
     sz = M - m;
     sz.x() = fastuidraw::t_max(1, sz.x());
     sz.y() = fastuidraw::t_max(1, sz.y());
 
     /* make the viewport so that the parent transformation maps correctly */
-    vwp = root_surface->viewport();
     vwp.m_origin -= m;
 
     m_blit_rect
@@ -713,7 +717,7 @@ public:
 
     fastuidraw::float_orthogonal_projection_params pp(0, vwp.m_dimensions.x(), 0, vwp.m_dimensions.y());
 
-    /* The clip-region provided by FastUIDraw is in coordinates where (0, 0)
+    /* Our conversion to pixel coordinates is in coordinates where (0, 0)
      * is the -BOTTOM- left corner (instead of the top left). Thus we set the
      * transformation with that convention when we initialize the clipping
      * region and then we set the transformation as the parent fastuidraw::painter
@@ -723,8 +727,17 @@ public:
     m_painter->painter()->transformation(pp);
     m_painter->painter()->clip_in_rect(m_blit_rect);
     m_painter->painter()->transformation(parent->transformation());
-    m_painter->painter()->composite_shader(parent->composite_shader(), parent->composite_mode());
-    m_painter->painter()->blend_shader(parent->blend_shader());
+  }
+
+  static
+  fastuidraw::ivec2
+  to_pixel_coordinates(fastuidraw::vec2 normalized_coord,
+                       fastuidraw::ivec2 viewport_sz)
+  {
+    normalized_coord += fastuidraw::vec2(1.0f, 1.0f);
+    normalized_coord *= 0.5f;
+    normalized_coord *= fastuidraw::vec2(viewport_sz);
+    return fastuidraw::ivec2(normalized_coord);
   }
 
   fastuidraw::reference_counted_ptr<fastuidraw::gl::ImageAtlasGL::TextureImage> m_image;
@@ -1052,7 +1065,8 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
 
         m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.m_color.packed_value()),
                                         fRect, m_data->fastuidraw_state().m_fill_aa);
-      
+
+
         fastuidraw::Path P;
         fastuidraw::PainterStrokeParams stroke_params;
 
@@ -1066,7 +1080,10 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
           .width(borderThickness)
           .stroking_units(fastuidraw::PainterStrokeParams::path_stroking_units);
 
-        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brushes.m_color.packed_value(),
+        /* it appears that drawRect wants the stroke in the same color as the fill
+         * rather than using the stroking color. Whatever.
+         */
+        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.m_color.packed_value(),
                                                                   &stroke_params),
                                           P,
                                           m_data->fastuidraw_state().m_stroke_style,
@@ -1206,8 +1223,16 @@ void GraphicsContext::drawEllipse(const FloatRect& rect)
         m_data->fastuidraw()->translate(vec2FromFloatPoint(rect.location()));
         m_data->fastuidraw()->shear(rect.width(), rect.height());
 
+        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.brush(state()).packed_value()),
+                                        m_data->m_fastuidraw_circle_path,
+                                        fastuidraw::Painter::nonzero_fill_rule,
+                                        m_data->fastuidraw_state().m_fill_aa);
+
+        m_data->fastuidraw()->clip_out_path(m_data->m_fastuidraw_circle_path,
+                                            fastuidraw::Painter::nonzero_fill_rule);
+
         /* we are going to cheat on the stroking params;
-         * we will just take the geometric average of the
+         * we will scale by the geometric average of the
          * inverse of the shearing factors.
          */
         fastuidraw::PainterStrokeParams stroke_params;
@@ -1221,10 +1246,6 @@ void GraphicsContext::drawEllipse(const FloatRect& rect)
                                           m_data->m_fastuidraw_circle_path,
                                           m_data->fastuidraw_state().m_stroke_style,
                                           m_data->fastuidraw_state().m_stroke_aa);
-        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.brush(state()).packed_value()),
-                                        m_data->m_fastuidraw_circle_path,
-                                        fastuidraw::Painter::nonzero_fill_rule,
-                                        m_data->fastuidraw_state().m_fill_aa);
                 
         m_data->fastuidraw()->restore();
     }
@@ -2213,26 +2234,23 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
             h = int(qBound(qreal(0), deviceClip.height(), (qreal)h) + 2);
         }
 
-        std::cout << "Begin Transparent layer at (" << x << ", "
-                  << y << "), size = (" << w << ", " << h << ")\n";
+        //std::cout << "Begin Transparent layer at (" << x << ", "
+        //        << y << "), size = (" << w << ", " << h << "), opacity = "
+        //       << opacity << "\n";
 
         QPixmap emptyAlphaMask;
         m_data->layers.push(new TransparencyLayer(p, QRect(x, y, w, h), opacity, emptyAlphaMask));
         ++m_data->layerCount;
     } else {
         fastuidraw::reference_counted_ptr<fastuidraw::Painter> p(m_data->fastuidraw());
-        fastuidraw::vec2 m, M;
 
         // ctor calls begin for us.
         m_data->m_fastuidraw_layers.push_back(FastUIDrawTransparencyLayer(m_data->m_root_surface, p, opacity));
         m_data->m_fastuidraw_state_stack.push_back(m_data->fastuidraw_state());
 
-        m_data->fastuidraw()->clip_region_bounds(&m, &M);
-
-        std::cout << m_data->printPrefix() << "Begin Transparent layer at "
-                  << m_data->m_fastuidraw_layers.back().m_blit_rect
-                  << " with opacity = " << opacity << "{"
-                  << m << ", " << M << "}\n";
+        //std::cout << m_data->printPrefix() << "Begin Transparent layer at "
+        //        << m_data->m_fastuidraw_layers.back().m_blit_rect
+        //        << " with opacity = " << opacity << "\n";
     }
 }
 
@@ -2285,16 +2303,16 @@ void GraphicsContext::endPlatformTransparencyLayer()
         p->drawPixmap(layer->offset, layer->pixmap);
         p->restore();
 
-        std::cout << "End transparent layer\n";
+        //std::cout << "End transparent layer\n";
 
         delete layer;
     } else {
         FastUIDrawTransparencyLayer layer(m_data->m_fastuidraw_layers.back());
         const fastuidraw::PainterBackend::Surface::Viewport vwp(m_data->m_root_surface->viewport());
 
-        std::cout << m_data->printPrefix() << "End transparency layer at "
-                  << m_data->m_fastuidraw_layers.back().m_blit_rect
-                  << "\n";
+        //std::cout << m_data->printPrefix() << "End transparency layer at "
+        //        << m_data->m_fastuidraw_layers.back().m_blit_rect
+        //        << "\n";
 
         m_data->m_fastuidraw_state_stack.pop_back();
         m_data->m_fastuidraw_layers.pop_back();
@@ -2380,8 +2398,8 @@ void GraphicsContext::strokeRect(const FloatRect& rect, float lineWidth)
         fastuidraw::Path path;
         fastuidraw::PainterStrokeParams stroke_params;
 
-        path << fastuidraw::vec2(rect.x(), rect.y())
-             << fastuidraw::vec2(rect.x(), rect.y() + rect.height())
+        path << fastuidraw::vec2(rect.x()               , rect.y())
+             << fastuidraw::vec2(rect.x()               , rect.y() + rect.height())
              << fastuidraw::vec2(rect.x() + rect.width(), rect.y() + rect.height())
              << fastuidraw::vec2(rect.x() + rect.width(), rect.y())
              << fastuidraw::Path::contour_close();
@@ -2389,11 +2407,11 @@ void GraphicsContext::strokeRect(const FloatRect& rect, float lineWidth)
         stroke_params
           .width(lineWidth);
 
-        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(&stroke_params,
-                                                                  m_data->fastuidraw_state().m_stroke_brushes.brush(state()).packed_value()),
-                                          path,
-                                          m_data->fastuidraw_state().m_stroke_style,
-                                          m_data->fastuidraw_state().m_stroke_aa);
+        //        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(&stroke_params,
+        //                                                        m_data->fastuidraw_state().m_stroke_brushes.brush(state()).packed_value()),
+        //                                path,
+        //                                m_data->fastuidraw_state().m_stroke_style,
+        //                                m_data->fastuidraw_state().m_stroke_aa);
     }
 }
 
