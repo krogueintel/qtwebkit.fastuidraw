@@ -32,6 +32,8 @@
 #include "Length.h"
 #include "TextStream.h"
 
+#include <iostream>
+
 namespace WebCore {
 
 GradientImage::GradientImage(PassRefPtr<Gradient> generator, const FloatSize& size)
@@ -59,6 +61,12 @@ void GradientImage::draw(GraphicsContext& destContext, const FloatRect& destRect
 void GradientImage::drawPattern(GraphicsContext& destContext, const FloatRect& srcRect, const AffineTransform& patternTransform,
     const FloatPoint& phase, const FloatSize& spacing, CompositeOperator compositeOp, const FloatRect& destRect, BlendMode blendMode)
 {
+    /* If the GraphicsContext can draw gradient patterns directly, let it. */
+    if (destContext.drawGradientPattern(*m_gradient, srcRect, patternTransform, phase, spacing,
+                                        compositeOp, destRect, blendMode)) {
+        return;
+    }
+  
     // Allow the generator to provide visually-equivalent tiling parameters for better performance.
     FloatSize adjustedSize = size();
     FloatRect adjustedSrcRect = srcRect;

@@ -593,7 +593,7 @@ void setGradientOfFastUIDrawBrush(Gradient &gr, fastuidraw::PainterBrush &brush)
   T.x() = M(0, 2);
   T.y() = M(1, 2);
   
-  if(gr.isRadial()) {
+  if (gr.isRadial()) {
       brush.radial_gradient(cs,
                             q0, gr.startRadius(),
                             q1, gr.endRadius(),
@@ -1251,21 +1251,86 @@ void GraphicsContext::drawEllipse(const FloatRect& rect)
     }
 }
 
+bool GraphicsContext::drawGradientPattern(const Gradient &gradient,
+                                          const FloatRect& srcRect, const AffineTransform& patternTransform,
+                                          const FloatPoint& phase, const FloatSize& spacing, CompositeOperator compositeOp,
+                                          const FloatRect& dstRect, BlendMode blendMode)
+{
+    if (m_data->is_qt()) {
+        return false;
+    }
+
+    /* There are so many arguments. First image that we draw the gradient into an infinite area.
+     * Then take from that infinite area the srcRect area. View that srcRect as an image to be
+     * draw repeated as according to patternTransform, phase and spacing. We perform this by
+     * setting the brush transformation to patternTransform and its repeat window to phase/spacing.
+     * Then we draw a rect at srcRect, but we modify the fastuidraw::Painter transformation so
+     * that srcRect maps to destRect.
+     */
+
+    m_data->fastuidraw()->save();
+
+    m_data->fastuidraw()->blend_shader(toFastUIDrawBlendMode(blendMode));
+    m_data->fastuidraw()->composite_shader(toFastUIDrawCompositeMode(compositeOp));
+
+    /* construct a PainterBrush from the arguments */
+    fastuidraw::PainterBrush brush;
+    fastuidraw::float2x2 M;
+    fastuidraw::vec2 T;
+
+    M.col_row(0, 0) = patternTransform.a();
+    M.col_row(0, 1) = patternTransform.b();
+    M.col_row(1, 0) = patternTransform.c();
+    M.col_row(1, 1) = patternTransform.d();
+    T.x() = patternTransform.e();
+    T.y() = patternTransform.f();
+
+    brush
+      .transformation(T, M)
+      .repeat_window(vec2FromFloatPoint(phase),
+                     vec2FromFloatSize(spacing));
+    
+    if (gradient.isRadial()) {
+        brush.radial_gradient(gradient.fastuidrawGradient(),
+                              vec2FromFloatPoint(gradient.p0()), gradient.startRadius(),
+                              vec2FromFloatPoint(gradient.p1()), gradient.endRadius(),
+                              toFastUIDrawGradientSpreadType(gradient.spreadMethod()));
+    } else {
+        brush.linear_gradient(gradient.fastuidrawGradient(),
+                              vec2FromFloatPoint(gradient.p0()),
+                              vec2FromFloatPoint(gradient.p1()),
+                              toFastUIDrawGradientSpreadType(gradient.spreadMethod()));
+    }
+
+    m_data->fastuidraw()->translate(fastuidraw::vec2(dstRect.x(), dstRect.y()));
+    m_data->fastuidraw()->shear(float(dstRect.width()) / float(srcRect.width()),
+                                float(dstRect.height()) / float(dstRect.height()));
+    m_data->fastuidraw()->translate(fastuidraw::vec2(-srcRect.x(), -srcRect.y()));
+
+    m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
+                                    rectFromFloatRect(srcRect),
+                                    m_data->fastuidraw_state().m_fill_aa);
+    
+    m_data->fastuidraw()->restore();
+
+    return true;
+}
+
 void GraphicsContext::drawPattern(Image& image, const FloatRect& tileRect, const AffineTransform& patternTransform,
     const FloatPoint& phase, const FloatSize& spacing, CompositeOperator op, const FloatRect &destRect, BlendMode blendMode)
 {
     if (paintingDisabled() || !patternTransform.isInvertible())
         return;
 
+    if (isRecording()) {
+        m_displayListRecorder->drawPattern(image, tileRect, patternTransform, phase, spacing, op, destRect, blendMode);
+        return;
+    }
+
     if (m_data->is_qt()) {
         QPixmap* framePixmap = image.nativeImageForCurrentFrame();
         if (!framePixmap) // If it's too early we won't have an image yet.
             return;
-
-        if (isRecording()) {
-            m_displayListRecorder->drawPattern(image, tileRect, patternTransform, phase, spacing, op, destRect, blendMode);
-            return;
-        }
 
 #if ENABLE(IMAGE_DECODER_DOWN_SAMPLING)
         FloatRect tileRectAdjusted = adjustSourceRectForDownSampling(tileRect, framePixmap->size());

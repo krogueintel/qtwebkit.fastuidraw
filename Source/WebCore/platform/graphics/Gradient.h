@@ -152,7 +152,7 @@ namespace WebCore {
         void setStopsSorted(bool s) { m_stopsSorted = s; }
         
         void setSpreadMethod(GradientSpreadMethod);
-        GradientSpreadMethod spreadMethod() { return m_spreadMethod; }
+        GradientSpreadMethod spreadMethod() const { return m_spreadMethod; }
         void setGradientSpaceTransform(const AffineTransform& gradientSpaceTransformation);
         // Qt and CG transform the gradient at draw time
         AffineTransform gradientSpaceTransform() { return m_gradientSpaceTransformation; }

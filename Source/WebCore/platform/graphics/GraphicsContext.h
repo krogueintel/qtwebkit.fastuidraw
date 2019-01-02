@@ -419,6 +419,11 @@ public:
     void drawImageBuffer(ImageBuffer&, const FloatRect& destination, const ImagePaintingOptions& = ImagePaintingOptions());
     void drawImageBuffer(ImageBuffer&, const FloatRect& destination, const FloatRect& source, const ImagePaintingOptions& = ImagePaintingOptions());
 
+    bool drawGradientPattern(const Gradient &gradient,
+                             const FloatRect& srcRect, const AffineTransform& patternTransform,
+                             const FloatPoint& phase, const FloatSize& spacing, CompositeOperator compositeOp,
+                             const FloatRect& destRect, BlendMode blendMode);
+
     void drawPattern(Image&, const FloatRect& srcRect, const AffineTransform&, const FloatPoint& phase, const FloatSize& spacing, CompositeOperator, const FloatRect& destRect, BlendMode = BlendModeNormal);
 
     WEBCORE_EXPORT void drawConsumingImageBuffer(std::unique_ptr<ImageBuffer>, const FloatPoint& destination, const ImagePaintingOptions& = ImagePaintingOptions());
