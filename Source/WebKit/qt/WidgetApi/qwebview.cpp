@@ -242,7 +242,7 @@ static QAccessibleInterface* accessibleInterfaceFactory(const QString& key, QObj
 QWebView::QWebView(QWidget *parent)
     : QOpenGLWidget(parent)
 {
-  QSurfaceFormat sf(QSurfaceFormat::defaultFormat());
+    QSurfaceFormat sf(QSurfaceFormat::defaultFormat());
 
     /* On Mesa/i965, GL versions higher than 3.0 are only
      * available as Core Profiles, so we use that.
@@ -254,7 +254,7 @@ QWebView::QWebView(QWidget *parent)
     create();
 
     d = new QWebViewPrivate(this);
-    d->m_drawWithFastUIDraw = false;
+    d->m_drawWithFastUIDraw = true;
 
 #if !defined(Q_WS_QWS)
     setAttribute(Qt::WA_InputMethodEnabled);
@@ -942,17 +942,21 @@ void QWebView::paintGL(void)
   QWebFrame *frame = d->page->mainFrame();
 
   if (!d->m_drawWithFastUIDraw || !d->m_painter) {
+    //std::cout << " ----------- Qt paint begin -------------\n";
       p.setRenderHints(d->renderHints);
       frame->render(&p);
+      //std::cout << " ----------- Qt paint end -------------\n";
       return;
   }
 
   p.beginNativePainting(); {
+    //std::cout << " ----------- FastUIDraw paint begin -------------\n";
       /* endNativePainting() fails to restore the enable/disable on
        * GL_CLIP_DISTANCE, so we need to restore them here ourselves.
        */
       GLStateRestoreArray<GL_CLIP_DISTANCE0> clips(fastuidraw::gl::context_get<GLint>(GL_MAX_CLIP_DISTANCES));
       enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
+      GLint unpack_alignment(fastuidraw::gl::context_get<GLint>(GL_UNPACK_ALIGNMENT));
       GLuint fbo;
 
       fbo = defaultFramebufferObject();
@@ -974,6 +978,8 @@ void QWebView::paintGL(void)
 
       fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
       d->m_surface->blit_surface(GL_NEAREST);
+      fastuidraw_glPixelStorei(GL_UNPACK_ALIGNMENT, unpack_alignment);
+      //std::cout << " ----------- FastUIDraw paint end -------------\n";
   }
   p.endNativePainting();
 }
