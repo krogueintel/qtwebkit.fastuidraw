@@ -580,12 +580,22 @@ void setGradientOfFastUIDrawBrush(const Gradient &gr, fastuidraw::PainterBrush &
 {
   const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> &cs(gr.fastuidrawGradient());
   fastuidraw::vec2 q0(vec2FromFloatPoint(gr.p0())), q1(vec2FromFloatPoint(gr.p1()));
-  fastuidraw::float3x3 A, M;
+  fastuidraw::float3x3 M;
   fastuidraw::float2x2 N;
   fastuidraw::vec2 T;
+  Optional<AffineTransform> inverse_gr;
 
-  computeToFastUIDrawMatrixT(gr.gradientSpaceTransform(), &A);
-  A.inverse(M);
+  /* Gradient::gradientSpaceTransform() maps from coordinates
+   * of the gradient TO logical coordinates. FastUIDraw's brush
+   * maps from logical coordinates to gradient coordiante, so
+   * we need the inverse.
+   */
+  inverse_gr = gr.gradientSpaceTransform().inverse();
+  computeToFastUIDrawMatrixT(inverse_gr.value(), &M);
+
+  /* AffineTransform is not a full 3x3, it is just
+   * a 2x2 matrix and a translate.
+   */
   N(0, 0) = M(0, 0);
   N(0, 1) = M(0, 1);
   N(1, 0) = M(1, 0);
@@ -729,7 +739,7 @@ public:
     // reuse this brush for solid color (to prevent expensive QBrush construction)
     QBrush solidColor;
 
-    inline QPainter* p() const
+    inline QPainter* p(void) const
     {
         FASTUIDRAWassert(is_qt());
         if (layers.isEmpty())
@@ -2235,6 +2245,7 @@ void GraphicsContext::endPlatformTransparencyLayer()
     if (paintingDisabled() || !EnableGraphicsContextTransparencyLayer)
         return;
 
+
     if (m_data->is_qt()) {
         while ( ! m_data->layers.top()->alphaMask.isNull() ){
             --m_data->layers.top()->saveCounter;
@@ -2248,6 +2259,7 @@ void GraphicsContext::endPlatformTransparencyLayer()
         layer->painter.end();
 
         QPainter* p = m_data->p();
+
         p->save();
         p->resetTransform();
         p->setOpacity(layer->opacity);
@@ -2422,15 +2434,23 @@ void GraphicsContext::setPlatformCompositeOperation(CompositeOperator op, BlendM
         return;
 
     if (m_data->is_qt()) {
+        QPainter *p(m_data->p());
+        QPainter::CompositionMode cs;
+
         ASSERT(op == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
 
         if (op == WebCore::CompositeSourceOver)
-            m_data->p()->setCompositionMode(toQtCompositionMode(blendMode));
+            cs = toQtCompositionMode(blendMode);
         else
-            m_data->p()->setCompositionMode(toQtCompositionMode(op));
+            cs = toQtCompositionMode(op);
+
+        p->setCompositionMode(cs);
     } else {
-        m_data->fastuidraw()->composite_shader(toFastUIDrawCompositeMode(op));
-        m_data->fastuidraw()->blend_shader(toFastUIDrawBlendMode(blendMode));
+        fastuidraw::Painter::composite_mode_t cs(toFastUIDrawCompositeMode(op));
+        fastuidraw::Painter::blend_w3c_mode_t bs(toFastUIDrawBlendMode(blendMode));
+
+        m_data->fastuidraw()->composite_shader(cs);
+        m_data->fastuidraw()->blend_shader(bs);
     }
 }
 
