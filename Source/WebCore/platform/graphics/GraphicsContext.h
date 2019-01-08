@@ -51,6 +51,21 @@ typedef WebCore::PlatformContextCairo PlatformGraphicsContext;
 namespace WebCore {
 class PlatformGraphicsContext {
 public:
+    struct FastUIDrawOption {      
+        /* if true use Painter::begin_layer(), if false
+         * the start a new fastuidraw::Painter onto a new
+         * surface with the viewport modified to allow for
+         * a blit.
+         */
+        bool m_use_fastuidaw_layers : 1;
+
+        /* Allow for FastUIDraw to perform shader anti-aliasing
+         * on filling or stroking.
+         */
+        bool m_allow_fill_aa : 1;
+        bool m_allow_stroke_aa : 1;
+    };
+  
     PlatformGraphicsContext(void):
       m_qt_painter(nullptr)
     {}
@@ -60,10 +75,10 @@ public:
     {}
 
     PlatformGraphicsContext(::fastuidraw::reference_counted_ptr<fastuidraw::Painter> f,
-                            bool use_fastuidraw_layers):
+                            FastUIDrawOption fastuidraw_options):
       m_qt_painter(nullptr),
       m_fastuidraw_painter(f),
-      m_use_fastuidraw_layers(use_fastuidraw_layers)
+      m_fastuidraw_options(fastuidraw_options)
     {}
 
     ::QPainter& qt(void) const
@@ -82,9 +97,9 @@ public:
         return m_fastuidraw_painter;
     }
 
-    bool use_fastuidraw_layers(void) const
+    FastUIDrawOption fastuidraw_options(void) const
     {
-        return m_use_fastuidraw_layers;
+        return m_fastuidraw_options;
     }
 
     const ::fastuidraw::reference_counted_ptr<fastuidraw::Painter>&
@@ -97,7 +112,7 @@ public:
 private:
     ::QPainter *m_qt_painter;
     ::fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_fastuidraw_painter;
-    bool m_use_fastuidraw_layers;
+    FastUIDrawOption m_fastuidraw_options;
 };
 
 } //namespace WebCore

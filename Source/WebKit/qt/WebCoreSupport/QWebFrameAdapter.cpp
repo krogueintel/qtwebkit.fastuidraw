@@ -496,10 +496,16 @@ void QWebFrameAdapter::renderRelativeCoords(QPainter* painter, int layers, const
 }
 
 void QWebFrameAdapter::renderRelativeCoords(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
-                                            bool use_fastui_draw_layers,
+                                            int fastuidraw_option_flags,
                                             int layers, const QRegion& clip)
 {
-  PlatformGraphicsContext ngc(painter, use_fastui_draw_layers);
+  PlatformGraphicsContext::FastUIDrawOption opts;
+
+  opts.m_use_fastuidaw_layers = (fastuidraw_option_flags & UseFastUIDrawLayers) != 0;
+  opts.m_allow_stroke_aa = (fastuidraw_option_flags & AllowFastUIDrawStrokeAA) != 0;
+  opts.m_allow_fill_aa = (fastuidraw_option_flags & AllowFastUIDrawFillAA) != 0;
+  
+  PlatformGraphicsContext ngc(painter, opts);
   GraphicsContext context(&ngc);
   renderRelativeCoords(context, layers, clip);
 }

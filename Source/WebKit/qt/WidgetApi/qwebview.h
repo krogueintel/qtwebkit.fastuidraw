@@ -118,6 +118,8 @@ public:
     bool event(QEvent*) Q_DECL_OVERRIDE;
     bool drawWithFastUIDraw(void) const;
     bool useFastUIDrawLayers(void) const;
+    bool allowFastUIDrawFillAA(void) const;
+    bool allowFastUIDrawStrokeAA(void) const;
 
 public Q_SLOTS:
     void stop();
@@ -128,6 +130,8 @@ public Q_SLOTS:
     void print(QPrinter*) const;
     void drawWithFastUIDraw(bool);
     void useFastUIDrawLayers(bool);
+    void allowFastUIDrawFillAA(bool);
+    void allowFastUIDrawStrokeAA(bool);
 
 Q_SIGNALS:
     void loadStarted();

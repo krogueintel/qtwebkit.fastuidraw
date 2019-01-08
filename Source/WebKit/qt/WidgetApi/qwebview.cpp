@@ -122,6 +122,8 @@ public:
     QPainter::RenderHints renderHints;
     bool m_drawWithFastUIDraw;
     bool m_useFastUIDrawLayers;
+    bool m_allowFastUIDrawFillAA;
+    bool m_allowFastUIDrawStrokeAA;
     fastuidraw::reference_counted_ptr<WebCore::FastUIDraw::PainterHolder> m_painter_holder;
     fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
@@ -256,6 +258,9 @@ QWebView::QWebView(QWidget *parent)
 
     d = new QWebViewPrivate(this);
     d->m_drawWithFastUIDraw = true;
+    d->m_useFastUIDrawLayers = true;
+    d->m_allowFastUIDrawFillAA = true;
+    d->m_allowFastUIDrawStrokeAA = true;
 
 #if !defined(Q_WS_QWS)
     setAttribute(Qt::WA_InputMethodEnabled);
@@ -935,6 +940,32 @@ void QWebView::useFastUIDrawLayers(bool v)
     }
 }
 
+bool QWebView::allowFastUIDrawFillAA(void) const
+{
+  return d->m_allowFastUIDrawFillAA;
+}
+
+void QWebView::allowFastUIDrawFillAA(bool v)
+{
+    if (v != d->m_allowFastUIDrawFillAA) {
+        d->m_allowFastUIDrawFillAA = v;
+        update();
+    }
+}
+
+bool QWebView::allowFastUIDrawStrokeAA(void) const
+{
+  return d->m_allowFastUIDrawStrokeAA;
+}
+
+void QWebView::allowFastUIDrawStrokeAA(bool v)
+{
+    if (v != d->m_allowFastUIDrawStrokeAA) {
+        d->m_allowFastUIDrawStrokeAA = v;
+        update();
+    }
+}
+
 void QWebView::resizeGL(int w, int h)
 {
   if (d->page)
@@ -984,16 +1015,28 @@ void QWebView::paintGL(void)
       }
   
       fbo = defaultFramebufferObject();
+      int render_flags(0);
+
+      if (d->m_useFastUIDrawLayers) {
+          render_flags |= QWebFrame::UseFastUIDrawLayers;
+      }
+
+      if (d->m_allowFastUIDrawStrokeAA) {
+          render_flags |= QWebFrame::AllowFastUIDrawStrokeAA;
+      }
+
+      if (d->m_allowFastUIDrawFillAA) {
+          render_flags |= QWebFrame::AllowFastUIDrawFillAA;
+      }
 
       d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
       d->m_painter->begin(d->m_surface, orientation);
-      frame->render(d->m_painter, d->m_useFastUIDrawLayers);
+      frame->render(d->m_painter, render_flags);
       d->m_painter->end();
 
       fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
       d->m_surface->blit_surface(GL_NEAREST);
       fastuidraw_glPixelStorei(GL_UNPACK_ALIGNMENT, unpack_alignment);
-      std::cout << " \n----------- FastUIDraw paint end -------------\n";
   }
   p.endNativePainting();
 }

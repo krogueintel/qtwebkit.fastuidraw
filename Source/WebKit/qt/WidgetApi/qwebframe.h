@@ -132,6 +132,12 @@ public:
         AutoOwnership
     };
 
+    enum FastUIDrawOption {
+        UseFastUIDrawLayers = 1,
+        AllowFastUIDrawStrokeAA = 2,
+        AllowFastUIDrawFillAA = 4,
+    };
+
     QWebPage *page() const;
 
     void load(const QUrl &url);
@@ -184,10 +190,10 @@ public:
     void render(QPainter*, RenderLayers layer, const QRegion& clip = QRegion());
 
     void render(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
-                bool use_fastui_draw_layers,
+                int fastuidraw_render_flags,
                 const QRegion& clip = QRegion());
     void render(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
-                bool use_fastui_draw_layers,
+                int fastuidraw_render_flags,
                 RenderLayers layer, const QRegion& clip = QRegion());
 
     void setTextSizeMultiplier(qreal factor);

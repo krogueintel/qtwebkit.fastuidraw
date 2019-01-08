@@ -112,6 +112,12 @@ public:
         AllLayers = 0xff
     };
 
+    enum FastUIDrawOption {
+        UseFastUIDrawLayers = 1,
+        AllowFastUIDrawStrokeAA = 2,
+        AllowFastUIDrawFillAA = 4,
+    };
+
     static QUrl ensureAbsoluteUrl(const QUrl&);
 
     QWebFrameAdapter();
@@ -162,7 +168,7 @@ public:
 
     void renderRelativeCoords(QPainter*, int layers, const QRegion& clip);
     void renderRelativeCoords(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
-                              bool use_fastui_draw_layers,
+                              int fastuidraw_option_flags,
                               int layers, const QRegion& clip);
 
     void renderRelativeCoords(WebCore::GraphicsContext&, int layers, const QRegion& clip);

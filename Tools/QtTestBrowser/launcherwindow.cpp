@@ -334,6 +334,18 @@ void LauncherWindow::createChrome()
     toggleUseFastUIDrawLayers->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
     toggleUseFastUIDrawLayers->connect(toggleGraphicsView, SIGNAL(toggled(bool)), SLOT(setEnabled(bool)));
 
+    QAction *toggleFastUIDrawFillAA = toolsMenu->addAction("Use FastUIDraw Fill AA", this, SLOT(toggleFastUIDrawFillAA(bool)));
+    toggleFastUIDrawFillAA->setCheckable(true);
+    toggleFastUIDrawFillAA->setChecked(isFastUIDraw());
+    toggleFastUIDrawFillAA->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
+    toggleFastUIDrawFillAA->connect(toggleGraphicsView, SIGNAL(toggled(bool)), SLOT(setEnabled(bool)));
+
+    QAction *toggleFastUIDrawStrokeAA = toolsMenu->addAction("Use FastUIDraw Stroke AA", this, SLOT(toggleFastUIDrawStrokeAA(bool)));
+    toggleFastUIDrawStrokeAA->setCheckable(true);
+    toggleFastUIDrawStrokeAA->setChecked(isFastUIDraw());
+    toggleFastUIDrawStrokeAA->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
+    toggleFastUIDrawStrokeAA->connect(toggleGraphicsView, SIGNAL(toggled(bool)), SLOT(setEnabled(bool)));
+
     QAction* toggleWebGL = toolsMenu->addAction("Toggle WebGL", this, SLOT(toggleWebGL(bool)));
     toggleWebGL->setCheckable(true);
     toggleWebGL->setChecked(settings->testAttribute(QWebSettings::WebGLEnabled));
@@ -959,6 +971,24 @@ void LauncherWindow::toggleFastUIDrawLayers(bool vFastUIDrawLayers)
     p = qobject_cast<WebViewTraditional*>(m_view);
     if (p) {
         p->useFastUIDrawLayers(vFastUIDrawLayers);
+    }
+}
+
+void LauncherWindow::toggleFastUIDrawFillAA(bool v)
+{
+    WebViewTraditional *p;
+    p = qobject_cast<WebViewTraditional*>(m_view);
+    if (p) {
+        p->allowFastUIDrawFillAA(v);
+    }
+}
+
+void LauncherWindow::toggleFastUIDrawStrokeAA(bool v)
+{
+    WebViewTraditional *p;
+    p = qobject_cast<WebViewTraditional*>(m_view);
+    if (p) {
+        p->allowFastUIDrawStrokeAA(v);
     }
 }
 

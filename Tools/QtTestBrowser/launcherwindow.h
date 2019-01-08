@@ -133,6 +133,8 @@ protected Q_SLOTS:
     void toggleWebView(bool graphicsBased);
     void toggleFastUIDraw(bool vFastUIDrawBased);
     void toggleFastUIDrawLayers(bool vFastUIDrawLayers);
+    void toggleFastUIDrawFillAA(bool v);
+    void toggleFastUIDrawStrokeAA(bool v);
     void toggleAcceleratedCompositing(bool toggle);
     void toggleAccelerated2dCanvas(bool toggle);
     void toggleTiledBackingStore(bool toggle);

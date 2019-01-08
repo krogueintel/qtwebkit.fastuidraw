@@ -37,8 +37,6 @@
  */
 
 #define EnableGraphicsContextTransparencyLayer true
-#define EnableFastUIDrawFillAntiAliasing true
-#define EnableFastUIDrawStrokeAntiAliasing true
 
 #define TransparencyLayerColor(X) fastuidraw::vec4(1.0f, 1.0f, 1.0f, X)
 
@@ -669,9 +667,10 @@ public:
 class FastUIDrawStateElement
 {
 public:
-  FastUIDrawStateElement(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p)
-    : m_fill_aa(EnableFastUIDrawFillAntiAliasing ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
-    , m_stroke_aa(EnableFastUIDrawStrokeAntiAliasing ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
+  FastUIDrawStateElement(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p,
+                         PlatformGraphicsContext::FastUIDrawOption options)
+    : m_fill_aa(options.m_allow_fill_aa ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
+    , m_stroke_aa(options.m_allow_stroke_aa ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
     , m_stroke_brushes(p)
     , m_fill_brushes(p)
     , m_stroke_params(p)
@@ -851,9 +850,9 @@ public:
       return std::string(2 * cnt, ' ');
     }
 
-    bool use_fastuidraw_layers(void) const
+    PlatformGraphicsContext::FastUIDrawOption fastuidraw_options(void) const
     {
-        return platform->use_fastuidraw_layers();
+        return platform->fastuidraw_options();
     }
 
     inline fastuidraw::float3x3 computeFastUIDrawCTM(void)
@@ -930,7 +929,7 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
         fastuidraw::PainterPackedValuePool &pool(platform->fastuidraw()->packed_value_pool());
 
         m_root_surface = platform->fastuidraw()->surface();
-        m_fastuidraw_state_stack.push_back(FastUIDrawStateElement(platform->fastuidraw()));
+        m_fastuidraw_state_stack.push_back(FastUIDrawStateElement(platform->fastuidraw(), platform->fastuidraw_options()));
         m_packed_black_brush = pool.create_packed_value(fastuidraw::PainterBrush()
                                                         .color(0.0f, 0.0f, 0.0f, 0.0f));
         m_fastuidraw_square_path << fastuidraw::vec2(0.0f, 0.0f)
@@ -2295,7 +2294,7 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
         m_data->layers.push(new TransparencyLayer(p, QRect(x, y, w, h), opacity, emptyAlphaMask));
         ++m_data->layerCount;
     } else {
-        if (m_data->use_fastuidraw_layers()) {
+        if (m_data->fastuidraw_options().m_use_fastuidaw_layers) {
             m_data->fastuidraw()->begin_layer(TransparencyLayerColor(opacity));
         } else {
             fastuidraw::reference_counted_ptr<fastuidraw::Painter> p(m_data->fastuidraw());
@@ -2362,7 +2361,7 @@ void GraphicsContext::endPlatformTransparencyLayer()
 
         delete layer;
     } else {
-        if (m_data->use_fastuidraw_layers()) {
+        if (m_data->fastuidraw_options().m_use_fastuidaw_layers) {
             m_data->fastuidraw()->end_layer();
         } else {
             FastUIDrawTransparencyLayer layer(m_data->m_fastuidraw_layers.back());
@@ -2398,28 +2397,6 @@ void GraphicsContext::endPlatformTransparencyLayer()
               .color(TransparencyLayerColor(layer.m_opacity));
             m_data->fastuidraw()->transformation(pp);
             m_data->fastuidraw()->translate(layer.m_blit_rect.m_min_point);
-
-            std::cout << "F[";
-            if (m_data->fastuidraw()->blend_shader())
-              {
-                std::cout << m_data->fastuidraw()->blend_shader()->tag().m_ID;
-              }
-            else
-              {
-                std::cout << "!";
-              }
-            std::cout << ":";
-            if (m_data->fastuidraw()->composite_shader())
-              {
-                std::cout << m_data->fastuidraw()->composite_shader()->tag().m_ID;
-              }
-            else
-              {
-                std::cout << "!";
-              }
-            std::cout << ":" << m_data->fastuidraw()->composite_mode().raw_value()
-                      << "]@" << layer.m_blit_rect.m_min_point << ", sz="
-                      << layer.m_blit_rect.size() << "\n";
             
             m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
                                             fastuidraw::Rect().size(layer.m_blit_rect.size()),
@@ -2891,11 +2868,11 @@ void GraphicsContext::setPlatformShouldAntialias(bool enable)
     if (m_data->is_qt()) {
         m_data->p()->setRenderHint(QPainter::Antialiasing, enable);
     } else {
-        m_data->fastuidraw_state().m_fill_aa = (EnableFastUIDrawFillAntiAliasing && enable) ?
+        m_data->fastuidraw_state().m_fill_aa = (m_data->fastuidraw_options().m_allow_fill_aa && enable) ?
           fastuidraw::Painter::shader_anti_alias_auto :
           fastuidraw::Painter::shader_anti_alias_none;
 
-        m_data->fastuidraw_state().m_stroke_aa = (EnableFastUIDrawStrokeAntiAliasing && enable) ?
+        m_data->fastuidraw_state().m_stroke_aa = (m_data->fastuidraw_options().m_allow_stroke_aa && enable) ?
           fastuidraw::Painter::shader_anti_alias_auto :
           fastuidraw::Painter::shader_anti_alias_none;
     }
