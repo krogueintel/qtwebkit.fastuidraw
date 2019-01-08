@@ -59,9 +59,11 @@ public:
       m_qt_painter(qt)
     {}
 
-    PlatformGraphicsContext(::fastuidraw::reference_counted_ptr<fastuidraw::Painter> f):
+    PlatformGraphicsContext(::fastuidraw::reference_counted_ptr<fastuidraw::Painter> f,
+                            bool use_fastuidraw_layers):
       m_qt_painter(nullptr),
-      m_fastuidraw_painter(f)
+      m_fastuidraw_painter(f),
+      m_use_fastuidraw_layers(use_fastuidraw_layers)
     {}
 
     ::QPainter& qt(void) const
@@ -80,6 +82,11 @@ public:
         return m_fastuidraw_painter;
     }
 
+    bool use_fastuidraw_layers(void) const
+    {
+        return m_use_fastuidraw_layers;
+    }
+
     const ::fastuidraw::reference_counted_ptr<fastuidraw::Painter>&
     fastuidraw(void) const
     {
@@ -90,6 +97,7 @@ public:
 private:
     ::QPainter *m_qt_painter;
     ::fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_fastuidraw_painter;
+    bool m_use_fastuidraw_layers;
 };
 
 } //namespace WebCore

@@ -184,8 +184,10 @@ public:
     void render(QPainter*, RenderLayers layer, const QRegion& clip = QRegion());
 
     void render(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                bool use_fastui_draw_layers,
                 const QRegion& clip = QRegion());
     void render(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                bool use_fastui_draw_layers,
                 RenderLayers layer, const QRegion& clip = QRegion());
 
     void setTextSizeMultiplier(qreal factor);

@@ -40,6 +40,8 @@
 #define EnableFastUIDrawFillAntiAliasing true
 #define EnableFastUIDrawStrokeAntiAliasing true
 
+#define TransparencyLayerColor(X) fastuidraw::vec4(1.0f, 1.0f, 1.0f, X)
+
 #include "config.h"
 #include "GraphicsContext.h"
 
@@ -683,6 +685,80 @@ public:
   MutablePackedValue<fastuidraw::PainterStrokeParams, fastuidraw::PainterItemShaderData> m_stroke_params;
 };
 
+class FastUIDrawTransparencyLayer
+{
+public:
+  FastUIDrawTransparencyLayer(const fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> &root_surface,
+                              const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &parent,
+                              float opacity)
+  {
+    /* Basic idea: create a gl::TextureImage which will back m_surface with a size
+     * that just contains the region bounded by the clipping region.
+     */
+    fastuidraw::vec2 fm, fM;
+    fastuidraw::ivec2 m, M, sz;
+    fastuidraw::PainterBackend::Surface::Viewport vwp;
+    bool b;
+
+    vwp = root_surface->viewport();    
+    b = parent->clip_region_bounds(&fm, &fM);
+    /* fastuidraw::Painter delivers the coordinates
+     * in normalize device coordinates, transform
+     * it into pixel coordinates.
+     */
+    m = to_pixel_coordinates(fm, vwp.m_dimensions);
+    M = to_pixel_coordinates(fM, vwp.m_dimensions);
+    
+    sz = M - m;
+    sz.x() = fastuidraw::t_max(1, sz.x());
+    sz.y() = fastuidraw::t_max(1, sz.y());
+
+    /* make the viewport so that the parent transformation maps correctly */
+    vwp.m_origin -= m;
+
+    m_blit_rect
+      .min_point(fastuidraw::vec2(m))
+      .size(fastuidraw::vec2(sz));
+
+    m_image = fastuidraw::gl::ImageAtlasGL::TextureImage::create(FastUIDraw::imageAtlas(), sz.x(), sz.y(), GL_LINEAR);
+    m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(sz, m_image->texture());
+    m_surface->clear_color(fastuidraw::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+    m_surface->viewport(vwp);
+    m_opacity = opacity;
+
+    fastuidraw::float_orthogonal_projection_params pp(0, vwp.m_dimensions.x(), 0, vwp.m_dimensions.y());
+
+    /* Our conversion to pixel coordinates is in coordinates where (0, 0)
+     * is the -BOTTOM- left corner (instead of the top left). Thus we set the
+     * transformation with that convention when we initialize the clipping
+     * region and then we set the transformation as the parent fastuidraw::painter
+     * had it.
+     */
+    m_painter->painter()->begin(m_surface, fastuidraw::Painter::y_increases_downwards, true);
+    m_painter->painter()->transformation(pp);
+    m_painter->painter()->clip_in_rect(m_blit_rect);
+    m_painter->painter()->transformation(parent->transformation());
+  }
+
+  static
+  fastuidraw::ivec2
+  to_pixel_coordinates(fastuidraw::vec2 normalized_coord,
+                       fastuidraw::ivec2 viewport_sz)
+  {
+    normalized_coord += fastuidraw::vec2(1.0f, 1.0f);
+    normalized_coord *= 0.5f;
+    normalized_coord *= fastuidraw::vec2(viewport_sz);
+    return fastuidraw::ivec2(normalized_coord);
+  }
+
+  fastuidraw::reference_counted_ptr<fastuidraw::gl::ImageAtlasGL::TextureImage> m_image;
+  fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> m_painter;
+  fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
+  fastuidraw::Rect m_blit_rect;
+  float m_opacity;
+};
+
 static inline enum fastuidraw::PainterBrush::image_filter computeFastUIImageFilter(InterpolationQuality quality,
                                                                                    fastuidraw::reference_counted_ptr<const fastuidraw::Image> image)
 {
@@ -765,6 +841,7 @@ public:
     std::vector<FastUIDrawStateElement> m_fastuidraw_state_stack;
     FastUIDrawStateElement &fastuidraw_state(void) { return m_fastuidraw_state_stack.back(); }
     fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> m_root_surface;
+    std::vector<FastUIDrawTransparencyLayer> m_fastuidraw_layers;
 
     std::string printPrefix(void)
     {
@@ -772,6 +849,11 @@ public:
 
       cnt = (is_qt()) ? layers.size() : 0;
       return std::string(2 * cnt, ' ');
+    }
+
+    bool use_fastuidraw_layers(void) const
+    {
+        return platform->use_fastuidraw_layers();
     }
 
     inline fastuidraw::float3x3 computeFastUIDrawCTM(void)
@@ -806,7 +888,9 @@ public:
     inline const fastuidraw::reference_counted_ptr<fastuidraw::Painter>&
     fastuidraw(void) const
     {
-        return platform->fastuidraw();
+        return m_fastuidraw_layers.empty() ?
+            platform->fastuidraw() :
+            m_fastuidraw_layers.back().m_painter->painter();
     }
 private:
     PlatformGraphicsContext *platform;
@@ -2211,7 +2295,15 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
         m_data->layers.push(new TransparencyLayer(p, QRect(x, y, w, h), opacity, emptyAlphaMask));
         ++m_data->layerCount;
     } else {
-        m_data->fastuidraw()->begin_layer(opacity);
+        if (m_data->use_fastuidraw_layers()) {
+            m_data->fastuidraw()->begin_layer(TransparencyLayerColor(opacity));
+        } else {
+            fastuidraw::reference_counted_ptr<fastuidraw::Painter> p(m_data->fastuidraw());
+
+            // ctor calls begin for us.
+            m_data->m_fastuidraw_layers.push_back(FastUIDrawTransparencyLayer(m_data->m_root_surface, p, opacity));
+            m_data->m_fastuidraw_state_stack.push_back(m_data->fastuidraw_state());
+        }
     }
 }
 
@@ -2270,7 +2362,70 @@ void GraphicsContext::endPlatformTransparencyLayer()
 
         delete layer;
     } else {
-        m_data->fastuidraw()->end_layer();
+        if (m_data->use_fastuidraw_layers()) {
+            m_data->fastuidraw()->end_layer();
+        } else {
+            FastUIDrawTransparencyLayer layer(m_data->m_fastuidraw_layers.back());
+            const fastuidraw::PainterBackend::Surface::Viewport vwp(m_data->m_root_surface->viewport());
+
+            //std::cout << m_data->printPrefix() << "End transparency layer at "
+            //        << m_data->m_fastuidraw_layers.back().m_blit_rect
+            //        << "\n";
+
+            m_data->m_fastuidraw_state_stack.pop_back();
+            m_data->m_fastuidraw_layers.pop_back();
+            layer.m_painter->painter()->end();
+
+            /* now add the necesary draw-image command; the image
+             * is to be drawn only with the transformation of from
+             * pixel to normalized device coordinates. Note that
+             * the projection we are providing is where y increases
+             * upwards; this is because we are doing a blit and
+             * the rectangle provided by FastUIDraw from
+             * painter::clip_region_bounds() is oriented with (0, 0)
+             * being the -bottom- left corner.
+             */
+            m_data->fastuidraw()->save();
+            fastuidraw::float_orthogonal_projection_params pp(0, vwp.m_dimensions.x(), 0, vwp.m_dimensions.y());
+            fastuidraw::PainterBrush brush;
+
+            /* Note that we translate() the fastuidraw::Painter so that the rect to
+             * be drawn is at the origin. We do this because we want the coordinates
+             * fed to the brush to be from (0, 0) to layer.m_blit_rect.size().
+             */
+            brush
+              .image(layer.m_image)
+              .color(TransparencyLayerColor(layer.m_opacity));
+            m_data->fastuidraw()->transformation(pp);
+            m_data->fastuidraw()->translate(layer.m_blit_rect.m_min_point);
+
+            std::cout << "F[";
+            if (m_data->fastuidraw()->blend_shader())
+              {
+                std::cout << m_data->fastuidraw()->blend_shader()->tag().m_ID;
+              }
+            else
+              {
+                std::cout << "!";
+              }
+            std::cout << ":";
+            if (m_data->fastuidraw()->composite_shader())
+              {
+                std::cout << m_data->fastuidraw()->composite_shader()->tag().m_ID;
+              }
+            else
+              {
+                std::cout << "!";
+              }
+            std::cout << ":" << m_data->fastuidraw()->composite_mode().raw_value()
+                      << "]@" << layer.m_blit_rect.m_min_point << ", sz="
+                      << layer.m_blit_rect.size() << "\n";
+            
+            m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
+                                            fastuidraw::Rect().size(layer.m_blit_rect.size()),
+                                            fastuidraw::Painter::shader_anti_alias_none);
+            m_data->fastuidraw()->restore();
+        }
     }
 }
 

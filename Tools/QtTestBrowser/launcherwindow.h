@@ -132,6 +132,7 @@ protected Q_SLOTS:
     void setTouchMocking(bool on);
     void toggleWebView(bool graphicsBased);
     void toggleFastUIDraw(bool vFastUIDrawBased);
+    void toggleFastUIDrawLayers(bool vFastUIDrawLayers);
     void toggleAcceleratedCompositing(bool toggle);
     void toggleAccelerated2dCanvas(bool toggle);
     void toggleTiledBackingStore(bool toggle);

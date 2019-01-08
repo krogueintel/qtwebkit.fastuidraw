@@ -496,9 +496,10 @@ void QWebFrameAdapter::renderRelativeCoords(QPainter* painter, int layers, const
 }
 
 void QWebFrameAdapter::renderRelativeCoords(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                                            bool use_fastui_draw_layers,
                                             int layers, const QRegion& clip)
 {
-  PlatformGraphicsContext ngc(painter);
+  PlatformGraphicsContext ngc(painter, use_fastui_draw_layers);
   GraphicsContext context(&ngc);
   renderRelativeCoords(context, layers, clip);
 }
@@ -545,7 +546,7 @@ void QWebFrameAdapter::renderRelativeCoords(WebCore::GraphicsContext &context, i
 
             context.restore();
         }
-        renderCompositedLayers(context, IntRect(clipBoundingRect));
+        //renderCompositedLayers(context, IntRect(clipBoundingRect));
     }
     renderFrameExtras(context, layers, clip);
 

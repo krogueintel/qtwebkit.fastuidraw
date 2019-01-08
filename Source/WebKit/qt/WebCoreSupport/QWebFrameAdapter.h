@@ -162,6 +162,7 @@ public:
 
     void renderRelativeCoords(QPainter*, int layers, const QRegion& clip);
     void renderRelativeCoords(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &painter,
+                              bool use_fastui_draw_layers,
                               int layers, const QRegion& clip);
 
     void renderRelativeCoords(WebCore::GraphicsContext&, int layers, const QRegion& clip);

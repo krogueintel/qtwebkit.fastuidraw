@@ -121,6 +121,7 @@ public:
 
     QPainter::RenderHints renderHints;
     bool m_drawWithFastUIDraw;
+    bool m_useFastUIDrawLayers;
     fastuidraw::reference_counted_ptr<WebCore::FastUIDraw::PainterHolder> m_painter_holder;
     fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
@@ -921,6 +922,19 @@ void QWebView::drawWithFastUIDraw(bool v)
     }
 }
 
+bool QWebView::useFastUIDrawLayers(void) const
+{
+    return d->m_useFastUIDrawLayers;
+}
+
+void QWebView::useFastUIDrawLayers(bool v)
+{
+    if (v != d->m_useFastUIDrawLayers) {
+        d->m_useFastUIDrawLayers = v;
+        update();
+    }
+}
+
 void QWebView::resizeGL(int w, int h)
 {
   if (d->page)
@@ -973,13 +987,13 @@ void QWebView::paintGL(void)
 
       d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
       d->m_painter->begin(d->m_surface, orientation);
-      frame->render(d->m_painter);
+      frame->render(d->m_painter, d->m_useFastUIDrawLayers);
       d->m_painter->end();
 
       fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
       d->m_surface->blit_surface(GL_NEAREST);
       fastuidraw_glPixelStorei(GL_UNPACK_ALIGNMENT, unpack_alignment);
-      //std::cout << " ----------- FastUIDraw paint end -------------\n";
+      std::cout << " \n----------- FastUIDraw paint end -------------\n";
   }
   p.endNativePainting();
 }

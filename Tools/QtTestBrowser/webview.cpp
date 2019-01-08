@@ -141,12 +141,12 @@ private:
 WebViewTraditional::WebViewTraditional(QWidget* parent) :
   QWebView(parent)
 {
-    KeepItAlive::makeAlive();
+  // KeepItAlive::makeAlive();
 }
 
 void WebViewTraditional::shutDown(void)
 {
-    KeepItAlive::shutDown();
+  //  KeepItAlive::shutDown();
 }
 
 /////////////////////////////////////////////////////
