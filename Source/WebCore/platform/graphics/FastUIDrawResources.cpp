@@ -550,7 +550,7 @@ PainterHolder(void)
 
       b = S.m_backend;
       FASTUIDRAWassert(b);
-      m_painter = FASTUIDRAWnew fastuidraw::Painter(b->create_sharing_shaders());
+      m_painter = FASTUIDRAWnew fastuidraw::Painter(b->create_shared());
     }
   else
     {

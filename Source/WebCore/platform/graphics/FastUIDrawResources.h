@@ -46,7 +46,7 @@ namespace WebCore {
                fastuidraw::c_string foundry);
 
     void
-      unimplementedFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p);
+    unimplementedFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p);
   }
 }
 
