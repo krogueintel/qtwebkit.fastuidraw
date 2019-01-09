@@ -135,6 +135,7 @@ protected Q_SLOTS:
     void toggleFastUIDrawLayers(bool vFastUIDrawLayers);
     void toggleFastUIDrawFillAA(bool v);
     void toggleFastUIDrawStrokeAA(bool v);
+    void toggleFastUIDrawShowStats(bool v);
     void toggleAcceleratedCompositing(bool toggle);
     void toggleAccelerated2dCanvas(bool toggle);
     void toggleTiledBackingStore(bool toggle);

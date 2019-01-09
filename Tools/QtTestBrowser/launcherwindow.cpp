@@ -355,6 +355,13 @@ void LauncherWindow::createChrome()
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleFastUIDrawStrokeAA, SLOT(setEnabled(bool)));
 
+    QAction *toggleFastUIDrawShowStats = toolsMenu->addAction("Show FastUIDraw stats", this, SLOT(toggleFastUIDrawShowStats(bool)));
+    toggleFastUIDrawShowStats->setCheckable(true);
+    toggleFastUIDrawShowStats->setChecked(false);
+    toggleFastUIDrawShowStats->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
+    QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
+                     toggleFastUIDrawShowStats, SLOT(setEnabled(bool)));
+
     QAction* toggleWebGL = toolsMenu->addAction("Toggle WebGL", this, SLOT(toggleWebGL(bool)));
     toggleWebGL->setCheckable(true);
     toggleWebGL->setChecked(settings->testAttribute(QWebSettings::WebGLEnabled));
@@ -1003,6 +1010,15 @@ void LauncherWindow::toggleFastUIDrawStrokeAA(bool v)
     p = qobject_cast<WebViewTraditional*>(m_view);
     if (p) {
         p->allowFastUIDrawStrokeAA(v);
+    }
+}
+
+void LauncherWindow::toggleFastUIDrawShowStats(bool v)
+{
+    WebViewTraditional *p;
+    p = qobject_cast<WebViewTraditional*>(m_view);
+    if (p) {
+        p->drawFastUIDrawStats(v);
     }
 }
 
