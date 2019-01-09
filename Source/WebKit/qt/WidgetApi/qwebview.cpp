@@ -146,6 +146,7 @@ public:
     bool m_useFastUIDrawLayers;
     bool m_allowFastUIDrawFillAA;
     bool m_allowFastUIDrawStrokeAA;
+    bool m_drawFastUIDrawStats;
     fastuidraw::reference_counted_ptr<WebCore::FastUIDraw::PainterHolder> m_painter_holder;
     fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
     fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_font;
@@ -449,6 +450,7 @@ QWebView::QWebView(QWidget *parent)
     d->m_useFastUIDrawLayers = true;
     d->m_allowFastUIDrawFillAA = true;
     d->m_allowFastUIDrawStrokeAA = true;
+    d->m_drawFastUIDrawStats = false;
 
 #if !defined(Q_WS_QWS)
     setAttribute(Qt::WA_InputMethodEnabled);
@@ -1160,6 +1162,19 @@ void QWebView::allowFastUIDrawStrokeAA(bool v)
     }
 }
 
+bool QWebView::drawFastUIDrawStats(void) const
+{
+  return d->m_drawFastUIDrawStats;
+}
+
+void QWebView::drawFastUIDrawStats(bool v)
+{
+    if (v != d->m_drawFastUIDrawStats) {
+        d->m_drawFastUIDrawStats = v;
+        update();
+    }
+}
+
 void QWebView::resizeGL(int w, int h)
 {
   if (d->page)
@@ -1229,24 +1244,23 @@ void QWebView::paintGL(void)
       frame->render(d->m_painter, render_flags);
       d->m_painter->restore();
 
-      std::ostringstream ostr;
-      fastuidraw::PainterBrush brush;
+      if (d->m_drawFastUIDrawStats) {
+          std::ostringstream ostr;
+          fastuidraw::PainterBrush brush;
 
-      brush.color(0.0f, 1.0f, 1.0f, 1.0f);
-      for (unsigned int i = 0; i < d->m_fastuidraw_painter_stats.size(); ++i)
-        {
-          enum fastuidraw::Painter::query_stats_t st;
+          brush.color(0.0f, 1.0f, 1.0f, 1.0f);
+          for (unsigned int i = 0; i < d->m_fastuidraw_painter_stats.size(); ++i) {
+              enum fastuidraw::Painter::query_stats_t st;
 
-          st = static_cast<enum fastuidraw::Painter::query_stats_t>(i);
-          ostr << "\n" << fastuidraw::Painter::stat_name(st) << ": "
-               << d->m_fastuidraw_painter_stats[i];
-        }
-      ostr << "\n";
-      d->draw_text(ostr.str(), 32.0f, fastuidraw::GlyphRenderer(),
-                   fastuidraw::PainterData(&brush));
+              st = static_cast<enum fastuidraw::Painter::query_stats_t>(i);
+              ostr << "\n" << fastuidraw::Painter::stat_name(st) << ": "
+                   << d->m_fastuidraw_painter_stats[i];
+          }
+          ostr << "\n";
+          d->draw_text(ostr.str(), 32.0f, fastuidraw::GlyphRenderer(),
+                       fastuidraw::PainterData(&brush));
+      }
 
-      
-      
       d->m_painter->end();
       d->m_painter->query_stats(cast_c_array(d->m_fastuidraw_painter_stats));
 
