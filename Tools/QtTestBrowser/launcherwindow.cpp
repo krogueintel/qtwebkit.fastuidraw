@@ -74,6 +74,7 @@
 #endif
 
 #include <QSurfaceFormat>
+#include <iostream>
 
 struct HighlightedElement {
     QWebElement m_element;
@@ -322,29 +323,37 @@ void LauncherWindow::createChrome()
     toggleGraphicsView->setCheckable(true);
     toggleGraphicsView->setChecked(isGraphicsBased());
 
+    QAction *toggleLayers = toolsMenu->addAction("Support Transparent Layers");
+    toggleLayers->setCheckable(true);
+    toggleLayers->setChecked(qSupportTransparencyLayers());
+    QObject::connect(toggleLayers, SIGNAL(toggled(bool)),
+                     this, SLOT(toggleSupportTransparentLayers(bool)));
+
     QAction *toggleFastUIDraw = toolsMenu->addAction("Use FastUIDraw", this, SLOT(toggleFastUIDraw(bool)));
     toggleFastUIDraw->setCheckable(true);
     toggleFastUIDraw->setChecked(isFastUIDraw());
     toggleFastUIDraw->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
-    toggleFastUIDraw->connect(toggleGraphicsView, SIGNAL(toggled(bool)), SLOT(setEnabled(bool)));
 
     QAction *toggleUseFastUIDrawLayers = toolsMenu->addAction("Use FastUIDraw Layers", this, SLOT(toggleFastUIDrawLayers(bool)));
     toggleUseFastUIDrawLayers->setCheckable(true);
     toggleUseFastUIDrawLayers->setChecked(isFastUIDraw());
     toggleUseFastUIDrawLayers->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
-    toggleUseFastUIDrawLayers->connect(toggleGraphicsView, SIGNAL(toggled(bool)), SLOT(setEnabled(bool)));
+    QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
+                     toggleUseFastUIDrawLayers, SLOT(setEnabled(bool)));
 
     QAction *toggleFastUIDrawFillAA = toolsMenu->addAction("Use FastUIDraw Fill AA", this, SLOT(toggleFastUIDrawFillAA(bool)));
     toggleFastUIDrawFillAA->setCheckable(true);
     toggleFastUIDrawFillAA->setChecked(isFastUIDraw());
     toggleFastUIDrawFillAA->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
-    toggleFastUIDrawFillAA->connect(toggleGraphicsView, SIGNAL(toggled(bool)), SLOT(setEnabled(bool)));
+    QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
+                     toggleFastUIDrawFillAA, SLOT(setEnabled(bool)));
 
     QAction *toggleFastUIDrawStrokeAA = toolsMenu->addAction("Use FastUIDraw Stroke AA", this, SLOT(toggleFastUIDrawStrokeAA(bool)));
     toggleFastUIDrawStrokeAA->setCheckable(true);
     toggleFastUIDrawStrokeAA->setChecked(isFastUIDraw());
     toggleFastUIDrawStrokeAA->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
-    toggleFastUIDrawStrokeAA->connect(toggleGraphicsView, SIGNAL(toggled(bool)), SLOT(setEnabled(bool)));
+    QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
+                     toggleFastUIDrawStrokeAA, SLOT(setEnabled(bool)));
 
     QAction* toggleWebGL = toolsMenu->addAction("Toggle WebGL", this, SLOT(toggleWebGL(bool)));
     toggleWebGL->setCheckable(true);
@@ -953,6 +962,11 @@ void LauncherWindow::toggleWebView(bool graphicsBased)
     menuBar()->clear();
 #endif
     createChrome();
+}
+
+void LauncherWindow::toggleSupportTransparentLayers(bool enable)
+{
+  qSupportTransparencyLayers(enable);
 }
 
 void LauncherWindow::toggleFastUIDraw(bool vFastUIDrawBased)

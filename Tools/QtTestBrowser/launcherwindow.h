@@ -168,6 +168,7 @@ protected Q_SLOTS:
     void toggleQGLWidgetViewport(bool enable);
     void toggleQOpenGLWidgetViewport(bool enable);
 #endif
+    void toggleSupportTransparentLayers(bool enable);
 
     void changeViewportUpdateMode(int mode);
     void animatedFlip();
