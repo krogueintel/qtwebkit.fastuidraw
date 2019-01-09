@@ -44,6 +44,7 @@
 #include <QOpenGLContext>
 #include <QFunctionPointer>
 #include <iostream>
+#include <sstream>
 
 #include <fastuidraw/gl_backend/ngl_header.hpp>
 #include <fastuidraw/gl_backend/gl_get.hpp>
@@ -107,6 +108,7 @@ public:
         : view(view)
         , page(0)
         , renderHints(QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform)
+        , m_fastuidraw_painter_stats(fastuidraw::Painter::number_stats(), 0)
     {
         Q_ASSERT(view);
     }
@@ -116,6 +118,26 @@ public:
     void _q_pageDestroyed();
     void detachCurrentPage();
 
+    template<typename T>
+    void
+    create_formatted_textT(T &out_sequence,
+                           std::istream &istr,
+                           const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &font,
+                           const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> &font_database,
+                           const fastuidraw::vec2 &starting_place);
+
+    void
+    draw_text(const std::string &text, float pixel_size,
+              fastuidraw::GlyphRenderer renderer,
+              const fastuidraw::PainterData &draw)
+    {
+        enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
+        std::istringstream str(text);
+        fastuidraw::GlyphRun run(pixel_size, orientation, qFastUIDrawGlyphCache());
+        create_formatted_textT(run, str, m_font, qFastUIDrawFontDatabase(), fastuidraw::vec2(0.0f, 0.0f));
+        m_painter->draw_glyphs(draw, run, 0, run.number_glyphs(), renderer);
+    }    
+  
     QWebView *view;
     QWebPage *page;
 
@@ -126,7 +148,9 @@ public:
     bool m_allowFastUIDrawStrokeAA;
     fastuidraw::reference_counted_ptr<WebCore::FastUIDraw::PainterHolder> m_painter_holder;
     fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
+    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_font;
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
+    std::vector<unsigned int> m_fastuidraw_painter_stats;
 };
 
 QWebViewPrivate::~QWebViewPrivate()
@@ -138,6 +162,170 @@ void QWebViewPrivate::_q_pageDestroyed()
 {
     page = 0;
     view->setPage(0);
+}
+
+
+static
+void
+preprocess_text(std::string &text)
+{
+  /* we want to change '\t' into 4 spaces
+   */
+  std::string v;
+  v.reserve(text.size() + 4 * std::count(text.begin(), text.end(), '\t'));
+  for(std::string::const_iterator iter = text.begin(); iter != text.end(); ++iter)
+    {
+      if (*iter != '\t')
+        {
+          v.push_back(*iter);
+        }
+      else
+        {
+          v.push_back(' ');
+        }
+    }
+  text.swap(v);
+}
+
+template<typename T>
+static
+fastuidraw::c_array<const T>
+cast_c_array(const std::vector<T> &p)
+{
+  return (p.empty()) ?
+    fastuidraw::c_array<const T>() :
+    fastuidraw::c_array<const T>(&p[0], p.size());
+}
+
+template<typename T>
+static
+fastuidraw::c_array<const T>
+const_cast_c_array(const std::vector<T> &p)
+{
+  return (p.empty()) ?
+    fastuidraw::c_array<const T>() :
+    fastuidraw::c_array<const T>(&p[0], p.size());
+}
+
+template<typename T>
+static
+fastuidraw::c_array<T>
+cast_c_array(std::vector<T> &p)
+{
+  return (p.empty()) ?
+    fastuidraw::c_array<T>() :
+    fastuidraw::c_array<T>(&p[0], p.size());
+}
+
+template<typename T>
+void
+QWebViewPrivate::
+create_formatted_textT(T &out_sequence,
+                       std::istream &istr,
+                       const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &font,
+                       const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> &font_database,
+                       const fastuidraw::vec2 &starting_place)
+{
+  std::streampos current_position, end_position;
+  float pixel_size(out_sequence.pixel_size());
+  enum fastuidraw::Painter::screen_orientation orientation(out_sequence.orientation());
+  unsigned int loc(0);
+  fastuidraw::vec2 pen(starting_place);
+  std::string line, original_line;
+  float last_negative_tallest(0.0f);
+  bool first_line(true);
+
+  current_position = istr.tellg();
+  istr.seekg(0, std::ios::end);
+  end_position = istr.tellg();
+  istr.seekg(current_position, std::ios::beg);
+
+  std::vector<fastuidraw::GlyphSource> glyph_sources;
+  std::vector<fastuidraw::vec2> sub_p;
+  std::vector<fastuidraw::GlyphMetrics> metrics;
+
+  while(getline(istr, line))
+    {
+      fastuidraw::c_array<uint32_t> sub_ch;
+      fastuidraw::c_array<fastuidraw::range_type<float> > sub_extents;
+      float tallest, negative_tallest, offset;
+      bool empty_line;
+      float pen_y_advance;
+
+      empty_line = true;
+      tallest = 0.0f;
+      negative_tallest = 0.0f;
+
+      original_line = line;
+      preprocess_text(line);
+
+      sub_p.resize(line.length());
+      glyph_sources.resize(line.length());
+      metrics.resize(line.length());
+
+      font_database->create_glyph_sequence(font, line.begin(), line.end(), glyph_sources.begin());
+      out_sequence.glyph_cache()->fetch_glyph_metrics(cast_c_array(glyph_sources), cast_c_array(metrics));
+      for(unsigned int i = 0, endi = glyph_sources.size(); i < endi; ++i)
+        {
+          sub_p[i] = pen;
+          if (glyph_sources[i].m_font)
+            {
+              float ratio;
+
+              ratio = pixel_size / metrics[i].units_per_EM();
+
+              empty_line = false;
+              pen.x() += ratio * metrics[i].advance().x();
+
+              tallest = std::max(tallest, ratio * (metrics[i].horizontal_layout_offset().y() + metrics[i].size().y()));
+              negative_tallest = std::min(negative_tallest, ratio * metrics[i].horizontal_layout_offset().y());
+            }
+        }
+
+      if (empty_line)
+        {
+          pen_y_advance = pixel_size + 1.0f;
+          offset = 0.0f;
+        }
+      else
+        {
+          if (orientation == fastuidraw::Painter::y_increases_downwards)
+            {
+              float v;
+
+              v = tallest - last_negative_tallest;
+              offset = (first_line) ? 0 : v;
+              pen_y_advance = (first_line) ? 0 : v;
+            }
+          else
+            {
+              pen_y_advance = tallest - negative_tallest;
+              offset = (first_line) ? 0 : -negative_tallest;
+            }
+        }
+
+      for(unsigned int i = 0; i < sub_p.size(); ++i)
+        {
+          sub_p[i].y() += offset;
+        }
+
+      if (orientation == fastuidraw::Painter::y_increases_downwards)
+        {
+          pen.y() += pen_y_advance + 1.0f;
+        }
+      else
+        {
+          pen.y() -= pen_y_advance + 1.0f;
+        }
+
+      pen.x() = starting_place.x();
+      loc += line.length();
+      last_negative_tallest = negative_tallest;
+      first_line = false;
+
+      out_sequence.add_glyphs(const_cast_c_array(glyph_sources),
+                              const_cast_c_array(sub_p));
+    }
 }
 
 /*!
@@ -908,10 +1096,16 @@ void QWebView::initializeGL(void)
 {
     /* A GL Context must be current so that the GLContext
      * can be queried when creating the FastUIDraw resources
-     */
+     */  
     qFastUIDrawInitializeResources(context(), get_proc_from_context);
     d->m_painter_holder = FASTUIDRAWnew WebCore::FastUIDraw::PainterHolder();
     d->m_painter = d->m_painter_holder->painter();
+    d->m_font = qFastUIDrawFontDatabase()->fetch_font(fastuidraw::FontProperties()
+                                                      .style("Book")
+                                                      .family("DejaVu Sans")
+                                                      .bold(false)
+                                                      .italic(false),
+                                                      0u);
 }
 
 bool QWebView::drawWithFastUIDraw(void) const
@@ -1031,8 +1225,30 @@ void QWebView::paintGL(void)
 
       d->m_surface->clear_color(fastuidraw::vec4(0.0f, 0.5f, 0.5f, 1.0f));
       d->m_painter->begin(d->m_surface, orientation);
+      d->m_painter->save();
       frame->render(d->m_painter, render_flags);
+      d->m_painter->restore();
+
+      std::ostringstream ostr;
+      fastuidraw::PainterBrush brush;
+
+      brush.color(0.0f, 1.0f, 1.0f, 1.0f);
+      for (unsigned int i = 0; i < d->m_fastuidraw_painter_stats.size(); ++i)
+        {
+          enum fastuidraw::Painter::query_stats_t st;
+
+          st = static_cast<enum fastuidraw::Painter::query_stats_t>(i);
+          ostr << "\n" << fastuidraw::Painter::stat_name(st) << ": "
+               << d->m_fastuidraw_painter_stats[i];
+        }
+      ostr << "\n";
+      d->draw_text(ostr.str(), 32.0f, fastuidraw::GlyphRenderer(),
+                   fastuidraw::PainterData(&brush));
+
+      
+      
       d->m_painter->end();
+      d->m_painter->query_stats(cast_c_array(d->m_fastuidraw_painter_stats));
 
       fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
       d->m_surface->blit_surface(GL_NEAREST);
