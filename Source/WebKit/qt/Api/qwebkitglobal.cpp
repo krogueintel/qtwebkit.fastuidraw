@@ -107,3 +107,15 @@ qFastUIDrawFontDatabase(void)
 {
   return WebCore::FastUIDraw::fontDatabase();
 }
+
+bool
+qSupportTransparencyLayers(void)
+{
+  return WebCore::GraphicsContext::supportsTransparencyLayers();
+}
+
+void
+qSupportTransparencyLayers(bool v)
+{
+  WebCore::GraphicsContext::supportsTransparencyLayers(v);
+}

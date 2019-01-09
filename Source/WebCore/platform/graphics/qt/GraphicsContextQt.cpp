@@ -36,8 +36,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define EnableGraphicsContextTransparencyLayer true
-
 #define TransparencyLayerColor(X) fastuidraw::vec4(1.0f, 1.0f, 1.0f, X)
 
 #include "config.h"
@@ -161,6 +159,8 @@ static inline ostream& operator<<(ostream &str, const fastuidraw::Rect &rect)
 }
 
 }
+
+static bool EnableGraphicsContextTransparencyLayer = true;
 
 namespace WebCore {
   
@@ -2409,6 +2409,11 @@ void GraphicsContext::endPlatformTransparencyLayer()
 bool GraphicsContext::supportsTransparencyLayers()
 {
     return EnableGraphicsContextTransparencyLayer;
+}
+
+void GraphicsContext::supportsTransparencyLayers(bool v)
+{
+    EnableGraphicsContextTransparencyLayer = v;
 }
 
 void GraphicsContext::clearRect(const FloatRect& rect)

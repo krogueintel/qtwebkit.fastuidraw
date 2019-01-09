@@ -685,8 +685,10 @@ private:
 
     void beginPlatformTransparencyLayer(float opacity);
     void endPlatformTransparencyLayer();
+public:
     static bool supportsTransparencyLayers();
-
+    static void supportsTransparencyLayers(bool);
+private:
     void fillEllipseAsPath(const FloatRect&);
     void strokeEllipseAsPath(const FloatRect&);
 
