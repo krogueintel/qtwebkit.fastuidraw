@@ -108,22 +108,23 @@ FontPlatformData::FontPlatformData(const FontDescription& description, const Ato
     if (!FontCascade::shouldUseSmoothing())
         font.setStyleStrategy(QFont::NoAntialias);
 
-    m_data->bold = font.bold();
+    m_data->bold(font.bold());
     // WebKit allows font size zero but QFont does not. We will return
     // m_data->size if a font size of zero is requested and pixelSize()
     // otherwise.
-    m_data->size = (!requestedSize) ? requestedSize : font.pixelSize();
-    m_data->rawFont = QRawFont::fromFont(font, QFontDatabase::Any);
+    m_data->size((!requestedSize) ? requestedSize : font.pixelSize());
+    m_data->font(QRawFont::fromFont(font, QFontDatabase::Any));
 }
 
 FontPlatformData::FontPlatformData(const FontPlatformData& other, float size)
     : m_data(adoptRef(new FontPlatformDataPrivate()))
 {
-    m_data->rawFont = other.m_data->rawFont;
-    m_data->bold = other.m_data->bold;
-    m_data->oblique = other.m_data->oblique;
-    m_data->rawFont.setPixelSize(size);
-    m_data->size = m_data->rawFont.pixelSize();
+    m_data->font(other.m_data->rawFont(),
+                 other.m_data->fastuidraw_font());
+    m_data->bold(other.m_data->bold());
+    m_data->oblique(other.m_data->oblique());
+    m_data->rawFont().setPixelSize(size);
+    m_data->size(m_data->rawFont().pixelSize());
 }
 
 bool FontPlatformData::operator==(const FontPlatformData& other) const
@@ -131,13 +132,13 @@ bool FontPlatformData::operator==(const FontPlatformData& other) const
     if (m_data == other.m_data)
         return true;
 
-    if (!m_data || !other.m_data || m_data->isDeletedValue || other.m_data->isDeletedValue)
+    if (!m_data || !other.m_data || m_data->isDeletedValue() || other.m_data->isDeletedValue())
         return false;
 
-    const bool equals = (m_data->size == other.m_data->size
-                         && m_data->bold == other.m_data->bold
-                         && m_data->oblique == other.m_data->oblique
-                         && m_data->rawFont == other.m_data->rawFont);
+    const bool equals = (m_data->size() == other.m_data->size()
+                         && m_data->bold() == other.m_data->bold()
+                         && m_data->oblique() == other.m_data->oblique()
+                         && m_data->rawFont() == other.m_data->rawFont());
     return equals;
 }
 
@@ -149,7 +150,7 @@ PassRefPtr<SharedBuffer> FontPlatformData::openTypeTable(uint32_t table) const
         char((table & 0xff0000) >> 16),
         char(table >> 24)
     };
-    QByteArray tableData = m_data->rawFont.fontTable(tag);
+    QByteArray tableData = m_data->rawFont().fontTable(tag);
 
     // TODO: Wrap SharedBuffer around QByteArray when it's possible
     return SharedBuffer::create(tableData.data(), tableData.size());
@@ -159,11 +160,12 @@ unsigned FontPlatformData::hash() const
 {
     if (!m_data)
         return 0;
-    if (m_data->isDeletedValue)
+    if (m_data->isDeletedValue())
         return 1;
-    return qHash(m_data->rawFont.familyName()) ^ qHash(m_data->rawFont.style())
-            ^ qHash(m_data->rawFont.weight())
-            ^ qHash(*reinterpret_cast<quint32*>(&m_data->size));
+    float sz(m_data->size());
+    return qHash(m_data->rawFont().familyName()) ^ qHash(m_data->rawFont().style())
+            ^ qHash(m_data->rawFont().weight())
+            ^ qHash(*reinterpret_cast<quint32*>(&sz));
 }
 
 #ifndef NDEBUG

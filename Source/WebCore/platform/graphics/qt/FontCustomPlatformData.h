@@ -43,12 +43,16 @@ public:
     FontPlatformData fontPlatformData(const FontDescription&, bool bold, bool italic);
 
     static bool supportsFormat(const String&);
-
+    static std::unique_ptr<FontCustomPlatformData> createFontCustomPlatformData(SharedBuffer&);
+private:
     QRawFont m_rawFont;
     fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_fastuidraw_font;
 };
 
-std::unique_ptr<FontCustomPlatformData> createFontCustomPlatformData(SharedBuffer&);
+inline std::unique_ptr<FontCustomPlatformData> createFontCustomPlatformData(SharedBuffer &buffer)
+{
+    return FontCustomPlatformData::createFontCustomPlatformData(buffer);
+}
 
 } // namespace WebCore
 

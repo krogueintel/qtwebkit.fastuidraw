@@ -68,7 +68,7 @@ RefPtr<Font> FontCache::systemFallbackForCharacters(const FontDescription&, cons
     QRawFont computedFont = rawFontForCharacters(qstring, originalFontData->getQtRawFont());
     if (!computedFont.isValid())
         return 0;
-    FontPlatformData alternateFont(computedFont);
+    FontPlatformData alternateFont(computedFont, FastUIDraw::select_font(computedFont));
     return fontForPlatformData(alternateFont);
 }
 

@@ -198,7 +198,7 @@ static AtomicString alternateFamilyName(const AtomicString& familyName)
             return AtomicString("Courier", AtomicString::ConstructFromLiteral);
         break;
 #endif
-#if OS(WINDOWS)
+        //#if OS(WINDOWS)
     // On Windows, we don't support bitmap fonts, but legacy content expects support.
     // Thus we allow Microsoft Sans Serif as an alternative for the bitmap font MS Sans Serif,
     // even if the webpage does not specify fallback.
@@ -208,7 +208,7 @@ static AtomicString alternateFamilyName(const AtomicString& familyName)
         if (equalLettersIgnoringASCIICase(familyName, "ms sans serif"))
             return AtomicString("Microsoft Sans Serif", AtomicString::ConstructFromLiteral);
         break;
-#endif
+        //#endif
     case 15:
         if (equalLettersIgnoringASCIICase(familyName, "times new roman"))
             return AtomicString("Times", AtomicString::ConstructFromLiteral);

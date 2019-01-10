@@ -456,6 +456,9 @@ select_font(int weight, int slant,
           return_value = font_database->fetch_font((fastuidraw::c_string)filename, face_index);
           if (return_value)
             {
+              std::cout << "[style=" << style << ", family=" << family
+                        << ", weight=" << weight << ", slant=" << slant
+                        << "-->" << filename << ":" << face_index << "\n";
               return return_value;
             }
         }
