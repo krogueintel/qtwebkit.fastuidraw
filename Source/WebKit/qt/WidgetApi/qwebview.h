@@ -176,7 +176,7 @@ protected:
 
     bool focusNextPrevChild(bool next) Q_DECL_OVERRIDE;
 
-private:
+private:    
     friend class QWebPage;
     QWebViewPrivate* d;
     Q_PRIVATE_SLOT(d, void _q_pageDestroyed())

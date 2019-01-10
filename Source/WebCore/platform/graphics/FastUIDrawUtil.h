@@ -10,6 +10,10 @@ namespace WebCore {
   namespace FastUIDraw {
     fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
     select_font(const QRawFont &desc);
+
+    void
+    install_custom_font(const QRawFont &desc,
+                        fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> f);
   }
 }
 

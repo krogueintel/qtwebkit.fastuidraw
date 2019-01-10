@@ -21,6 +21,14 @@
 #include <fastuidraw/gl_backend/ngl_header.hpp>
 
 namespace {
+
+  inline
+  fastuidraw::c_string
+  make_printable(fastuidraw::c_string c)
+  {
+    return c ? c : "NULL";
+  }
+
   class AtlasSet:fastuidraw::noncopyable
   {
   public:
@@ -66,9 +74,37 @@ namespace {
                 fastuidraw::c_string foundry,
                 fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> font_database);
 
+    static
+    void
+    install_custom_font(int weight, int slant,
+                        fastuidraw::c_string style,
+                        fastuidraw::c_string family,
+                        fastuidraw::c_string foundry,
+                        fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font)
+    {
+      get().m_custom_fonts[make_custom_font_key(weight, slant, style, family, foundry)] = font;
+    }
+
   private:
+    // weight, slant, style, family, foundry
+    typedef std::tuple<int, int, std::string, std::string, std::string> CustomFontKey;
+
+    static
+    CustomFontKey
+    make_custom_font_key(int weight, int slant,
+                         fastuidraw::c_string style,
+                         fastuidraw::c_string family,
+                         fastuidraw::c_string foundry)
+    {
+      return CustomFontKey(weight, slant,
+                           make_printable(style),
+                           make_printable(family),
+                           make_printable(foundry));
+    }
+
     FontConfig(void);
     ~FontConfig(void);
+
     static
     std::string
     get_string(FcPattern *pattern, const char *label, std::string default_value = std::string());
@@ -95,6 +131,7 @@ namespace {
 
     FcConfig* m_fc;
     fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> m_lib;
+    std::map<CustomFontKey, fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> > m_custom_fonts;
   };
 
   /* The purpose of the DataBufferHolder is to -DELAY-
@@ -180,8 +217,6 @@ namespace {
         << ", " << obj.italic() << ", " << obj.bold() << ")";
     return str;
   }
-
-  
 }
 
 ///////////////////////////////////////
@@ -408,6 +443,14 @@ select_font(int weight, int slant,
 { 
   FASTUIDRAWassert(font_database);
 
+  CustomFontKey K(make_custom_font_key(weight, slant, style, family, foundry));
+  std::map<CustomFontKey, fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> >::const_iterator iter;
+  iter = get().m_custom_fonts.find(K);
+  if (iter != get().m_custom_fonts.end())
+    {
+      return iter->second;
+    }
+
   FcConfig *config(get().m_fc);
   fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib(get().m_lib);
   FcPattern* pattern;
@@ -456,9 +499,6 @@ select_font(int weight, int slant,
           return_value = font_database->fetch_font((fastuidraw::c_string)filename, face_index);
           if (return_value)
             {
-              std::cout << "[style=" << style << ", family=" << family
-                        << ", weight=" << weight << ", slant=" << slant
-                        << "-->" << filename << ":" << face_index << "\n";
               return return_value;
             }
         }
@@ -526,6 +566,17 @@ selectFont(int weight, int slant,
            fastuidraw::c_string foundry)
 {
   return FontConfig::select_font(weight, slant, style, family, foundry, fontDatabase());
+}
+
+void
+WebCore::FastUIDraw::
+installCustomFont(int weight, int slant,
+                  fastuidraw::c_string style,
+                  fastuidraw::c_string family,
+                  fastuidraw::c_string foundry,
+                  fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font)
+{
+  FontConfig::install_custom_font(weight, slant, style, family, foundry, font);
 }
 
 void

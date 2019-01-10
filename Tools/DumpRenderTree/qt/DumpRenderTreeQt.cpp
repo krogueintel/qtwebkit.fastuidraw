@@ -425,7 +425,8 @@ DumpRenderTree::DumpRenderTree()
         view->setPage(m_page);
         m_mainView = view;
     } else {
-        QWebView* view = new QWebView(0);
+        QWidget *null(0);
+        QWebView* view = new QWebView(null);
         m_page = new WebPage(view, this);
         view->setPage(m_page);
         m_mainView = view;

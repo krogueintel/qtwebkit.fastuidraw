@@ -435,7 +435,6 @@ QWebView::QWebView(QWidget *parent)
     : QOpenGLWidget(parent)
 {
     QSurfaceFormat sf(QSurfaceFormat::defaultFormat());
-
     /* On Mesa/i965, GL versions higher than 3.0 are only
      * available as Core Profiles, so we use that.
      */
@@ -443,8 +442,7 @@ QWebView::QWebView(QWidget *parent)
     sf.setMinorVersion(5);
     sf.setProfile(QSurfaceFormat::CoreProfile);
     setFormat(sf);
-    create();
-
+  
     d = new QWebViewPrivate(this);
     d->m_drawWithFastUIDraw = true;
     d->m_useFastUIDrawLayers = true;

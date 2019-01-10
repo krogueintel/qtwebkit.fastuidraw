@@ -46,6 +46,13 @@ namespace WebCore {
                fastuidraw::c_string foundry);
 
     void
+    installCustomFont(int weight, int slant,
+                      fastuidraw::c_string style,
+                      fastuidraw::c_string family,
+                      fastuidraw::c_string foundry,
+                      fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font);
+
+    void
     unimplementedFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p);
   }
 }

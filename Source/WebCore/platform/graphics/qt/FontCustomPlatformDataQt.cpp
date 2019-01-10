@@ -26,6 +26,7 @@
 #include "SharedBuffer.h"
 #include <iostream>
 #include <QStringList>
+#include "FastUIDrawUtil.h"
 #include <fastuidraw/util/data_buffer.hpp>
 #include <fastuidraw/text/font_freetype.hpp>
 
@@ -53,12 +54,6 @@ std::unique_ptr<FontCustomPlatformData> FontCustomPlatformData::createFontCustom
     fastuidraw::reference_counted_ptr<fastuidraw::DataBuffer> fasuidrawFontData;
     fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeFace::GeneratorBase> h;
     fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> f;
-
-    std::cout << "CustomFont [family = "
-              << rawFont.familyName().toLatin1().data()
-              << ", style =" << rawFont.style()
-              << ", weight = " << rawFont.weight()
-              << "]\n";
     
     fasuidrawFontData = FASTUIDRAWnew fastuidraw::DataBuffer(pdata);
     h = FASTUIDRAWnew fastuidraw::FreeTypeFace::GeneratorMemory(fasuidrawFontData, 0);
@@ -67,6 +62,8 @@ std::unique_ptr<FontCustomPlatformData> FontCustomPlatformData::createFontCustom
     auto data = std::make_unique<FontCustomPlatformData>();
     data->m_rawFont = rawFont;
     data->m_fastuidraw_font = f;
+    WebCore::FastUIDraw::install_custom_font(rawFont, f);
+                                  
     return data;
 }
 
