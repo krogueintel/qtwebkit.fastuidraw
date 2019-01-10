@@ -27,6 +27,8 @@
 #include <wtf/Forward.h>
 #include <wtf/Noncopyable.h>
 
+#include <fastuidraw/text/font_freetype.hpp>
+
 namespace WebCore {
 
 class FontDescription;
@@ -43,6 +45,7 @@ public:
     static bool supportsFormat(const String&);
 
     QRawFont m_rawFont;
+    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_fastuidraw_font;
 };
 
 std::unique_ptr<FontCustomPlatformData> createFontCustomPlatformData(SharedBuffer&);

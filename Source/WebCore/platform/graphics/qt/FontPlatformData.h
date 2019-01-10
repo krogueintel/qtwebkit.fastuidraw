@@ -39,11 +39,14 @@ class SharedBuffer;
 class FontPlatformDataPrivate : public RefCounted<FontPlatformDataPrivate> {
     WTF_MAKE_NONCOPYABLE(FontPlatformDataPrivate); WTF_MAKE_FAST_ALLOCATED;
 public:
-    FontPlatformDataPrivate()
+    explicit
+    FontPlatformDataPrivate(const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &f =
+                            fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>())
         : size(0)
         , bold(false)
         , oblique(false)
         , isDeletedValue(false)
+        , m_fastuidraw_font(f)
     { }
     FontPlatformDataPrivate(const float size, const bool bold, const bool oblique)
         : size(size)
@@ -60,29 +63,38 @@ public:
         rawFont.setPixelSize(size);
     }
 
-    FontPlatformDataPrivate(const QRawFont& rawFont)
+    FontPlatformDataPrivate(const QRawFont& rawFont,
+                            const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &f =
+                            fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>())
         : rawFont(rawFont)
         , size(rawFont.pixelSize())
         , bold(rawFont.weight() >= QFont::Bold)
         , oblique(false)
         , isDeletedValue(false)
+        , m_fastuidraw_font(f)
     { }
 
     FontPlatformDataPrivate(WTF::HashTableDeletedValueType)
         : isDeletedValue(true)
     { }
 
-    void setFastUIDrawFont()
+    const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>&
+    fastuidraw_font(void) const
     {
-      m_fastuidraw_font = FastUIDraw::select_font(rawFont);
+        if (!m_fastuidraw_font) {
+            m_fastuidraw_font = FastUIDraw::select_font(rawFont);
+        }
+        return m_fastuidraw_font;
     }
 
     QRawFont rawFont;
-    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_fastuidraw_font;
     float size;
     bool bold : 1;
     bool oblique : 1;
     bool isDeletedValue : 1;
+
+private:
+    mutable fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_fastuidraw_font;
 };
 
 class FontPlatformData {
@@ -91,8 +103,9 @@ public:
     FontPlatformData(float size, bool bold, bool oblique);
     FontPlatformData(const FontDescription&, const AtomicString& familyName, int wordSpacing = 0, int letterSpacing = 0);
     FontPlatformData(const FontPlatformData&, float size);
-    FontPlatformData(const QRawFont& rawFont)
-        : m_data(adoptRef(new FontPlatformDataPrivate(rawFont)))
+    FontPlatformData(const QRawFont& rawFont, const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &f =
+                     fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>())
+      : m_data(adoptRef(new FontPlatformDataPrivate(rawFont, f)))
     { }
     FontPlatformData(WTF::HashTableDeletedValueType)
         : m_data(adoptRef(new FontPlatformDataPrivate()))
@@ -120,7 +133,7 @@ public:
         static fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> null;
         if (!m_data)
             return null;
-        return m_data->m_fastuidraw_font;
+        return m_data->fastuidraw_font();
     }
 
     float size() const

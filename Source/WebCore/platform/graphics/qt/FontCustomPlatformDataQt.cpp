@@ -25,6 +25,8 @@
 #include "FontPlatformData.h"
 #include "SharedBuffer.h"
 #include <QStringList>
+#include <fastuidraw/util/data_buffer.hpp>
+#include <fastuidraw/text/font_freetype.hpp>
 
 namespace WebCore {
 
@@ -33,7 +35,7 @@ FontPlatformData FontCustomPlatformData::fontPlatformData(const FontDescription&
     Q_ASSERT(m_rawFont.isValid());
     int size = description.computedPixelSize();
     m_rawFont.setPixelSize(qreal(size));
-    return FontPlatformData(m_rawFont);
+    return FontPlatformData(m_rawFont, m_fastuidraw_font);
 }
 
 std::unique_ptr<FontCustomPlatformData> createFontCustomPlatformData(SharedBuffer& buffer)
@@ -45,8 +47,19 @@ std::unique_ptr<FontCustomPlatformData> createFontCustomPlatformData(SharedBuffe
     if (!rawFont.isValid())
         return 0;
 
+    const uint8_t* buffer_ptr(reinterpret_cast<const uint8_t*>(buffer.data()));
+    fastuidraw::c_array<const uint8_t> pdata(buffer_ptr, buffer.size());
+    fastuidraw::reference_counted_ptr<fastuidraw::DataBuffer> fasuidrawFontData;
+    fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeFace::GeneratorBase> h;
+    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> f;
+
+    fasuidrawFontData = FASTUIDRAWnew fastuidraw::DataBuffer(pdata);
+    h = FASTUIDRAWnew fastuidraw::FreeTypeFace::GeneratorMemory(fasuidrawFontData, 0);
+    f = FASTUIDRAWnew fastuidraw::FontFreeType(h);
+
     auto data = std::make_unique<FontCustomPlatformData>();
     data->m_rawFont = rawFont;
+    data->m_fastuidraw_font = f;
     return data;
 }
 

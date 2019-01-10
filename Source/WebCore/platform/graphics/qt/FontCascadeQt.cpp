@@ -180,7 +180,7 @@ static void drawQtGlyphRun(GraphicsContext& context, const QGlyphRun& qtGlyphRun
 static void drawFastUIDrawGlyphRun(GraphicsContext& context, const fastuidraw::GlyphRun& glyphRun, const FloatPoint& point, float baseLineOffset)
 {
     if (context.hasShadow()) {
-        unimplementedFastUIDraw();
+        unimplementedFastUIDrawMessage("Shadow");
     }
 
     context.save();

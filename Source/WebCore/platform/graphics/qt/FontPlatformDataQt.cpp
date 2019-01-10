@@ -89,7 +89,6 @@ FontPlatformData::FontPlatformData(float size, bool bold, bool oblique)
 {
     if (!isEmptyValue(size, bold, oblique)) {
         m_data = adoptRef(new FontPlatformDataPrivate(size, bold, oblique));
-        m_data->setFastUIDrawFont();
     }
 }
 
@@ -115,7 +114,6 @@ FontPlatformData::FontPlatformData(const FontDescription& description, const Ato
     // otherwise.
     m_data->size = (!requestedSize) ? requestedSize : font.pixelSize();
     m_data->rawFont = QRawFont::fromFont(font, QFontDatabase::Any);
-    m_data->setFastUIDrawFont();
 }
 
 FontPlatformData::FontPlatformData(const FontPlatformData& other, float size)
@@ -126,7 +124,6 @@ FontPlatformData::FontPlatformData(const FontPlatformData& other, float size)
     m_data->oblique = other.m_data->oblique;
     m_data->rawFont.setPixelSize(size);
     m_data->size = m_data->rawFont.pixelSize();
-    m_data->setFastUIDrawFont();
 }
 
 bool FontPlatformData::operator==(const FontPlatformData& other) const
