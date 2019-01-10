@@ -43,7 +43,8 @@ namespace WebCore {
     selectFont(int weight, int slant,
                fastuidraw::c_string style,
                fastuidraw::c_string family,
-               fastuidraw::c_string foundry);
+               fastuidraw::c_string foundry,
+               fastuidraw::c_array<const fastuidraw::c_string> langs);
 
     void
     installCustomFont(int weight, int slant,

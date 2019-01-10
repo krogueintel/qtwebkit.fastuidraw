@@ -72,6 +72,7 @@ namespace {
                 fastuidraw::c_string style,
                 fastuidraw::c_string family,
                 fastuidraw::c_string foundry,
+                fastuidraw::c_array<const fastuidraw::c_string> langs,
                 fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> font_database);
 
     static
@@ -383,7 +384,7 @@ add_system_fonts(const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabas
 
   object_set = FcObjectSetBuild(FC_FOUNDRY, FC_FAMILY, FC_STYLE, FC_WEIGHT,
                                 FC_SLANT, FC_SCALABLE, FC_FILE, FC_INDEX,
-                                nullptr);
+                                FC_LANG, nullptr);
   pattern = FcPatternCreate();
   FcPatternAddBool(pattern, FC_SCALABLE, FcTrue);
   font_set = FcFontList(config, pattern, object_set);
@@ -439,6 +440,7 @@ select_font(int weight, int slant,
             fastuidraw::c_string style,
             fastuidraw::c_string family,
             fastuidraw::c_string foundry,
+            fastuidraw::c_array<const fastuidraw::c_string> langs,
             fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> font_database)
 { 
   FASTUIDRAWassert(font_database);
@@ -454,6 +456,7 @@ select_font(int weight, int slant,
   FcConfig *config(get().m_fc);
   fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib(get().m_lib);
   FcPattern* pattern;
+  FcLangSet* lang_set(nullptr);
   fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> return_value;
 
   pattern = FcPatternCreate();
@@ -482,6 +485,23 @@ select_font(int weight, int slant,
       FcPatternAddString(pattern, FC_FOUNDRY, (const FcChar8*)foundry);
     }
   FcPatternAddBool(pattern, FC_SCALABLE, FcTrue);
+
+  for (fastuidraw::c_string language : langs)
+    {
+      if (language)
+        {
+          if (!lang_set)
+            {
+              lang_set = FcLangSetCreate();
+            }
+          FcLangSetAdd(lang_set, (const FcChar8*)language);
+        }
+    }
+
+  if (lang_set)
+    {
+      FcPatternAddLangSet(pattern, FC_LANG, lang_set);
+    }
 
   FcConfigSubstitute(config, pattern, FcMatchPattern);
   FcDefaultSubstitute(pattern);
@@ -563,9 +583,10 @@ WebCore::FastUIDraw::
 selectFont(int weight, int slant,
            fastuidraw::c_string style,
            fastuidraw::c_string family,
-           fastuidraw::c_string foundry)
+           fastuidraw::c_string foundry,
+           fastuidraw::c_array<const fastuidraw::c_string> langs)
 {
-  return FontConfig::select_font(weight, slant, style, family, foundry, fontDatabase());
+  return FontConfig::select_font(weight, slant, style, family, foundry, langs, fontDatabase());
 }
 
 void

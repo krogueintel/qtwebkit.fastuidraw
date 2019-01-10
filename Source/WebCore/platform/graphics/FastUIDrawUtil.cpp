@@ -2,8 +2,46 @@
 #include "FastUIDrawResources.h"
 #include <fontconfig/fontconfig.h>
 #include <QRawFont>
+#include <vector>
 #include <string>
 #include <iostream>
+
+static const char langNameFromQFontDatabaseWritingSystem[][6] = {
+    "",     // Any
+    "en",  // Latin
+    "el",  // Greek
+    "ru",  // Cyrillic
+    "hy",  // Armenian
+    "he",  // Hebrew
+    "ar",  // Arabic
+    "syr", // Syriac
+    "div", // Thaana
+    "hi",  // Devanagari
+    "bn",  // Bengali
+    "pa",  // Gurmukhi
+    "gu",  // Gujarati
+    "or",  // Oriya
+    "ta",  // Tamil
+    "te",  // Telugu
+    "kn",  // Kannada
+    "ml",  // Malayalam
+    "si",  // Sinhala
+    "th",  // Thai
+    "lo",  // Lao
+    "bo",  // Tibetan
+    "my",  // Myanmar
+    "ka",  // Georgian
+    "km",  // Khmer
+    "zh-cn", // SimplifiedChinese
+    "zh-tw", // TraditionalChinese
+    "ja",  // Japanese
+    "ko",  // Korean
+    "vi",  // Vietnamese
+    "", // Symbol
+    "sga", // Ogham
+    "non", // Runic
+    "man" // N'Ko
+};
 
 static
 std::ostream&
@@ -179,11 +217,23 @@ select_font(const QRawFont &desc)
       family = tmp1.data();
     }
 
+  const QList<QFontDatabase::WritingSystem> &qLangs(desc.supportedWritingSystems());
+  std::vector<fastuidraw::c_string> langs;
+  fastuidraw::c_array<const fastuidraw::c_string> langs_array;
+
+  for (auto c : qLangs)
+    {
+      langs.push_back(langNameFromQFontDatabaseWritingSystem[c]);
+    }
+
+  if (!langs.empty())
+    {
+      langs_array = fastuidraw::c_array<const fastuidraw::c_string>(&langs[0], langs.size());
+    }
+
   return_value = selectFont(font_config_wieght_from_qt_weight(desc.weight()),
-                            slant,
-                            style,
-                            family,
-                            foundry);
+                            slant, style, family, foundry,
+                            langs_array);
   
   return return_value;
 }
