@@ -237,14 +237,15 @@ void FontCascade::drawComplexText(GraphicsContext& ctx, const TextRun& run, cons
         Q_FOREACH(QGlyphRun glyphRun, runs)
             drawQtGlyphRun(ctx, glyphRun, adjustedPoint, line.ascent());
     } else {
-        const QRawFont &qfont(rawFont());
-        fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> fastuidraw_font(FastUIDraw::select_font(qfont));
-        float pixel_size(qfont.pixelSize());
         enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
         enum fastuidraw::Painter::glyph_layout_type layout(fastuidraw::Painter::glyph_layout_horizontal);
 
         Q_FOREACH(QGlyphRun glyphRun, runs) {
+            const QRawFont &qfont(glyphRun.rawFont());
+            fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> fastuidraw_font(FastUIDraw::select_font(qfont));
+            float pixel_size(qfont.pixelSize());
             fastuidraw::GlyphRun fastuidraw_run(pixel_size, orientation, FastUIDraw::glyphCache(), layout);
+
             addQtGlyphRunToFastUIDrawGlyphRun(fastuidraw_font, glyphRun, fastuidraw_run);
             drawFastUIDrawGlyphRun(ctx, fastuidraw_run, adjustedPoint, line.ascent());
         }
