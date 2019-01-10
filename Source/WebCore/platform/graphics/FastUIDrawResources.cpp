@@ -525,7 +525,10 @@ select_font(int weight, int slant,
       FcPatternDestroy(font_pattern);
     }
   FcPatternDestroy(pattern);
-
+  if (lang_set)
+    {
+      FcLangSetDestroy(lang_set);
+    }
   return return_value;
 }
 
