@@ -332,33 +332,33 @@ void LauncherWindow::createChrome()
     QAction *toggleFastUIDraw = toolsMenu->addAction("Use FastUIDraw", this, SLOT(toggleFastUIDraw(bool)));
     toggleFastUIDraw->setCheckable(true);
     toggleFastUIDraw->setChecked(isFastUIDraw());
-    toggleFastUIDraw->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
+    toggleFastUIDraw->setEnabled(!m_windowOptions.useGraphicsView);
 
     QAction *toggleUseFastUIDrawLayers = toolsMenu->addAction("Use FastUIDraw Layers", this, SLOT(toggleFastUIDrawLayers(bool)));
     toggleUseFastUIDrawLayers->setCheckable(true);
     toggleUseFastUIDrawLayers->setChecked(isFastUIDraw());
-    toggleUseFastUIDrawLayers->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
+    toggleUseFastUIDrawLayers->setEnabled(!m_windowOptions.useGraphicsView);
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleUseFastUIDrawLayers, SLOT(setEnabled(bool)));
 
     QAction *toggleFastUIDrawFillAA = toolsMenu->addAction("Use FastUIDraw Fill AA", this, SLOT(toggleFastUIDrawFillAA(bool)));
     toggleFastUIDrawFillAA->setCheckable(true);
     toggleFastUIDrawFillAA->setChecked(isFastUIDraw());
-    toggleFastUIDrawFillAA->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
+    toggleFastUIDrawFillAA->setEnabled(!m_windowOptions.useGraphicsView);
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleFastUIDrawFillAA, SLOT(setEnabled(bool)));
 
     QAction *toggleFastUIDrawStrokeAA = toolsMenu->addAction("Use FastUIDraw Stroke AA", this, SLOT(toggleFastUIDrawStrokeAA(bool)));
     toggleFastUIDrawStrokeAA->setCheckable(true);
     toggleFastUIDrawStrokeAA->setChecked(isFastUIDraw());
-    toggleFastUIDrawStrokeAA->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
+    toggleFastUIDrawStrokeAA->setEnabled(!m_windowOptions.useGraphicsView);
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleFastUIDrawStrokeAA, SLOT(setEnabled(bool)));
 
     QAction *toggleFastUIDrawShowStats = toolsMenu->addAction("Show FastUIDraw stats", this, SLOT(toggleFastUIDrawShowStats(bool)));
     toggleFastUIDrawShowStats->setCheckable(true);
     toggleFastUIDrawShowStats->setChecked(false);
-    toggleFastUIDrawShowStats->setEnabled(!m_windowOptions.useQOpenGLWidgetViewport);
+    toggleFastUIDrawShowStats->setEnabled(!m_windowOptions.useGraphicsView);
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleFastUIDrawShowStats, SLOT(setEnabled(bool)));
 
