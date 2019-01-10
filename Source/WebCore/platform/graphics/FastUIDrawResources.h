@@ -51,6 +51,7 @@ namespace WebCore {
                       fastuidraw::c_string style,
                       fastuidraw::c_string family,
                       fastuidraw::c_string foundry,
+                      fastuidraw::c_array<const fastuidraw::c_string> langs,
                       fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font);
 
     void

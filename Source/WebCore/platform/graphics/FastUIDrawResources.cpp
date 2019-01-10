@@ -29,6 +29,49 @@ namespace {
     return c ? c : "NULL";
   }
 
+  // weight, slant, style, family, foundry, languages
+  typedef std::tuple<int, int, std::string, std::string, std::string, std::vector<std::string> > CustomFontKey;
+
+  CustomFontKey
+  make_custom_font_key(int weight, int slant,
+                         fastuidraw::c_string style,
+                         fastuidraw::c_string family,
+                         fastuidraw::c_string foundry,
+                         fastuidraw::c_array<const fastuidraw::c_string > langs)
+  {
+    CustomFontKey K;
+    std::get<0>(K) = weight;
+    std::get<1>(K) = slant;
+    std::get<2>(K) = make_printable(style);
+    std::get<3>(K) = make_printable(family);
+    std::get<4>(K) = make_printable(foundry);
+    
+    for (fastuidraw::c_string l : langs)
+      {
+        std::get<5>(K).push_back(l);
+      }
+    
+    return K;
+  }
+
+  static
+  std::ostream&
+  operator<<(std::ostream &str, const CustomFontKey &K)
+  {
+    str << "[weight=" << std::get<0>(K)
+        << ",slant=" << std::get<1>(K)
+        << ",style=" << std::get<2>(K)
+        << ", family=" << std::get<3>(K)
+        << ", foundry=" << std::get<4>(K)
+        << ",langs={";
+    for(const std::string &v : std::get<5>(K))
+      {
+        str << "\"" << v << "\",";
+      }
+    str << "]";
+    return str;
+  }
+
   class AtlasSet:fastuidraw::noncopyable
   {
   public:
@@ -81,27 +124,25 @@ namespace {
                         fastuidraw::c_string style,
                         fastuidraw::c_string family,
                         fastuidraw::c_string foundry,
+                        fastuidraw::c_array<const fastuidraw::c_string > langs,
                         fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font)
     {
-      get().m_custom_fonts[make_custom_font_key(weight, slant, style, family, foundry)] = font;
+      std::lock_guard<std::mutex> M(get().m_mutex);
+      CustomFontKey K(make_custom_font_key(weight, slant, style, family, foundry, langs));
+
+      //std::cout << "FUID: InstallCustom" << K << "@" << font.get();
+      if (get().m_custom_fonts.find(K) == get().m_custom_fonts.end())
+        {
+          //std::cout << ":OK \n";
+          get().m_custom_fonts[K] = font;
+        }
+      else
+        {
+          //std::cout << ":BAD, entry already present!\n";
+        }
     }
 
   private:
-    // weight, slant, style, family, foundry
-    typedef std::tuple<int, int, std::string, std::string, std::string> CustomFontKey;
-
-    static
-    CustomFontKey
-    make_custom_font_key(int weight, int slant,
-                         fastuidraw::c_string style,
-                         fastuidraw::c_string family,
-                         fastuidraw::c_string foundry)
-    {
-      return CustomFontKey(weight, slant,
-                           make_printable(style),
-                           make_printable(family),
-                           make_printable(foundry));
-    }
 
     FontConfig(void);
     ~FontConfig(void);
@@ -130,6 +171,7 @@ namespace {
       return R;
     }
 
+    std::mutex m_mutex;
     FcConfig* m_fc;
     fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> m_lib;
     std::map<CustomFontKey, fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> > m_custom_fonts;
@@ -375,6 +417,7 @@ add_system_fonts(const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabas
 {
   FASTUIDRAWassert(font_database);
 
+  std::lock_guard<std::mutex> M(get().m_mutex);
   FcConfig *config(get().m_fc);
   fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib(get().m_lib);
   FcObjectSet *object_set;
@@ -445,11 +488,14 @@ select_font(int weight, int slant,
 { 
   FASTUIDRAWassert(font_database);
 
-  CustomFontKey K(make_custom_font_key(weight, slant, style, family, foundry));
+  CustomFontKey K(make_custom_font_key(weight, slant, style, family, foundry, langs));
+  //std::cout << "FUID: FcFont" << K << "--->";
+
   std::map<CustomFontKey, fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> >::const_iterator iter;
   iter = get().m_custom_fonts.find(K);
   if (iter != get().m_custom_fonts.end())
     {
+      //std::cout << "Custom(" << iter->second.get() << ")\n";
       return iter->second;
     }
 
@@ -519,16 +565,22 @@ select_font(int weight, int slant,
           return_value = font_database->fetch_font((fastuidraw::c_string)filename, face_index);
           if (return_value)
             {
-              return return_value;
+              //std::cout << filename << ":" << face_index << "\n";
             }
         }
       FcPatternDestroy(font_pattern);
     }
   FcPatternDestroy(pattern);
+
   if (lang_set)
     {
       FcLangSetDestroy(lang_set);
     }
+  if (!return_value)
+    {
+      //std::cout << "null";
+    }
+
   return return_value;
 }
 
@@ -598,9 +650,10 @@ installCustomFont(int weight, int slant,
                   fastuidraw::c_string style,
                   fastuidraw::c_string family,
                   fastuidraw::c_string foundry,
+                  fastuidraw::c_array<const fastuidraw::c_string> langs,
                   fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font)
 {
-  FontConfig::install_custom_font(weight, slant, style, family, foundry, font);
+  FontConfig::install_custom_font(weight, slant, style, family, foundry, langs, font);
 }
 
 void

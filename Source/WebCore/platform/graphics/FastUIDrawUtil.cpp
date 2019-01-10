@@ -106,6 +106,7 @@ install_custom_font(const QRawFont &desc,
   
   int slant;
   const QString in_family(desc.familyName());
+  const QString in_style(desc.styleName());
   QByteArray tmp1, tmp2;
   fastuidraw::c_string family, foundry(nullptr), style(nullptr);
 
@@ -154,11 +155,26 @@ install_custom_font(const QRawFont &desc,
       family = tmp1.data();
     }
 
+  const QList<QFontDatabase::WritingSystem> &qLangs(desc.supportedWritingSystems());
+  std::vector<fastuidraw::c_string> langs;
+  fastuidraw::c_array<const fastuidraw::c_string> langs_array;
+
+  for (auto c : qLangs)
+    {
+      langs.push_back(langNameFromQFontDatabaseWritingSystem[c]);
+    }
+
+  if (!langs.empty())
+    {
+      langs_array = fastuidraw::c_array<const fastuidraw::c_string>(&langs[0], langs.size());
+    }
+
   installCustomFont(font_config_wieght_from_qt_weight(desc.weight()),
                     slant,
                     style,
                     family,
                     foundry,
+                    langs_array,
                     f);
 }
 
