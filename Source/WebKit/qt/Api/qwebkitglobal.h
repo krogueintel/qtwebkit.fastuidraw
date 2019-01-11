@@ -82,4 +82,10 @@ qSupportTransparencyLayers(void);
 QWEBKIT_EXPORT void
 qSupportTransparencyLayers(bool v);
 
+QWEBKIT_EXPORT bool
+qSupportShadows(void);
+
+QWEBKIT_EXPORT void
+qSupportShadows(bool v);
+
 #endif // QWEBKITGLOBAL_H

@@ -119,3 +119,15 @@ qSupportTransparencyLayers(bool v)
 {
   WebCore::GraphicsContext::supportsTransparencyLayers(v);
 }
+
+bool
+qSupportShadows(void)
+{
+  return WebCore::GraphicsContext::supportsShadow();
+}
+
+void
+qSupportShadows(bool v)
+{
+  WebCore::GraphicsContext::supportsShadow(v);
+}
