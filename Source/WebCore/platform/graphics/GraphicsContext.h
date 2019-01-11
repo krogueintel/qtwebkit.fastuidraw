@@ -509,9 +509,9 @@ public:
     WEBCORE_EXPORT void clearShadow();
     bool getShadow(FloatSize&, float&, Color&) const;
 
-    bool hasVisibleShadow() const { return m_state.shadowColor.isValid() && m_state.shadowColor.alpha(); }
-    bool hasShadow() const { return hasVisibleShadow() && (m_state.shadowBlur || m_state.shadowOffset.width() || m_state.shadowOffset.height()); }
-    bool hasBlurredShadow() const { return hasVisibleShadow() && m_state.shadowBlur; }
+    bool hasVisibleShadow() const { return supportsShadow() && m_state.shadowColor.isValid() && m_state.shadowColor.alpha(); }
+    bool hasShadow() const { return supportsShadow() && hasVisibleShadow() && (m_state.shadowBlur || m_state.shadowOffset.width() || m_state.shadowOffset.height()); }
+    bool hasBlurredShadow() const { return supportsShadow() && hasVisibleShadow() && m_state.shadowBlur; }
 
 #if PLATFORM(QT) || USE(CAIRO)
     bool mustUseShadowBlur() const;
@@ -688,6 +688,8 @@ private:
 public:
     static bool supportsTransparencyLayers();
     static void supportsTransparencyLayers(bool);
+    static bool supportsShadow();
+    static void supportsShadow(bool);
 private:
     void fillEllipseAsPath(const FloatRect&);
     void strokeEllipseAsPath(const FloatRect&);

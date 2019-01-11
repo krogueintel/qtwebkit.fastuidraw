@@ -77,7 +77,9 @@ private:
     unsigned m_offset;
 };
 
-#define CHECK_FOR_CHANGED_PROPERTY(flag, property) \
+static bool GraphicsContextSupportsShadow = true;
+
+#define CHECK_FOR_CHANGED_PROPERTY(flag, property)                      \
     if ((m_changeFlags & GraphicsContextState::flag) && (m_state.property != state.property)) \
         changeFlags |= GraphicsContextState::flag;
 
@@ -1175,6 +1177,16 @@ void GraphicsContext::applyState(const GraphicsContextState& state)
     setPlatformCompositeOperation(state.compositeOperator, state.blendMode);
     setPlatformShouldAntialias(state.shouldAntialias);
     setPlatformShouldSmoothFonts(state.shouldSmoothFonts);
+}
+
+bool GraphicsContext::supportsShadow()
+{
+    return GraphicsContextSupportsShadow;
+}
+
+void GraphicsContext::supportsShadow(bool v)
+{
+    GraphicsContextSupportsShadow = v;
 }
 
 }
