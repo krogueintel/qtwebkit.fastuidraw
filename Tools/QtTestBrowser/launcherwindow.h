@@ -170,6 +170,7 @@ protected Q_SLOTS:
     void toggleQOpenGLWidgetViewport(bool enable);
 #endif
     void toggleSupportTransparentLayers(bool enable);
+    void toggleSupportShadows(bool enable);
 
     void changeViewportUpdateMode(int mode);
     void animatedFlip();
@@ -208,6 +209,7 @@ private:
 
 private:
     void closeEvent(QCloseEvent*) final;
+    void updateWebView(void);
 
     static QVector<int> m_zoomLevels;
     int m_currentZoom;

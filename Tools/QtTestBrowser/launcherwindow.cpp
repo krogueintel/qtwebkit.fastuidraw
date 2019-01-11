@@ -318,44 +318,58 @@ void LauncherWindow::createChrome()
     QWebSettings* settings = page()->settings();
 
     QMenu* toolsMenu = menuBar()->addMenu("&Develop");
+    QMenu *webkitFeatures = toolsMenu->addMenu("WebKit Drawing Features");
     QMenu* graphicsViewMenu = toolsMenu->addMenu("QGraphicsView");
     QAction* toggleGraphicsView = graphicsViewMenu->addAction("Toggle use of QGraphicsView", this, SLOT(toggleWebView(bool)));
     toggleGraphicsView->setCheckable(true);
     toggleGraphicsView->setChecked(isGraphicsBased());
 
-    QAction *toggleLayers = toolsMenu->addAction("Support Transparent Layers");
+    QAction *toggleLayers = webkitFeatures->addAction("Support Transparent Layers");
     toggleLayers->setCheckable(true);
     toggleLayers->setChecked(qSupportTransparencyLayers());
     QObject::connect(toggleLayers, SIGNAL(toggled(bool)),
                      this, SLOT(toggleSupportTransparentLayers(bool)));
 
+    QAction *toggleShadows = webkitFeatures->addAction("Support Shadows");
+    toggleShadows->setCheckable(true);
+    toggleShadows->setChecked(qSupportShadows());
+    QObject::connect(toggleShadows, SIGNAL(toggled(bool)),
+                     this, SLOT(toggleSupportShadows(bool)));
+
     QAction *toggleFastUIDraw = toolsMenu->addAction("Use FastUIDraw", this, SLOT(toggleFastUIDraw(bool)));
     toggleFastUIDraw->setCheckable(true);
     toggleFastUIDraw->setChecked(isFastUIDraw());
     toggleFastUIDraw->setEnabled(!m_windowOptions.useGraphicsView);
+    toggleFastUIDraw->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F));
 
-    QAction *toggleUseFastUIDrawLayers = toolsMenu->addAction("Use FastUIDraw Layers", this, SLOT(toggleFastUIDrawLayers(bool)));
+    QMenu *menuFastUIDraw = toolsMenu->addMenu("FastUIDraw Options");
+
+    QAction *toggleUseFastUIDrawLayers = menuFastUIDraw->addAction("Use FastUIDraw Layers", this,
+                                                                   SLOT(toggleFastUIDrawLayers(bool)));
     toggleUseFastUIDrawLayers->setCheckable(true);
     toggleUseFastUIDrawLayers->setChecked(isFastUIDraw());
     toggleUseFastUIDrawLayers->setEnabled(!m_windowOptions.useGraphicsView);
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleUseFastUIDrawLayers, SLOT(setEnabled(bool)));
 
-    QAction *toggleFastUIDrawFillAA = toolsMenu->addAction("Use FastUIDraw Fill AA", this, SLOT(toggleFastUIDrawFillAA(bool)));
+    QAction *toggleFastUIDrawFillAA = menuFastUIDraw->addAction("Use FastUIDraw Fill AA", this,
+                                                                SLOT(toggleFastUIDrawFillAA(bool)));
     toggleFastUIDrawFillAA->setCheckable(true);
     toggleFastUIDrawFillAA->setChecked(isFastUIDraw());
     toggleFastUIDrawFillAA->setEnabled(!m_windowOptions.useGraphicsView);
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleFastUIDrawFillAA, SLOT(setEnabled(bool)));
 
-    QAction *toggleFastUIDrawStrokeAA = toolsMenu->addAction("Use FastUIDraw Stroke AA", this, SLOT(toggleFastUIDrawStrokeAA(bool)));
+    QAction *toggleFastUIDrawStrokeAA = menuFastUIDraw->addAction("Use FastUIDraw Stroke AA", this,
+                                                                  SLOT(toggleFastUIDrawStrokeAA(bool)));
     toggleFastUIDrawStrokeAA->setCheckable(true);
     toggleFastUIDrawStrokeAA->setChecked(isFastUIDraw());
     toggleFastUIDrawStrokeAA->setEnabled(!m_windowOptions.useGraphicsView);
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleFastUIDrawStrokeAA, SLOT(setEnabled(bool)));
 
-    QAction *toggleFastUIDrawShowStats = toolsMenu->addAction("Show FastUIDraw stats", this, SLOT(toggleFastUIDrawShowStats(bool)));
+    QAction *toggleFastUIDrawShowStats = menuFastUIDraw->addAction("Show FastUIDraw stats", this,
+                                                                   SLOT(toggleFastUIDrawShowStats(bool)));
     toggleFastUIDrawShowStats->setCheckable(true);
     toggleFastUIDrawShowStats->setChecked(false);
     toggleFastUIDrawShowStats->setEnabled(!m_windowOptions.useGraphicsView);
@@ -974,6 +988,27 @@ void LauncherWindow::toggleWebView(bool graphicsBased)
 void LauncherWindow::toggleSupportTransparentLayers(bool enable)
 {
   qSupportTransparencyLayers(enable);
+  updateWebView();
+}
+
+void LauncherWindow::toggleSupportShadows(bool enable)
+{
+  qSupportShadows(enable);
+  updateWebView();
+}
+
+void LauncherWindow::updateWebView(void)
+{
+    WebViewTraditional *p;
+    GraphicsWebView *q;
+    
+    p = qobject_cast<WebViewTraditional*>(m_view);
+    q = qobject_cast<GraphicsWebView*>(m_view);
+    if (p) {
+        p->update();
+    } else if (q) {
+        q->update();
+    }
 }
 
 void LauncherWindow::toggleFastUIDraw(bool vFastUIDrawBased)
