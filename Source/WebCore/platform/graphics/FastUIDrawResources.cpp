@@ -138,7 +138,8 @@ namespace {
         }
       else
         {
-          //std::cout << ":BAD, entry already present!\n";
+          std::cout << "FUID: attemptyed to add font when key"
+                    << K << " is already present\n";
         }
     }
 

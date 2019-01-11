@@ -57,12 +57,13 @@ std::unique_ptr<FontCustomPlatformData> FontCustomPlatformData::createFontCustom
     
     fasuidrawFontData = FASTUIDRAWnew fastuidraw::DataBuffer(pdata);
     h = FASTUIDRAWnew fastuidraw::FreeTypeFace::GeneratorMemory(fasuidrawFontData, 0);
-    f = FASTUIDRAWnew fastuidraw::FontFreeType(h);
 
+    /* Maybe we should add a hash value coming from the raw data of
+     * buffer to the key...
+     */
     auto data = std::make_unique<FontCustomPlatformData>();
     data->m_rawFont = rawFont;
-    data->m_fastuidraw_font = f;
-    WebCore::FastUIDraw::install_custom_font(rawFont, f);
+    data->m_fastuidraw_font = WebCore::FastUIDraw::install_custom_font(rawFont, h);
                                   
     return data;
 }
