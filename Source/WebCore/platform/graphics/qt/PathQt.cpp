@@ -404,9 +404,9 @@ void Path::addPath(const Path& path, const AffineTransform& transform)
 
 void Path::clear()
 {
+    m_fastuidraw_path_ready = false;
     if (!m_path.elementCount())
         return;
-    m_fastuidraw_path_ready = false;
     m_path = QPainterPath();
 }
 
