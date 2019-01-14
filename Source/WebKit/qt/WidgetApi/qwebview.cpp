@@ -264,7 +264,7 @@ create_formatted_textT(T &out_sequence,
       glyph_sources.resize(line.length());
       metrics.resize(line.length());
 
-      font_database->create_glyph_sequence(font, line.begin(), line.end(), glyph_sources.begin());
+      font_database->create_glyph_sequence(font.get(), line.begin(), line.end(), glyph_sources.begin());
       out_sequence.glyph_cache()->fetch_glyph_metrics(cast_c_array(glyph_sources), cast_c_array(metrics));
       for(unsigned int i = 0, endi = glyph_sources.size(); i < endi; ++i)
         {

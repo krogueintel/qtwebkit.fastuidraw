@@ -216,7 +216,7 @@ static void addQtGlyphRunToFastUIDrawGlyphRun(const fastuidraw::reference_counte
         indices[i] = inIndices[i];
     }
 
-    outGlyphRun.add_glyphs(fastuidraw_font,
+    outGlyphRun.add_glyphs(fastuidraw_font.get(),
                            fastuidraw::c_array<const uint32_t>(&indices[0], indices.size()),
                            fastuidraw::c_array<const fastuidraw::vec2>(&pts[0], pts.size()));
 }
@@ -414,7 +414,7 @@ void FontCascade::drawGlyphs(GraphicsContext& context, const Font& font, const G
               width += advance;
           }
 
-          fud_run.add_glyphs(fud_font,
+          fud_run.add_glyphs(fud_font.get(),
                              fastuidraw::c_array<const uint32_t>(&glyph_codes[0], glyph_codes.size()),
                              fastuidraw::c_array<const fastuidraw::vec2>(&glyph_positions[0], glyph_positions.size()));
           drawFastUIDrawGlyphRun(context, fud_run, point, /* baselineOffset = */0.0f);
