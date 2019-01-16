@@ -183,6 +183,9 @@ pixel(int x, int y) const
   if (y < 0) y = 0;
   if (x >= m_image.width()) x = m_image.width() - 1;
   if (y >= m_image.height()) y = m_image.height() - 1;
+  /* NOTE: doing QColor qcolor(m_image.pixel(x, y)
+   * yeilds a QColor where qcolor.alpha() is always 255
+   */
   QRgb qcolor(m_image.pixel(x, y));
   return fastuidraw::u8vec4(qRed(qcolor),
                             qGreen(qcolor),
