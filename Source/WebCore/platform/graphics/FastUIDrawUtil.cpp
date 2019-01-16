@@ -430,11 +430,9 @@ compose_with_pattern(fastuidraw::PainterBrush &brush,
   FASTUIDRAWunused(spacing);
 
   vec2_phase = vec2FromFloatPoint(phase);
-  brush
-    .repeat_window(-vec2_phase + fastuidraw::vec2(srcRect.x(), srcRect.y()),
-                   fastuidraw::vec2(srcRect.width(), srcRect.height()));
 
   compose_with_pattern_transformation(brush, patternTransform);
+  brush.apply_translate(fastuidraw::vec2(-phase.x(), -phase.y()));
 }
 
 void
@@ -442,9 +440,28 @@ WebCore::FastUIDraw::
 compose_with_pattern_transformation(fastuidraw::PainterBrush &brush,
                                     const AffineTransform& patternTransform)
 {
-  /* TODO: use patternTransform to transform the logical coordinates
-   * to image coordinates or something correctly.
+  /* patternTransform takes as input -image- pixel coordinates
+   * and applies a scaling factor to give logical coordinates.
+   * fastuidraw::PainterBrush's transformation goes from logical
+   * coordinates to pixel coordinates, so we need to invert
+   * the transformation.
    */
-  FASTUIDRAWunused(brush);
-  FASTUIDRAWunused(patternTransform);
+  fastuidraw::float3x3 M;
+  fastuidraw::float2x2 N;
+  fastuidraw::vec2 T;
+  Optional<AffineTransform> inverse_tr;
+
+  inverse_tr = patternTransform.inverse();
+  FastUIDraw::computeToFastUIDrawMatrixT(inverse_tr.value(), &M);
+
+  N(0, 0) = M(0, 0);
+  N(0, 1) = M(0, 1);
+  N(1, 0) = M(1, 0);
+  N(1, 1) = M(1, 1);
+  T.x() = M(0, 2);
+  T.y() = M(1, 2);
+
+  brush
+    .apply_translate(T)
+    .apply_matrix(N);
 }
