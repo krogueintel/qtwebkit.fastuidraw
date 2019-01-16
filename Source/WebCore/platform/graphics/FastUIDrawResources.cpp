@@ -659,6 +659,14 @@ installCustomFont(int weight, int slant,
 
 void
 WebCore::FastUIDraw::
+setBrushToNullImage(fastuidraw::PainterBrush &brush)
+{
+  brush.reset();
+  brush.color(0.5f, 0.75f, 0.3f, 0.8f);
+}
+
+void
+WebCore::FastUIDraw::
 unimplementedFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p)
 {
   if (count < 1)

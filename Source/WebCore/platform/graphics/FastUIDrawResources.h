@@ -39,6 +39,9 @@ namespace WebCore {
     const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
     fontDatabase(void);
 
+    void
+    setBrushToNullImage(fastuidraw::PainterBrush &brush);
+
     fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
     selectFont(int weight, int slant,
                fastuidraw::c_string style,
