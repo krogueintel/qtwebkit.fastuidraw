@@ -41,6 +41,7 @@
 #include "StillImageQt.h"
 #include "Timer.h"
 #include "FastUIDrawResources.h"
+#include "FastUIDrawUtil.h"
 
 #include <QCoreApplication>
 #include <QImage>
@@ -134,12 +135,21 @@ bool FrameData::clear(bool clearMetadata)
     m_orientation = DefaultImageOrientation;
     m_subsamplingLevel = 0;
 
+    m_fastuidraw_image.clear();
     if (m_frame) {
         delete m_frame;
         m_frame = 0;
         return true;
     }
     return false;
+}
+
+const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &FrameData::fastuidraw_image(void)
+{
+    if (!m_fastuidraw_image && m_frame) {
+        m_fastuidraw_image = FastUIDraw::create_fastuidraw_image(*m_frame);
+    }
+    return m_fastuidraw_image;
 }
 
 
@@ -299,7 +309,19 @@ void BitmapImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
         if (imageObserver())
             imageObserver()->didDraw(this);
     } else {
-        unimplementedFastUIDraw();
+        fastuidraw::PainterBrush brush;
+
+        readyFastUIDrawBrush(brush);
+        brush
+          .apply_translate(fastuidraw::vec2(normalizedSrc.x(), normalizedSrc.y()))
+          .apply_shear(normalizedSrc.width() / normalizedDst.width(),
+                       normalizedSrc.height() / normalizedDst.height())
+          .apply_translate(fastuidraw::vec2(-normalizedDst.x(), -normalizedDst.y()));
+        ctxt.drawImage(brush, dst, op, blendMode);
+
+        if (imageObserver())
+            imageObserver()->didDraw(this);
+        
     }
 }
 

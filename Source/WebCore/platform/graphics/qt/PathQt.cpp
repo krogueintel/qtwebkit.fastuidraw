@@ -182,6 +182,7 @@ FloatRect Path::boundingRect() const
 
 FloatRect Path::strokeBoundingRect(StrokeStyleApplier* applier) const
 {
+  /**
     GraphicsContext* context = scratchContext();
     QPainterPathStroker stroke;
     if (applier) {
@@ -196,6 +197,28 @@ FloatRect Path::strokeBoundingRect(StrokeStyleApplier* applier) const
         stroke.setDashOffset(pen.dashOffset());
     }
     return stroke.createStroke(m_path).boundingRect();
+  **/
+
+  /* Instead of the above insanity, we just take the
+   * bounding box of the path inflated by the stroking
+   * width.
+   */
+  QRectF R(m_path.boundingRect());
+
+  if (applier) {
+      GraphicsContext* context = scratchContext();
+
+      applier->strokeStyle(context);
+      QPen pen = context->platformContext()->qt().pen();
+      float pw(pen.widthF());
+
+      R.setWidth(R.width() + 2.0f * pw);
+      R.setHeight(R.height() + 2.0f * pw);
+      R.translate(-pw, -pw);
+  }
+
+  return R;
+  
 }
 
 void Path::moveTo(const FloatPoint& point)

@@ -29,6 +29,8 @@
 
 #include "Color.h"
 #include "FloatRect.h"
+#include "FastUIDrawResources.h"
+#include "FastUIDrawUtil.h"
 #include <wtf/HashFunctions.h>
 #include <wtf/Hasher.h>
 
@@ -217,6 +219,107 @@ unsigned Gradient::hash() const
     m_cachedHash = pairIntHash(parametersHash, stopHash);
 
     return m_cachedHash;
+}
+
+const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>& Gradient::fastuidrawGradient(void) const
+{
+    if (!m_fastuidraw_cs) {
+        fastuidraw::ColorStopSequence sq;
+        unsigned int width(256);
+        float last_time(-1.0f);
+
+        for(const auto &colorStop: m_stops) {
+            fastuidraw::u8vec4 color;
+            float t;
+
+            color.x() = static_cast<uint8_t>(255.0f * colorStop.red);
+            color.y() = static_cast<uint8_t>(255.0f * colorStop.green);
+            color.z() = static_cast<uint8_t>(255.0f * colorStop.blue);
+            color.w() = static_cast<uint8_t>(255.0f * colorStop.alpha);
+            t = colorStop.stop;
+
+            if (last_time >= colorStop.stop) {
+              t = last_time + 1.0f / 256.0f;
+              width = fastuidraw::t_max(width, 256u);
+            } else {
+                float delta(colorStop.stop - last_time);
+                float recip(1.0f / delta);
+                /* we need atleast one texel between the two times. */
+                width = fastuidraw::t_max(width, static_cast<unsigned int>(recip));
+            }
+
+            sq.add(fastuidraw::ColorStop(color, t));
+            last_time = t;
+        }
+        if (m_stops.isEmpty()) {
+            sq.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0), 0.0f));
+            sq.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0), 1.0f));
+        }
+        
+        m_fastuidraw_cs = FASTUIDRAWnew fastuidraw::ColorStopSequenceOnAtlas(sq,
+                                                                             FastUIDraw::colorAtlas(),
+                                                                             width);
+    }
+
+    return m_fastuidraw_cs;
+}
+
+static inline enum fastuidraw::PainterBrush::gradient_spread_type_t toFastUIDrawGradientSpreadType(enum GradientSpreadMethod spread)
+{
+    switch(spread) {
+    case SpreadMethodPad:
+        return fastuidraw::PainterBrush::gradient_clamp;
+        break;
+    case SpreadMethodRepeat:
+        return fastuidraw::PainterBrush::gradient_repeat;
+        break;
+    case SpreadMethodReflect:
+        return fastuidraw::PainterBrush::gradient_mirror_repeat;
+        break;
+    }
+}
+
+void Gradient::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) const
+{
+    const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> &cs(fastuidrawGradient());
+    fastuidraw::vec2 q0(FastUIDraw::vec2FromFloatPoint(p0())), q1(FastUIDraw::vec2FromFloatPoint(p1()));
+    fastuidraw::float3x3 M;
+    fastuidraw::float2x2 N;
+    fastuidraw::vec2 T;
+    Optional<AffineTransform> inverse_gr;
+
+    /* Gradient::gradientSpaceTransform() maps from coordinates
+     * of the gradient TO logical coordinates. FastUIDraw's brush
+     * maps from logical coordinates to gradient coordiante, so
+     * we need the inverse.
+     */
+    inverse_gr = gradientSpaceTransform().inverse();
+    FastUIDraw::computeToFastUIDrawMatrixT(inverse_gr.value(), &M);
+
+    /* AffineTransform is not a full 3x3, it is just
+     * a 2x2 matrix and a translate.
+     */
+    N(0, 0) = M(0, 0);
+    N(0, 1) = M(0, 1);
+    N(1, 0) = M(1, 0);
+    N(1, 1) = M(1, 1);
+    T.x() = M(0, 2);
+    T.y() = M(1, 2);
+
+    brush.reset();
+    if (isRadial()) {
+        brush.radial_gradient(cs,
+                              q0, startRadius(),
+                              q1, endRadius(),
+                              toFastUIDrawGradientSpreadType(spreadMethod()));
+    } else {
+        brush.linear_gradient(cs, q0, q1,
+                              toFastUIDrawGradientSpreadType(spreadMethod()));
+    }
+
+    brush
+      .transformation_matrix(N)
+      .transformation_translate(T);
 }
 
 } //namespace

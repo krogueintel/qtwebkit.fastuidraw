@@ -87,6 +87,7 @@ public:
     // Clear the cached image data on the frame, and (optionally) the metadata.
     // Returns whether there was cached image data to clear.
     bool clear(bool clearMetadata);
+    const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &fastuidraw_image(void);
 
     NativeImagePtr m_frame;
     ImageOrientation m_orientation;
@@ -96,6 +97,9 @@ public:
     bool m_isComplete : 1;
     bool m_hasAlpha : 1;
     unsigned m_frameBytes;
+
+private:
+  fastuidraw::reference_counted_ptr<const fastuidraw::Image> m_fastuidraw_image;
 };
 
 // =================================================
@@ -141,7 +145,8 @@ public:
     virtual void resetAnimation() override;
 
     virtual void drawPattern(GraphicsContext&, const FloatRect& srcRect, const AffineTransform& patternTransform,
-        const FloatPoint& phase, const FloatSize& spacing, CompositeOperator, const FloatRect& destRect, BlendMode = BlendModeNormal) override;
+                             const FloatPoint& phase, const FloatSize& spacing, CompositeOperator, const FloatRect& destRect, BlendMode = BlendModeNormal) override;
+    virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) override;
 
     // Accessors for native image formats.
 
@@ -214,6 +219,7 @@ protected:
 
     size_t frameCount();
 
+    FrameData* frameAtIndexInternal(size_t, float presentationScaleHint = 1);
     PassNativeImagePtr frameAtIndex(size_t, float presentationScaleHint = 1);
     PassNativeImagePtr copyUnscaledFrameAtIndex(size_t);
 

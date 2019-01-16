@@ -66,7 +66,8 @@ Qt WebKit: rendering.
            v. Image represents a static image, but appears to be a virtual base class
               - The derived types appear to be
                   * BitmapImage wraps over an array of FrameData which is rougly just a wrapper over
-                    NativeImagePtr
+                    NativeImagePtr; we need to add to FrameData the necessary fastuidraw field.
+                    Not clear when the data should be generated though.
                   * GeneratedImage which is also a pure-virtual base-class
                        ^ GradientImage is for caching a gradient render; 
                        ^ NamedImageGeneratedImage, appears to be used for theme rendering; likely not active (?)
@@ -78,15 +79,8 @@ Qt WebKit: rendering.
                 virtual method Image::nativeImageForCurrentFrame() is to be overridden
               - Rendering to offscreen has additional class, ImageBuffer and ImageBufferData
                 that adds more layers of C++ code.
-              - Perhaps one way to win is to change NativeImagePtr to a type that
-                holds both a reference to a fastuidraw::Image and a QPixmap*,
-                similar to what we did for GraphicsContext and then correctly
-                generate the needed data. Ideally, images coming from offscreen
-                rendering would be tied to fastuidraw::Image that is backed by
-                a GL texture and images that are static are fastuidraw::Image
-                backed by the FastUIDraw image atlas. The challenge will be
-                to identify these correctly and do the right thing (perhaps
-                always use QGLFramebufferObject and grab that texture).
+              - Plan: add to Image class an interface function readyFastUIDrawBrush()
+                whose job is to ready a fastuidraw::PainterBrush to brush with the image.
                   
        b. text
          i. modify GlyphBuffer and/or TextRun to have a fastuidraw structs for text.

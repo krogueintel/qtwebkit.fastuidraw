@@ -388,6 +388,13 @@ bool BitmapImage::ensureFrameIsCached(size_t index, ImageFrameCaching frameCachi
 
 PassNativeImagePtr BitmapImage::frameAtIndex(size_t index, float presentationScaleHint)
 {
+  FrameData *f;
+  f = frameAtIndexInternal(index, presentationScaleHint);
+  return (f) ? f->m_frame : nullptr;
+}
+
+FrameData* BitmapImage::frameAtIndexInternal(size_t index, float presentationScaleHint)
+{
     if (index >= frameCount())
         return nullptr;
 
@@ -409,7 +416,7 @@ PassNativeImagePtr BitmapImage::frameAtIndex(size_t index, float presentationSca
     if (index >= m_frames.size() || !m_frames[index].m_frame)
         cacheFrame(index, subsamplingLevel, CacheMetadataAndFrame);
 
-    return m_frames[index].m_frame;
+    return &m_frames[index];
 }
 
 bool BitmapImage::frameIsCompleteAtIndex(size_t index)
@@ -604,6 +611,20 @@ void BitmapImage::drawPattern(GraphicsContext& ctxt, const FloatRect& tileRect, 
         Image::drawPattern(ctxt, tileRect, transform, phase, spacing, op, destRect, blendMode);
         return;
     }
+
+    if (ctxt.platformContext()->is_fastuidraw()) {
+        fastuidraw::PainterBrush brush;
+
+        startAnimation();
+        readyFastUIDrawBrush(brush);
+        FastUIDraw::compose_with_pattern(brush, tileRect, transform, phase, spacing);
+        ctxt.drawImage(brush, destRect, op, blendMode);
+        
+        if (imageObserver())
+            imageObserver()->didDraw(this);
+        return;
+    }
+    
     if (!m_cachedImage) {
         std::unique_ptr<ImageBuffer> buffer = ctxt.createCompatibleBuffer(expandedIntSize(tileRect.size()));
         if (!buffer)
@@ -629,6 +650,16 @@ void BitmapImage::drawPattern(GraphicsContext& ctxt, const FloatRect& tileRect, 
     m_cachedImage->drawPattern(ctxt, tileRect, transform, phase, spacing, op, destRect, blendMode);
 }
 
+void BitmapImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
+{
+    FrameData *f;
+
+    brush.reset();
+    f = frameAtIndexInternal(currentFrame());
+    if (f) {
+        brush.image(f->fastuidraw_image());
+    }
+}
 
 void BitmapImage::advanceAnimation()
 {

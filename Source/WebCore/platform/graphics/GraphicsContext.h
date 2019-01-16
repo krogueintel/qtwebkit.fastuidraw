@@ -520,6 +520,9 @@ public:
 #if PLATFORM(QT)
     void strokeText(const fastuidraw::GlyphRun& glyphRun);
     void fillText(const fastuidraw::GlyphRun& glyphRun);
+    void drawImage(const fastuidraw::PainterBrush &brush,
+                   const FloatRect& dst,
+                   CompositeOperator op, BlendMode blendMode);
 #endif
 
     void drawFocusRing(const Vector<FloatRect>&, float width, float offset, const Color&);

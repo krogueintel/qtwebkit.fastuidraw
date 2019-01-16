@@ -31,26 +31,32 @@
 #include "GraphicsContext.h"
 #include "ShadowBlur.h"
 #include "FastUIDrawResources.h"
+#include "FastUIDrawUtil.h"
 
 #include <QPainter>
+#include <iostream>
 
 namespace WebCore {
 
 StillImage::StillImage(const QPixmap& pixmap)
     : m_pixmap(new QPixmap(pixmap))
     , m_ownsPixmap(true)
-{}
+{
+    createFastUIDrawImage();
+}
 
 StillImage::StillImage(const QPixmap* pixmap)
     : m_pixmap(pixmap)
     , m_ownsPixmap(false)
-{}
+{
+}
 
 StillImage::StillImage(QPixmap&& pixmap)
     : m_pixmap(new QPixmap())
     , m_ownsPixmap(true)
 {
     const_cast<QPixmap*>(m_pixmap)->swap(pixmap);
+    createFastUIDrawImage();
 }
 
 StillImage::~StillImage()
@@ -104,8 +110,33 @@ void StillImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
         ctxt.platformContext()->qt().drawPixmap(normalizedDst, *m_pixmap, normalizedSrc);
         ctxt.setCompositeOperation(previousOperator, previousBlendMode);
     } else {
-        unimplementedFastUIDraw();
+        fastuidraw::PainterBrush brush;
+        FloatRect normalizedSrc = src.normalized();
+        FloatRect normalizedDst = dst.normalized();
+
+        readyFastUIDrawBrush(brush);
+        brush
+          .apply_translate(fastuidraw::vec2(normalizedSrc.x(), normalizedSrc.y()))
+          .apply_shear(normalizedSrc.width() / normalizedDst.width(),
+                       normalizedSrc.height() / normalizedDst.height())
+          .apply_translate(fastuidraw::vec2(-normalizedDst.x(), -normalizedDst.y()));
+        ctxt.drawImage(brush, normalizedDst, op, blendMode);
     }
+}
+
+void StillImage::createFastUIDrawImage(void)
+{
+    if (!m_fastuidraw_image && m_pixmap && !m_pixmap->isNull() && m_ownsPixmap) {
+        m_fastuidraw_image = WebCore::FastUIDraw::create_fastuidraw_image(*m_pixmap);
+    }
+}
+
+void StillImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
+{
+  brush.reset();
+  brush
+    .image(m_fastuidraw_image)
+    .apply_shear(m_pixmap->devicePixelRatio(), m_pixmap->devicePixelRatio());
 }
 
 }

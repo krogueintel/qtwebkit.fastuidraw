@@ -51,6 +51,7 @@ protected:
         const FloatPoint& phase, const FloatSize& spacing, CompositeOperator, const FloatRect& destRect, BlendMode) override;
 
     GradientImage(PassRefPtr<Gradient>, const FloatSize&);
+    virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) override;
 
 private:
     virtual bool isGradientImage() const override { return true; }

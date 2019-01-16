@@ -66,7 +66,6 @@ public:
 #if PLATFORM(QT)
     // Qt ignores user space transformation and uses pattern's instead
     PlatformPatternPtr createPlatformPattern() const;
-    fastuidraw::PainterBrush createFastUIDrawBrush(void) const;
 #else
     PlatformPatternPtr createPlatformPattern(const AffineTransform& userSpaceTransformation) const;
 #endif

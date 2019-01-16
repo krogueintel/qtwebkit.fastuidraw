@@ -137,6 +137,7 @@ namespace WebCore {
         PlatformGradient platformGradient();
 #endif
         const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>& fastuidrawGradient(void) const;
+        void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) const;
 
         struct ColorStop {
             float stop;

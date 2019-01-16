@@ -2,63 +2,138 @@
 #include "FastUIDrawResources.h"
 #include <fontconfig/fontconfig.h>
 #include <QRawFont>
+#include <QImage>
+#include <QPixmap>
 #include <QHash>
 #include <vector>
 #include <string>
 #include <mutex>
 #include <iostream>
 
-
-class FontHolder:fastuidraw::noncopyable
+namespace
 {
-public:
-  static
-  fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
-  get_font(const QRawFont &desc)
+  class ImageFromPixmap:public fastuidraw::ImageSourceBase
   {
-    FontHolder &F(get());
-    std::lock_guard<std::mutex> M(F.m_mutex);
-    QHash<QRawFont, fastuidraw_font>::iterator iter;
+  public:
+    ImageFromPixmap(const QImage &image):
+      m_image(image)
+    {}
 
-    iter = F.m_fonts.find(desc);
-    if (iter != F.m_fonts.end())
+    virtual
+    bool
+    all_same_color(fastuidraw::ivec2 location, int square_size,
+                   fastuidraw::u8vec4 *dst) const;
+
+    virtual
+    unsigned int
+    number_levels(void) const { return 1; }
+
+    virtual
+    void
+    fetch_texels(unsigned int mimpap_level,
+                 fastuidraw::ivec2 location,
+                 unsigned int w, unsigned int h,
+                 fastuidraw::c_array<fastuidraw::u8vec4> dst) const;
+
+  private:
+    fastuidraw::u8vec4
+    pixel(int x, int y) const;
+
+    const QImage &m_image;
+  };
+
+  class FontHolder:fastuidraw::noncopyable
+  {
+  public:
+    static
+    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
+    get_font(const QRawFont &desc)
+    {
+      FontHolder &F(get());
+      std::lock_guard<std::mutex> M(F.m_mutex);
+      QHash<QRawFont, fastuidraw_font>::iterator iter;
+
+      iter = F.m_fonts.find(desc);
+      if (iter != F.m_fonts.end())
+        {
+          return iter.value();
+        }
+      else
+        {
+          return nullptr;
+        }
+    }
+
+    static
+    void
+    add_font(const QRawFont &desc,
+             fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> f)
+    {
+      FontHolder &F(get());
+      std::lock_guard<std::mutex> M(F.m_mutex);
+      F.m_fonts[desc] = f;
+    }
+  
+  private:
+    FontHolder(void)
+    {}
+
+    static
+    FontHolder&
+    get(void)
+    {
+      static FontHolder R;
+      return R;
+    }
+  
+    typedef fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> fastuidraw_font;
+
+    std::mutex m_mutex;
+    QHash<QRawFont, fastuidraw_font> m_fonts;
+  };
+
+  int
+  font_config_wieght_from_qt_weight(int wt)
+  {
+    if (wt >= QFont::Black)
       {
-        return iter.value();
+        return FC_WEIGHT_EXTRABLACK;
+      }
+    else if (wt >= QFont::ExtraBold)
+      {
+        return FC_WEIGHT_EXTRABOLD;
+      }
+    else if (wt >= QFont::Bold)
+      {
+        return FC_WEIGHT_BOLD;
+      }
+    else if (wt >= QFont::DemiBold)
+      {
+        return FC_WEIGHT_DEMIBOLD;
+      }
+    else if (wt >= QFont::Medium)
+      {
+        return FC_WEIGHT_MEDIUM;
+      }
+    else if (wt >= QFont::Normal)
+      {
+        return FC_WEIGHT_NORMAL;
+      }
+    else if (wt >= QFont::Light)
+      {
+        return FC_WEIGHT_LIGHT;
+      }
+    else if (wt >= QFont::ExtraLight)
+      {
+        return FC_WEIGHT_EXTRALIGHT;
       }
     else
       {
-        return nullptr;
+        return FC_WEIGHT_THIN;
       }
   }
 
-  static
-  void
-  add_font(const QRawFont &desc,
-           fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> f)
-  {
-    FontHolder &F(get());
-    std::lock_guard<std::mutex> M(F.m_mutex);
-    F.m_fonts[desc] = f;
-  }
-  
-private:
-  FontHolder(void)
-  {}
-
-  static
-  FontHolder&
-  get(void)
-  {
-    static FontHolder R;
-    return R;
-  }
-  
-  typedef fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> fastuidraw_font;
-  
-  std::mutex m_mutex;
-  QHash<QRawFont, fastuidraw_font> m_fonts;
-};
-
+}
 
 static const char langNameFromQFontDatabaseWritingSystem[][6] = {
     "",     // Any
@@ -97,48 +172,58 @@ static const char langNameFromQFontDatabaseWritingSystem[][6] = {
     "man" // N'Ko
 };
 
-static
-int
-font_config_wieght_from_qt_weight(int wt)
+///////////////////////////////////
+// ImageFromPixmap methods
+
+fastuidraw::u8vec4
+ImageFromPixmap::
+pixel(int x, int y) const
 {
-  if (wt >= QFont::Black)
-    {
-      return FC_WEIGHT_EXTRABLACK;
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  if (x >= m_image.width()) x = m_image.width() - 1;
+  if (y >= m_image.height()) y = m_image.height() - 1;
+  QColor qcolor(m_image.pixel(x, y));
+  return fastuidraw::u8vec4(qcolor.red(),
+                            qcolor.green(),
+                            qcolor.blue(),
+                            qcolor.alpha());
+}
+
+bool
+ImageFromPixmap::
+all_same_color(fastuidraw::ivec2 location, int square_size,
+               fastuidraw::u8vec4 *dst) const
+{
+    *dst = pixel(location.x(), location.y());
+    for (int x = location.x(), ix = 0; ix < square_size; ++ix, ++x) {
+        for (int y = location.y(), iy = 0; iy < square_size; ++iy, ++y) {
+            fastuidraw::u8vec4 p(pixel(x, y));
+            if (p != *dst) {
+                return false;
+            }
+        }
     }
-  else if (wt >= QFont::ExtraBold)
-    {
-      return FC_WEIGHT_EXTRABOLD;
-    }
-  else if (wt >= QFont::Bold)
-    {
-      return FC_WEIGHT_BOLD;
-    }
-  else if (wt >= QFont::DemiBold)
-    {
-      return FC_WEIGHT_DEMIBOLD;
-    }
-  else if (wt >= QFont::Medium)
-    {
-      return FC_WEIGHT_MEDIUM;
-    }
-  else if (wt >= QFont::Normal)
-    {
-      return FC_WEIGHT_NORMAL;
-    }
-  else if (wt >= QFont::Light)
-    {
-      return FC_WEIGHT_LIGHT;
-    }
-  else if (wt >= QFont::ExtraLight)
-    {
-      return FC_WEIGHT_EXTRALIGHT;
-    }
-  else
-    {
-      return FC_WEIGHT_THIN;
+    return true;
+}
+
+void
+ImageFromPixmap::
+fetch_texels(unsigned int level,
+             fastuidraw::ivec2 location,
+             unsigned int w, unsigned int h,
+             fastuidraw::c_array<fastuidraw::u8vec4> dst) const
+{
+    FASTUIDRAWunused(level);
+    for (int y = location.y(), iy = 0; iy < h; ++iy, ++y) {
+        for (int x = location.x(), ix = 0; ix < w; ++ix, ++x) {
+            dst[ix + w * iy] = pixel(x, y);
+        }
     }
 }
 
+////////////////////////////////////////////////
+// WebCore::FastUIDraw methods
 fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
 WebCore::FastUIDraw::
 install_custom_font(const QRawFont &desc,
@@ -312,4 +397,51 @@ select_font(const QRawFont &desc)
   FontHolder::add_font(desc, return_value);
   
   return return_value;
+}
+
+fastuidraw::reference_counted_ptr<const fastuidraw::Image>
+WebCore::FastUIDraw::
+create_fastuidraw_image(const QImage &image)
+{
+  ImageFromPixmap tmp(image);
+  return fastuidraw::Image::create(FastUIDraw::imageAtlas(),
+                                   image.width(), image.height(),
+                                   tmp, 1);
+}
+
+fastuidraw::reference_counted_ptr<const fastuidraw::Image>
+WebCore::FastUIDraw::
+create_fastuidraw_image(const QPixmap &pixmap)
+{
+  return create_fastuidraw_image(pixmap.toImage());
+}
+
+void
+WebCore::FastUIDraw::
+compose_with_pattern(fastuidraw::PainterBrush &brush,
+                     const FloatRect& srcRect, const AffineTransform& patternTransform,
+                     const FloatPoint& phase, const FloatSize& spacing)
+{
+  fastuidraw::vec2 vec2_phase;
+
+  FASTUIDRAWunused(spacing);
+
+  vec2_phase = vec2FromFloatPoint(phase);
+  brush
+    .repeat_window(-vec2_phase + fastuidraw::vec2(srcRect.x(), srcRect.y()),
+                   fastuidraw::vec2(srcRect.width(), srcRect.height()));
+
+  compose_with_pattern_transformation(brush, patternTransform);
+}
+
+void
+WebCore::FastUIDraw::
+compose_with_pattern_transformation(fastuidraw::PainterBrush &brush,
+                                    const AffineTransform& patternTransform)
+{
+  /* TODO: use patternTransform to transform the logical coordinates
+   * to image coordinates or something correctly.
+   */
+  FASTUIDRAWunused(brush);
+  FASTUIDRAWunused(patternTransform);
 }

@@ -58,6 +58,11 @@ void GradientImage::draw(GraphicsContext& destContext, const FloatRect& destRect
     destContext.fillRect(FloatRect(FloatPoint(), size()), *m_gradient.get());
 }
 
+void GradientImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
+{
+    m_gradient->readyFastUIDrawBrush(brush);
+}
+
 void GradientImage::drawPattern(GraphicsContext& destContext, const FloatRect& srcRect, const AffineTransform& patternTransform,
     const FloatPoint& phase, const FloatSize& spacing, CompositeOperator compositeOp, const FloatRect& destRect, BlendMode blendMode)
 {

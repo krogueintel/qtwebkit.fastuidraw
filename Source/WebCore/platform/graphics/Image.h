@@ -39,6 +39,7 @@
 #include <wtf/RetainPtr.h>
 #include <wtf/TypeCasts.h>
 #include <wtf/text/WTFString.h>
+#include <fastuidraw/painter/painter_brush.hpp>
 
 #if USE(APPKIT)
 OBJC_CLASS NSImage;
@@ -141,6 +142,13 @@ public:
 
     virtual PassNativeImagePtr nativeImageForCurrentFrame() { return 0; }
     virtual ImageOrientation orientationForCurrentFrame() { return ImageOrientation(); }
+
+    /* Ready a fastuidraw::PainterBrush to draw the contents of this Image. */
+    virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
+    {
+      brush.reset();
+      brush.color(1.0f, 0.0f, 0.0f, 0.5f);
+    }
 
     // Accessors for native image formats.
 

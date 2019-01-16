@@ -58,14 +58,18 @@ namespace WebCore {
         FloatSize size() const override;
         PassNativeImagePtr nativeImageForCurrentFrame() override;
         void draw(GraphicsContext&, const FloatRect& dstRect, const FloatRect& srcRect, CompositeOperator, BlendMode, ImageOrientationDescription) override;
+        virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) override;
 
     private:
         StillImage(const QPixmap&);
         StillImage(const QPixmap*);
         StillImage(QPixmap&&);
         ~StillImage() override;
+
+        void createFastUIDrawImage(void);
         
         const QPixmap* m_pixmap;
+        fastuidraw::reference_counted_ptr<const fastuidraw::Image> m_fastuidraw_image;
         bool m_ownsPixmap;
     };
 

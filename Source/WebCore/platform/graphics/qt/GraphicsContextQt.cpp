@@ -162,7 +162,36 @@ static inline ostream& operator<<(ostream &str, const fastuidraw::Rect &rect)
 
 static bool EnableGraphicsContextTransparencyLayer = true;
 
+namespace {
+  class SimpleGlyphRendererChooser:public fastuidraw::Painter::GlyphRendererChooser {
+  public:
+      virtual
+      fastuidraw::GlyphRenderer
+      choose_glyph_render(float logical_pixel_size,
+                          const fastuidraw::float3x3& /*transformation */,
+                          float max_singular_value,
+                          float /*min_singular_value*/) const
+      {
+          float sz;
+          sz = logical_pixel_size * max_singular_value;
+          return (sz < 32.0f) ?
+              fastuidraw::GlyphRenderer(static_cast<int>(sz)) :
+              fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph);
+      }
+
+      virtual
+      fastuidraw::GlyphRenderer
+      choose_glyph_render(float /*logical_pixel_size */,
+                          const fastuidraw::float3x3& /*transformation*/) const
+      {
+          return fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph);
+      }
+  };
+}
+
 namespace WebCore {
+
+using namespace FastUIDraw; //I should use scoped calls, but this code is just POC.
   
 static inline QPainter::CompositionMode toQtCompositionMode(CompositeOperator op)
 {
@@ -436,21 +465,6 @@ static inline enum fastuidraw::Painter::fill_rule_t toFastUIDrawFillRule(WindRul
     return fastuidraw::Painter::odd_even_fill_rule;
 }
 
-static inline enum fastuidraw::PainterBrush::gradient_spread_type_t toFastUIDrawGradientSpreadType(enum GradientSpreadMethod spread)
-{
-    switch(spread) {
-    case SpreadMethodPad:
-        return fastuidraw::PainterBrush::gradient_clamp;
-        break;
-    case SpreadMethodRepeat:
-        return fastuidraw::PainterBrush::gradient_repeat;
-        break;
-    case SpreadMethodReflect:
-        return fastuidraw::PainterBrush::gradient_mirror_repeat;
-        break;
-    }
-}
-
 static inline fastuidraw::vec4 FastUIDrawColorValue(Color color, float alpha)
 {
   fastuidraw::vec4 return_value(color.red(), color.green(), color.blue(), color.alpha());
@@ -459,65 +473,6 @@ static inline fastuidraw::vec4 FastUIDrawColorValue(Color color, float alpha)
   return_value.w() *= alpha;
 
   return return_value;
-}
-
-static inline void computeToFastUIDrawMatrix(const QTransform &transform,
-                                             fastuidraw::float3x3 *dst)
-{
-  fastuidraw::float3x3 &matrix(*dst);
-  matrix.col_row(0, 0) = transform.m11();
-  matrix.col_row(1, 0) = transform.m21();
-  matrix.col_row(2, 0) = transform.m31();
-
-  matrix.col_row(0, 1) = transform.m12();
-  matrix.col_row(1, 1) = transform.m22();
-  matrix.col_row(2, 1) = transform.m32();
-
-  matrix.col_row(0, 2) = transform.m13();
-  matrix.col_row(1, 2) = transform.m23();
-  matrix.col_row(2, 2) = transform.m33();
-}
-
-static inline void computeFromFastUIDrawMatrix(const fastuidraw::float3x3 &matrix,
-                                               QTransform *dst)
-{
-  *dst = QTransform(matrix.col_row(0, 0), //m11
-                    matrix.col_row(0, 1), //m12
-                    matrix.col_row(0, 2), //m13
-                    matrix.col_row(1, 0), //m21
-                    matrix.col_row(1, 1), //m22
-                    matrix.col_row(1, 2), //m23
-                    matrix.col_row(2, 0), //m31
-                    matrix.col_row(2, 1), //m32
-                    matrix.col_row(2, 2)  //m33
-                    );
-}
-
-template<typename T>
-static inline void computeToFastUIDrawMatrixT(const T &transform,
-                                              fastuidraw::float3x3 *dst)
-{
-  QTransform Q = transform;
-  computeToFastUIDrawMatrix(Q, dst);
-}
-
-template<typename T>
-static inline void computeFromFastUIDrawMatrixT(const fastuidraw::float3x3 &matrix,
-                                                T *dst)
-{
-  QTransform Q;
-  computeFromFastUIDrawMatrix(matrix, &Q);
-  *dst = Q;
-}
-
-static inline fastuidraw::vec2 vec2FromFloatPoint(const FloatPoint &sz)
-{
-  return fastuidraw::vec2(sz.x(), sz.y());
-}
-
-static inline fastuidraw::vec2 vec2FromFloatSize(const FloatSize &sz)
-{
-  return fastuidraw::vec2(sz.width(), sz.height());
 }
 
 static inline void rectFromFloatRect(const FloatRect &inRect,
@@ -576,61 +531,22 @@ private:
     fastuidraw::PainterPackedValue<T> m_packed_value;
 };
 
-void setGradientOfFastUIDrawBrush(const Gradient &gr, fastuidraw::PainterBrush &brush)
-{
-  const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> &cs(gr.fastuidrawGradient());
-  fastuidraw::vec2 q0(vec2FromFloatPoint(gr.p0())), q1(vec2FromFloatPoint(gr.p1()));
-  fastuidraw::float3x3 M;
-  fastuidraw::float2x2 N;
-  fastuidraw::vec2 T;
-  Optional<AffineTransform> inverse_gr;
-
-  /* Gradient::gradientSpaceTransform() maps from coordinates
-   * of the gradient TO logical coordinates. FastUIDraw's brush
-   * maps from logical coordinates to gradient coordiante, so
-   * we need the inverse.
-   */
-  inverse_gr = gr.gradientSpaceTransform().inverse();
-  computeToFastUIDrawMatrixT(inverse_gr.value(), &M);
-
-  /* AffineTransform is not a full 3x3, it is just
-   * a 2x2 matrix and a translate.
-   */
-  N(0, 0) = M(0, 0);
-  N(0, 1) = M(0, 1);
-  N(1, 0) = M(1, 0);
-  N(1, 1) = M(1, 1);
-  T.x() = M(0, 2);
-  T.y() = M(1, 2);
-  
-  if (gr.isRadial()) {
-      brush.radial_gradient(cs,
-                            q0, gr.startRadius(),
-                            q1, gr.endRadius(),
-                            toFastUIDrawGradientSpreadType(gr.spreadMethod()));
-  } else {
-      brush.linear_gradient(cs, q0, q1,
-                            toFastUIDrawGradientSpreadType(gr.spreadMethod()));
-  }
-
-  brush
-    .transformation_matrix(N)
-    .transformation_translate(T);
-}
-
 void setPatternGradientOfFastUIDrawBrush(const RefPtr<Pattern> &pattern, const RefPtr<Gradient> &gr,
                                          fastuidraw::PainterBrush &brush)
 {
+    fastuidraw::vec4 c(brush.color());
+
+    brush.reset();
     if (gr) {
-        setGradientOfFastUIDrawBrush(*gr, brush);
-    } else {
-        brush.no_gradient();
+        gr->readyFastUIDrawBrush(brush);
     }
 
-    if (pattern) {
-        unimplementedFastUIDrawMessage("-Pattern");
-    } else {
+    if (pattern && pattern->tileImage()) {
+        pattern->tileImage()->readyFastUIDrawBrush(brush);
+        compose_with_pattern_transformation(brush, pattern->getPatternSpaceTransform());
     }
+
+    brush.color(c);
 }
 
 class FastUIDrawBrushSet
@@ -1282,17 +1198,9 @@ bool GraphicsContext::drawGradientPattern(const Gradient &gradient,
     m_data->fastuidraw()->composite_shader(toFastUIDrawCompositeMode(compositeOp));
 
     fastuidraw::PainterBrush brush;
-    fastuidraw::vec2 vec2_phase;
 
-    /* TODO: figure out where the transformation patternTransform
-     * is invoked: before or after the window and in what coordinates.
-     */
-    setGradientOfFastUIDrawBrush(gradient, brush);
-    vec2_phase = vec2FromFloatPoint(phase);
-
-    brush
-      .repeat_window(vec2_phase + fastuidraw::vec2(srcRect.x(), srcRect.y()),
-                     fastuidraw::vec2(srcRect.width(), srcRect.height()));
+    gradient.readyFastUIDrawBrush(brush);
+    compose_with_pattern(brush, srcRect, patternTransform, phase, spacing);
 
     m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
                                     rectFromFloatRect(dstRect),
@@ -1381,7 +1289,21 @@ void GraphicsContext::drawPattern(Image& image, const FloatRect& tileRect, const
 
         setCompositeOperation(previousOperator);
     } else {
-        unimplementedFastUIDraw();
+        m_data->fastuidraw()->save();
+
+        m_data->fastuidraw()->blend_shader(toFastUIDrawBlendMode(blendMode));
+        m_data->fastuidraw()->composite_shader(toFastUIDrawCompositeMode(op));
+
+        fastuidraw::PainterBrush brush;
+
+        image.readyFastUIDrawBrush(brush);
+        compose_with_pattern(brush, tileRect, patternTransform, phase, spacing);
+
+        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
+                                        rectFromFloatRect(destRect),
+                                        m_data->fastuidraw_state().m_fill_aa);
+    
+        m_data->fastuidraw()->restore();
     }
 }
 
@@ -1734,7 +1656,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
         fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> cs(gradient.fastuidrawGradient());
         fastuidraw::PainterBrush brush;
 
-        setGradientOfFastUIDrawBrush(gradient, brush);
+        gradient.readyFastUIDrawBrush(brush);
         m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
                                         fastuidraw::Rect()
                                         .min_point(rect.x(), rect.y())
@@ -2295,7 +2217,7 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
         ++m_data->layerCount;
     } else {
         if (m_data->fastuidraw_options().m_use_fastuidaw_layers) {
-            m_data->fastuidraw()->begin_layer(TransparencyLayerColor(opacity));
+          m_data->fastuidraw()->begin_layer(TransparencyLayerColor(opacity), false);
         } else {
             fastuidraw::reference_counted_ptr<fastuidraw::Painter> p(m_data->fastuidraw());
 
@@ -3029,6 +2951,27 @@ void GraphicsContext::fillText(const fastuidraw::GlyphRun& glyphRun)
 
     fastuidraw::PainterData pd(m_data->fastuidraw_state().m_fill_brushes.brush(state()).packed_value());
     m_data->fastuidraw()->draw_glyphs(pd, glyphRun, fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph));
+}
+
+void GraphicsContext::drawImage(const fastuidraw::PainterBrush &brush,
+                                const FloatRect& dst,
+                                CompositeOperator op, BlendMode blendMode)
+{
+    FASTUIDRAWassert(m_data && m_data->is_fastuidraw());
+    
+    if (hasShadow()) {
+        unimplementedFastUIDrawMessage("Shadow");
+    }
+
+    CompositeOperator previousOperator = compositeOperation();
+    BlendMode previousBlendMode = blendModeOperation();
+
+    setCompositeOperation(op, blendMode);
+    m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
+                                    fastuidraw::Rect()
+                                    .min_point(fastuidraw::vec2(dst.x(), dst.y()))
+                                    .size(fastuidraw::vec2(dst.width(), dst.height())));
+    setCompositeOperation(previousOperator, previousBlendMode);
 }
 
 }
