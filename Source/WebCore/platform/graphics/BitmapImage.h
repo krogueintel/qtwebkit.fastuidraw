@@ -68,14 +68,14 @@ struct FrameData {
     WTF_MAKE_NONCOPYABLE(FrameData);
 public:
     FrameData()
-        : m_frame(0)
-        , m_orientation(DefaultImageOrientation)
+        : m_orientation(DefaultImageOrientation)
         , m_subsamplingLevel(0)
         , m_duration(0)
         , m_haveMetadata(false)
         , m_isComplete(false)
         , m_hasAlpha(true) 
         , m_frameBytes(0)
+        , m_frame(0)
     {
     }
 
@@ -88,8 +88,13 @@ public:
     // Returns whether there was cached image data to clear.
     bool clear(bool clearMetadata);
     const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &fastuidraw_image(void);
+    void setFrame(NativeImagePtr f)
+    {
+        m_frame = f;
+        m_fastuidraw_image.clear();
+    }
+    NativeImagePtr frame(void) { return m_frame; }
 
-    NativeImagePtr m_frame;
     ImageOrientation m_orientation;
     SubsamplingLevel m_subsamplingLevel;
     float m_duration;
@@ -99,7 +104,8 @@ public:
     unsigned m_frameBytes;
 
 private:
-  fastuidraw::reference_counted_ptr<const fastuidraw::Image> m_fastuidraw_image;
+    NativeImagePtr m_frame;
+    fastuidraw::reference_counted_ptr<const fastuidraw::Image> m_fastuidraw_image;
 };
 
 // =================================================

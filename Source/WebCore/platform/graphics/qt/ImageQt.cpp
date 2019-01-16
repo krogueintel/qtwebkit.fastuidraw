@@ -203,7 +203,7 @@ BitmapImage::BitmapImage(QPixmap* pixmap, ImageObserver* observer)
     m_size = IntSize(width, height);
 
     m_frames.grow(1);
-    m_frames[0].m_frame = pixmap;
+    m_frames[0].setFrame(pixmap);
     m_frames[0].m_hasAlpha = pixmap->hasAlpha();
     m_frames[0].m_haveMetadata = true;
     checkForSolidColor();
