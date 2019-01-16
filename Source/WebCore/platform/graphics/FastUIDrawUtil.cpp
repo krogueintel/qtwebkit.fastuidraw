@@ -183,11 +183,11 @@ pixel(int x, int y) const
   if (y < 0) y = 0;
   if (x >= m_image.width()) x = m_image.width() - 1;
   if (y >= m_image.height()) y = m_image.height() - 1;
-  QColor qcolor(m_image.pixel(x, y));
-  return fastuidraw::u8vec4(qcolor.red(),
-                            qcolor.green(),
-                            qcolor.blue(),
-                            qcolor.alpha());
+  QRgb qcolor(m_image.pixel(x, y));
+  return fastuidraw::u8vec4(qRed(qcolor),
+                            qGreen(qcolor),
+                            qBlue(qcolor),
+                            qAlpha(qcolor));
 }
 
 bool
@@ -405,7 +405,7 @@ create_fastuidraw_image(const QImage &image)
 {
   ImageFromPixmap tmp(image);
   return fastuidraw::Image::create(FastUIDraw::imageAtlas(),
-                                   image.width(), image.height(),
+                                   image.width() + 1, image.height() + 1,
                                    tmp, 1);
 }
 
