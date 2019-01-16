@@ -532,10 +532,9 @@ private:
 };
 
 void setPatternGradientOfFastUIDrawBrush(const RefPtr<Pattern> &pattern, const RefPtr<Gradient> &gr,
-                                         fastuidraw::PainterBrush &brush)
+                                         fastuidraw::PainterBrush &brush,
+                                         float alpha)
 {
-    fastuidraw::vec4 c(brush.color());
-
     brush.reset();
     if (gr) {
         gr->readyFastUIDrawBrush(brush);
@@ -546,39 +545,8 @@ void setPatternGradientOfFastUIDrawBrush(const RefPtr<Pattern> &pattern, const R
         compose_with_pattern_transformation(brush, pattern->getPatternSpaceTransform());
     }
 
-    brush.color(c);
+    brush.color(1.0f, 1.0f, 1.0f, alpha);
 }
-
-class FastUIDrawBrushSet
-{
-public:
-  FastUIDrawBrushSet(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p)
-    : m_color(p)
-    , m_gradient_pattern(p)
-  {}
-
-  MutablePackedValue<fastuidraw::PainterBrush>&
-  brush(const GraphicsContextState &state)
-  {
-      if (state.fillGradient) {
-          return m_gradient_pattern;
-      } else if (state.fillPattern) {
-          unimplementedFastUIDrawMessage("-PatternBrush");
-          return m_color;
-      } else {
-          return m_color;
-      }
-  }
-
-  void
-  color(const Color &color, float alpha)
-  {
-    m_color.change_value().color(FastUIDrawColorValue(color, alpha));
-    m_gradient_pattern.change_value().color(1.0f, 1.0f, 1.0f, alpha);
-  }
-
-  MutablePackedValue<fastuidraw::PainterBrush> m_color, m_gradient_pattern;
-};
 
 class FastUIDrawStateElement
 {
@@ -587,8 +555,8 @@ public:
                          PlatformGraphicsContext::FastUIDrawOption options)
     : m_fill_aa(options.m_allow_fill_aa ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
     , m_stroke_aa(options.m_allow_stroke_aa ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
-    , m_stroke_brushes(p)
-    , m_fill_brushes(p)
+    , m_stroke_brush(p)
+    , m_fill_brush(p)
     , m_stroke_params(p)
   {
     
@@ -596,7 +564,7 @@ public:
   
   enum fastuidraw::Painter::shader_anti_alias_t m_fill_aa, m_stroke_aa;
   fastuidraw::StrokingStyle m_stroke_style;
-  FastUIDrawBrushSet m_stroke_brushes, m_fill_brushes;
+  MutablePackedValue<fastuidraw::PainterBrush> m_stroke_brush, m_fill_brush;
   MutablePackedValue<fastuidraw::PainterStrokeParams, fastuidraw::PainterItemShaderData> m_stroke_params;
 };
 
@@ -900,8 +868,8 @@ void GraphicsContext::platformInit(PlatformGraphicsContext *painter)
           .cap_style(toFastUIDrawCapStyle(ButtCap))
           .join_style(toFastUIDrawLineJoin(MiterJoin));
 
-        m_data->fastuidraw_state().m_fill_brushes.color(fillColor(), alpha());
-        m_data->fastuidraw_state().m_stroke_brushes.color(strokeColor(), alpha());
+        m_data->fastuidraw_state().m_fill_brush.change_value().color(FastUIDrawColorValue(fillColor(), alpha()));
+        m_data->fastuidraw_state().m_stroke_brush.change_value().color(FastUIDrawColorValue(strokeColor(), alpha()));
     }
 }
 
@@ -995,10 +963,10 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
     } else {
         fastuidraw::Rect fRect(rectFromFloatRect(rect));
 
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.m_color.packed_value()),
+        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
                                         fRect, m_data->fastuidraw_state().m_fill_aa);
 
-
+        /**/
         fastuidraw::Path P;
         fastuidraw::PainterStrokeParams stroke_params;
 
@@ -1008,18 +976,17 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
           << fRect.point(fastuidraw::Rect::maxx_miny_corner)
           << fastuidraw::Path::contour_close();
 
+        /* not clear, but using the stroke brush give incorrect render on github */
         stroke_params
           .width(borderThickness)
           .stroking_units(fastuidraw::PainterStrokeParams::path_stroking_units);
 
-        /* it appears that drawRect wants the stroke in the same color as the fill
-         * rather than using the stroking color. Whatever.
-         */
-        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.m_color.packed_value(),
+        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value(),
                                                                   &stroke_params),
                                           P,
                                           m_data->fastuidraw_state().m_stroke_style,
                                           m_data->fastuidraw_state().m_stroke_aa);
+        /**/
     }
 }
 
@@ -1131,7 +1098,7 @@ void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point
 
         pts[0] = vec2FromFloatPoint(point1);
         pts[1] = vec2FromFloatPoint(point2);
-        m_data->fastuidraw()->stroke_line_strip(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brushes.brush(state()).packed_value(),
+        m_data->fastuidraw()->stroke_line_strip(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brush.packed_value(),
                                                                         m_data->fastuidraw_state().m_stroke_params.packed_value()),
                                                 fastuidraw::c_array<const fastuidraw::vec2>(pts, 2),
                                                 m_data->fastuidraw_state().m_stroke_style,
@@ -1155,7 +1122,7 @@ void GraphicsContext::drawEllipse(const FloatRect& rect)
         m_data->fastuidraw()->translate(vec2FromFloatPoint(rect.location()));
         m_data->fastuidraw()->shear(rect.width(), rect.height());
 
-        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.brush(state()).packed_value()),
+        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
                                         m_data->m_fastuidraw_circle_path,
                                         fastuidraw::Painter::nonzero_fill_rule,
                                         m_data->fastuidraw_state().m_fill_aa);
@@ -1173,7 +1140,7 @@ void GraphicsContext::drawEllipse(const FloatRect& rect)
         w = m_data->fastuidraw_state().m_stroke_params.constant_value().width();
         w /= fastuidraw::t_sqrt(fastuidraw::t_abs(rect.width() * rect.height()));
         stroke_params.width(w);
-        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brushes.brush(state()).packed_value(),
+        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brush.packed_value(),
                                                                   &stroke_params),
                                           m_data->m_fastuidraw_circle_path,
                                           m_data->fastuidraw_state().m_stroke_style,
@@ -1412,7 +1379,7 @@ void GraphicsContext::fillPath(const Path& path)
         if (m_state.fillPattern) {
             unimplementedFastUIDrawMessage("-fillPattern");
         }
-        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.brush(state()).packed_value()),
+        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
                                         path.FastUIDrawPath(),
                                         toFastUIDrawFillRule(fillRule()),
                                         m_data->fastuidraw_state().m_fill_aa);
@@ -1494,7 +1461,7 @@ void GraphicsContext::strokePath(const Path& path)
         if (hasShadow()) {
             unimplementedFastUIDrawMessage("-Shadow");
         }
-        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brushes.brush(state()).packed_value(),
+        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brush.packed_value(),
                                                                   m_data->fastuidraw_state().m_stroke_params.packed_value()),
                                           path.FastUIDrawPath(),
                                           m_data->fastuidraw_state().m_stroke_style,
@@ -1606,7 +1573,7 @@ void GraphicsContext::fillRect(const FloatRect& rect)
         if (hasShadow()) {
             unimplementedFastUIDrawMessage("->Shadow");
         }
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brushes.brush(state()).packed_value()),
+        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
                                         rectFromFloatRect(rect),
                                         m_data->fastuidraw_state().m_fill_aa);
     }
@@ -2391,11 +2358,11 @@ void GraphicsContext::strokeRect(const FloatRect& rect, float lineWidth)
         stroke_params
           .width(lineWidth);
 
-        //        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(&stroke_params,
-        //                                                        m_data->fastuidraw_state().m_stroke_brushes.brush(state()).packed_value()),
-        //                                path,
-        //                                m_data->fastuidraw_state().m_stroke_style,
-        //                                m_data->fastuidraw_state().m_stroke_aa);
+        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(&stroke_params,
+                                                                  m_data->fastuidraw_state().m_stroke_brush.packed_value()),
+                                          path,
+                                          m_data->fastuidraw_state().m_stroke_style,
+                                          m_data->fastuidraw_state().m_stroke_aa);
     }
 }
 
@@ -2482,8 +2449,17 @@ void GraphicsContext::setPlatformAlpha(float opacity)
         QPainter* p = m_data->p();
         p->setOpacity(opacity);
     } else {
-        m_data->fastuidraw_state().m_fill_brushes.color(fillColor(), opacity);
-        m_data->fastuidraw_state().m_stroke_brushes.color(strokeColor(), opacity);
+        if (m_state.fillPattern || m_state.fillGradient) {
+            m_data->fastuidraw_state().m_fill_brush.change_value().color(1.0f, 1.0f, 1.0f, opacity);
+        } else {
+            m_data->fastuidraw_state().m_fill_brush.change_value().color(FastUIDrawColorValue(fillColor(), opacity));
+        }
+
+        if (m_state.strokePattern || m_state.strokeGradient) {
+            m_data->fastuidraw_state().m_stroke_brush.change_value().color(1.0f, 1.0f, 1.0f, opacity);
+        } else {
+            m_data->fastuidraw_state().m_stroke_brush.change_value().color(FastUIDrawColorValue(strokeColor(), opacity));
+        }
     }
 }
 
@@ -2718,7 +2694,9 @@ void GraphicsContext::setPlatformStrokeColor(const Color& color)
         newPen.setBrush(m_data->solidColor);
         p->setPen(newPen);
     } else {
-        m_data->fastuidraw_state().m_stroke_brushes.color(color, alpha());
+        m_data->fastuidraw_state().m_stroke_brush.change_value()
+          .reset()
+          .color(FastUIDrawColorValue(color, alpha()));
     }
 }
 
@@ -2765,8 +2743,9 @@ void GraphicsContext::setPlatformFillColor(const Color& color)
         m_data->solidColor.setColor(color);
         m_data->p()->setBrush(m_data->solidColor);
     } else {
-        m_data->fastuidraw_state().m_fill_brushes.color(color, alpha());
-
+        m_data->fastuidraw_state().m_fill_brush.change_value()
+          .reset()
+          .color(FastUIDrawColorValue(color, alpha()));
     }
 }
 
@@ -2775,7 +2754,8 @@ void GraphicsContext::setPlatformStrokePatternGradient(const RefPtr<Pattern> &pa
     if (m_data->is_qt()) {
     } else {
       setPatternGradientOfFastUIDrawBrush(pattern, gr,
-                                          m_data->fastuidraw_state().m_stroke_brushes.m_gradient_pattern.change_value());
+                                          m_data->fastuidraw_state().m_stroke_brush.change_value(),
+                                          alpha());
     }
 }
 
@@ -2784,7 +2764,8 @@ void GraphicsContext::setPlatformFillPatternGradient(const RefPtr<Pattern> &patt
     if (m_data->is_qt()) {
     } else {
         setPatternGradientOfFastUIDrawBrush(pattern, gr,
-                                            m_data->fastuidraw_state().m_fill_brushes.m_gradient_pattern.change_value());
+                                            m_data->fastuidraw_state().m_fill_brush.change_value(),
+                                            alpha());
     }
 }
 
@@ -2949,7 +2930,7 @@ void GraphicsContext::fillText(const fastuidraw::GlyphRun& glyphRun)
 {
     FASTUIDRAWassert(m_data && m_data->is_fastuidraw());
 
-    fastuidraw::PainterData pd(m_data->fastuidraw_state().m_fill_brushes.brush(state()).packed_value());
+    fastuidraw::PainterData pd(m_data->fastuidraw_state().m_fill_brush.packed_value());
     m_data->fastuidraw()->draw_glyphs(pd, glyphRun, fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph));
 }
 
