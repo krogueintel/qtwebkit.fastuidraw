@@ -83,10 +83,10 @@ PassNativeImagePtr StillImage::nativeImageForCurrentFrame()
 void StillImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
     const FloatRect& src, CompositeOperator op, BlendMode blendMode, ImageOrientationDescription)
 {
-    if (ctxt.platformContext()->is_qt()) {
-        if (m_pixmap->isNull())
-            return;
+    if (m_pixmap->isNull())
+        return;
 
+    if (ctxt.platformContext()->is_qt()) {
         FloatRect normalizedSrc = src.normalized();
         FloatRect normalizedDst = dst.normalized();
 
@@ -133,10 +133,14 @@ void StillImage::createFastUIDrawImage(void)
 
 void StillImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
 {
-  brush.reset();
-  brush
-    .image(m_fastuidraw_image, fastuidraw::PainterBrush::image_filter_linear)
-    .apply_shear(m_pixmap->devicePixelRatio(), m_pixmap->devicePixelRatio());
+    if (m_fastuidraw_image) {
+        brush.reset();
+        brush
+          .image(m_fastuidraw_image, fastuidraw::PainterBrush::image_filter_linear)
+          .apply_shear(m_pixmap->devicePixelRatio(), m_pixmap->devicePixelRatio());
+    } else {
+        FastUIDraw::setBrushToNullImage(brush);
+    }
 }
 
 }

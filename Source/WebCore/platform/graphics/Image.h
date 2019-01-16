@@ -33,6 +33,7 @@
 #include "GraphicsTypes.h"
 #include "ImageOrientation.h"
 #include "NativeImagePtr.h"
+#include "FastUIDrawResources.h"
 #include <wtf/PassRefPtr.h>
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
@@ -144,11 +145,7 @@ public:
     virtual ImageOrientation orientationForCurrentFrame() { return ImageOrientation(); }
 
     /* Ready a fastuidraw::PainterBrush to draw the contents of this Image. */
-    virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
-    {
-      brush.reset();
-      brush.color(1.0f, 0.0f, 0.0f, 0.5f);
-    }
+    virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) { FastUIDraw::setBrushToNullImage(brush); }
 
     // Accessors for native image formats.
 
