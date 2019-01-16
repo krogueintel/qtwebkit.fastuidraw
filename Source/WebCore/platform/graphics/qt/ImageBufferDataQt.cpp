@@ -209,7 +209,7 @@ void ImageBufferDataPrivateAccelerated::invalidateState() const
 void ImageBufferDataPrivateAccelerated::draw(GraphicsContext& destContext, const FloatRect& destRect,
     const FloatRect& srcRect, CompositeOperator op, BlendMode blendMode, bool /*ownContext*/)
 {
-    if (destContext.isAcceleratedContext()) {
+    if (destContext.isAcceleratedContext() && destContext.platformContext()->is_qt()) {
         invalidateState();
 
         // If accelerated compositing is disabled, this may be the painter of the QGLWidget, which is a QGL2PaintEngineEx.
