@@ -618,6 +618,8 @@ void BitmapImage::drawPattern(GraphicsContext& ctxt, const FloatRect& tileRect, 
         startAnimation();
         readyFastUIDrawBrush(brush);
         FastUIDraw::compose_with_pattern(brush, tileRect, transform, phase, spacing);
+        brush
+          .apply_translate(fastuidraw::vec2(-destRect.x(), -destRect.y()));
         ctxt.drawImage(brush, destRect, op, blendMode);
         
         if (imageObserver())

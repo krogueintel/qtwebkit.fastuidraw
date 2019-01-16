@@ -966,7 +966,7 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
         m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
                                         fRect, m_data->fastuidraw_state().m_fill_aa);
 
-        /**/
+        /**
         fastuidraw::Path P;
         fastuidraw::PainterStrokeParams stroke_params;
 
@@ -976,7 +976,7 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
           << fRect.point(fastuidraw::Rect::maxx_miny_corner)
           << fastuidraw::Path::contour_close();
 
-        /* not clear, but using the stroke brush give incorrect render on github */
+        // not clear, but using the stroke brush give incorrect render on github
         stroke_params
           .width(borderThickness)
           .stroking_units(fastuidraw::PainterStrokeParams::path_stroking_units);
@@ -986,7 +986,7 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
                                           P,
                                           m_data->fastuidraw_state().m_stroke_style,
                                           m_data->fastuidraw_state().m_stroke_aa);
-        /**/
+        **/
     }
 }
 
@@ -1168,7 +1168,8 @@ bool GraphicsContext::drawGradientPattern(const Gradient &gradient,
 
     gradient.readyFastUIDrawBrush(brush);
     compose_with_pattern(brush, srcRect, patternTransform, phase, spacing);
-
+    brush
+      .apply_translate(fastuidraw::vec2(-dstRect.x(), -dstRect.y()));
     m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
                                     rectFromFloatRect(dstRect),
                                     m_data->fastuidraw_state().m_fill_aa);
