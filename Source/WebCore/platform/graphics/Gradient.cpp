@@ -264,17 +264,17 @@ const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtl
     return m_fastuidraw_cs;
 }
 
-static inline enum fastuidraw::PainterBrush::gradient_spread_type_t toFastUIDrawGradientSpreadType(enum GradientSpreadMethod spread)
+static inline enum fastuidraw::PainterBrush::spread_type_t toFastUIDrawGradientSpreadType(enum GradientSpreadMethod spread)
 {
     switch(spread) {
     case SpreadMethodPad:
-        return fastuidraw::PainterBrush::gradient_clamp;
+        return fastuidraw::PainterBrush::spread_clamp;
         break;
     case SpreadMethodRepeat:
-        return fastuidraw::PainterBrush::gradient_repeat;
+        return fastuidraw::PainterBrush::spread_repeat;
         break;
     case SpreadMethodReflect:
-        return fastuidraw::PainterBrush::gradient_mirror_repeat;
+        return fastuidraw::PainterBrush::spread_mirror_repeat;
         break;
     }
 }

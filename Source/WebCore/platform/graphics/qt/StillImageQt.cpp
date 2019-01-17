@@ -138,6 +138,11 @@ void StillImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
         brush
           .image(m_fastuidraw_image,
                  fastuidraw::PainterBrush::image_filter_linear)
+          .repeat_window(fastuidraw::vec2(0.0f, 0.0f),
+                         fastuidraw::vec2(m_pixmap->width(),
+                                          m_pixmap->height()),
+                         fastuidraw::PainterBrush::spread_clamp,
+                         fastuidraw::PainterBrush::spread_clamp)
           .apply_shear(m_pixmap->devicePixelRatio(), m_pixmap->devicePixelRatio());
     } else {
         FastUIDraw::setBrushToNullImage(brush);

@@ -44,6 +44,7 @@
 #include <QPainter>
 #include <QPixmap>
 #include <math.h>
+#include <iostream>
 
 namespace WebCore {
 
@@ -142,6 +143,8 @@ PassRefPtr<Uint8ClampedArray> getImageData(const IntRect& unscaledRect, float sc
     ImageBuffer::CoordinateSystem coordinateSystem)
 {
     IntRect rect(unscaledRect);
+
+    std::cout << "FUID: Insanity of extracting pixels of ImageBuffer\n";
 
     if (coordinateSystem == ImageBuffer::LogicalCoordinateSystem)
         rect.scale(scale);

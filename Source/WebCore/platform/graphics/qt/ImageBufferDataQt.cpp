@@ -485,7 +485,7 @@ ImageBufferData::ImageBufferData(const FloatSize& size, float resolutionScale)
     m_painter = new QPainter;
     m_platform_context = new PlatformGraphicsContext(m_painter);
     m_impl = new ImageBufferDataPrivateUnaccelerated(size, resolutionScale);
-    std::cout << "ImageBufferData:" << m_painter << "\n";
+    std::cout << "FUID:ImageBufferData (Unaccelerated):" << m_painter << "\n";
 
     if (!m_impl->paintDevice())
         return;
@@ -501,7 +501,7 @@ ImageBufferData::ImageBufferData(const FloatSize& size, QOpenGLContext* compatib
     m_painter = new QPainter;
     m_platform_context = new PlatformGraphicsContext(m_painter);
     m_impl = new ImageBufferDataPrivateAccelerated(size, compatibleContext);
-    std::cout << "ImageBufferData (Accelerated):" << m_painter << "\n";
+    std::cout << "FUID:ImageBufferData (Accelerated):" << m_painter << "\n";
 
     if (!m_impl->paintDevice())
         return;

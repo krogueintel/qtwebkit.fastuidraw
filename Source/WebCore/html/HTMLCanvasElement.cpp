@@ -93,17 +93,17 @@ HTMLCanvasElement::HTMLCanvasElement(const QualifiedName& tagName, Document& doc
 
 Ref<HTMLCanvasElement> HTMLCanvasElement::create(Document& document)
 {
-    std::cout << "------------------------------\n"
-              << "       HTMLCanvasElement\n"
-              << "------------------------------\n";
+    std::cout << "FUID: ------------------------------\n"
+              << "FUID:       HTMLCanvasElement\n"
+              << "FUID:------------------------------\n";
     return adoptRef(*new HTMLCanvasElement(canvasTag, document));
 }
 
 Ref<HTMLCanvasElement> HTMLCanvasElement::create(const QualifiedName& tagName, Document& document)
 {
-    std::cout << "------------------------------\n"
-              << "       HTMLCanvasElement\n"
-              << "------------------------------\n";
+    std::cout << "FUID:------------------------------\n"
+              << "FUID:       HTMLCanvasElement\n"
+              << "FUID:------------------------------\n";
     return adoptRef(*new HTMLCanvasElement(tagName, document));
 }
 
@@ -691,6 +691,9 @@ void HTMLCanvasElement::createImageBuffer() const
     {
         setImageBuffer(ImageBuffer::create(size(), renderingMode));
     }
+
+    Settings *settings = document().settings();
+    
     if (!m_imageBuffer)
         return;
     m_imageBuffer->context().setShadowsIgnoreTransforms(true);

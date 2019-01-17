@@ -322,10 +322,9 @@ clear_resources(void)
   std::lock_guard<std::mutex> M(m_mutex);
   if (m_reference_counter <= 1)
     {
-      std::cout << "Clear resources\n"
-                << "\tGL_VERSION=" << fastuidraw_glGetString(GL_VERSION)
-                << "\tGL_RENDERER=" << fastuidraw_glGetString(GL_RENDERER)
-                << "\n";
+      std::cout << "FUID:Clear resources\n"
+                << "FUID:\tGL_VERSION=" << fastuidraw_glGetString(GL_VERSION) << "\n"
+                << "FUID:\tGL_RENDERER=" << fastuidraw_glGetString(GL_RENDERER) << "\n";
       m_font_database.clear();
       m_glyph_cache.clear();
       m_backend.clear();
@@ -464,7 +463,7 @@ add_system_fonts(const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabas
           R = font_database->add_font_generator(g);
           if (R != fastuidraw::routine_success)
             {
-              std::cout << "FontConfig Warning: unable to add font " << props
+              std::cout << "FUID:FontConfig Warning: unable to add font " << props
                         << " because it was already marked as added\n";
             }
           else

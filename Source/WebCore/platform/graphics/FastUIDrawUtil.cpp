@@ -460,7 +460,9 @@ compose_with_pattern(fastuidraw::PainterBrush &brush,
   compose_with_pattern_transformation(brush, patternTransform);
   brush
     .repeat_window(fastuidraw::vec2(srcRect.x(), srcRect.y()),
-                   fastuidraw::vec2(srcRect.width(), srcRect.height()))
+                   fastuidraw::vec2(srcRect.width(), srcRect.height()),
+                   fastuidraw::PainterBrush::spread_repeat,
+                   fastuidraw::PainterBrush::spread_repeat)
     .apply_translate(fastuidraw::vec2(-phase.x(), -phase.y()));
 }
 

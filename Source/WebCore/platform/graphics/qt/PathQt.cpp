@@ -535,11 +535,11 @@ float Path::normalAngleAtLength(float length, bool& ok) const
 static void printQtPath(const QPainterPath &path)
 {
     int lastMoveToAt(-1);
-    std::cout << "Decompose Path:\n";
+    std::cout << "FUID:Decompose Path:\n";
     for (int i = 0; i < path.elementCount(); ++i) {
         const QPainterPath::Element& cur = path.elementAt(i);
 
-        std::cout << "\tElement #" << i << ":";
+        std::cout << "FUID:\tElement #" << i << ":";
         switch (cur.type) {
             case QPainterPath::MoveToElement:
                 std::cout << "MoveTo (" << cur.x << ", " << cur.y << ")\n";
