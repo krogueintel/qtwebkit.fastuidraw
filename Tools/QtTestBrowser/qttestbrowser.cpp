@@ -338,6 +338,9 @@ int main(int argc, char **argv)
     sf.setProfile(QSurfaceFormat::CoreProfile);
     QSurfaceFormat::setDefaultFormat(sf);
 
+    /* initialize with shadows in webkit as disabled */
+    qSupportShadows(false);
+
     /* make all the windows of all GL contexts 
      * in the same share group; this must be set
      * before the QCoreApplication derived object
