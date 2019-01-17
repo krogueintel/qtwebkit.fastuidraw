@@ -541,8 +541,16 @@ void setPatternGradientOfFastUIDrawBrush(const RefPtr<Pattern> &pattern, const R
     }
 
     if (pattern && pattern->tileImage()) {
+        FloatSize srcSize(pattern->tileImage()->width(),
+                          pattern->tileImage()->height());
+        FloatRect srcRect(FloatPoint(0.0f, 0.0f), srcSize);
+        FloatPoint phase(0.0f, 0.0f);
+        FloatSize spacing(0.0f, 0.0f);
+        
         pattern->tileImage()->readyFastUIDrawBrush(brush);
-        compose_with_pattern_transformation(brush, pattern->getPatternSpaceTransform());
+        compose_with_pattern(brush, srcRect,
+                             pattern->getPatternSpaceTransform(),
+                             phase, spacing);
     }
 
     brush.color(1.0f, 1.0f, 1.0f, alpha);
@@ -2185,7 +2193,7 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
         ++m_data->layerCount;
     } else {
         if (m_data->fastuidraw_options().m_use_fastuidaw_layers) {
-          m_data->fastuidraw()->begin_layer(TransparencyLayerColor(opacity), false);
+          m_data->fastuidraw()->begin_layer(TransparencyLayerColor(opacity));
         } else {
             fastuidraw::reference_counted_ptr<fastuidraw::Painter> p(m_data->fastuidraw());
 

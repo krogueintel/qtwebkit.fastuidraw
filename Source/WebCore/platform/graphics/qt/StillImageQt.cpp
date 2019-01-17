@@ -136,7 +136,8 @@ void StillImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
     if (m_fastuidraw_image) {
         brush.reset();
         brush
-          .image(m_fastuidraw_image, fastuidraw::PainterBrush::image_filter_linear)
+          .image(m_fastuidraw_image,
+                 fastuidraw::PainterBrush::image_filter_linear)
           .apply_shear(m_pixmap->devicePixelRatio(), m_pixmap->devicePixelRatio());
     } else {
         FastUIDraw::setBrushToNullImage(brush);

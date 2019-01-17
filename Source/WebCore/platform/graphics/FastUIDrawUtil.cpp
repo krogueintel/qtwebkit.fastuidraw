@@ -35,6 +35,10 @@ namespace
                  unsigned int w, unsigned int h,
                  fastuidraw::c_array<fastuidraw::u8vec4> dst) const;
 
+    virtual
+    enum fastuidraw::Image::format_t
+    format(void) const;
+
   private:
     fastuidraw::u8vec4
     pixel(int x, int y) const;
@@ -174,6 +178,28 @@ static const char langNameFromQFontDatabaseWritingSystem[][6] = {
 
 ///////////////////////////////////
 // ImageFromPixmap methods
+enum fastuidraw::Image::format_t
+ImageFromPixmap::
+format(void) const
+{
+  //return fastuidraw::Image::rgba_format;
+  switch(m_image.format())
+    {
+    default:
+      return fastuidraw::Image::rgba_format;
+
+    case QImage::Format_ARGB32_Premultiplied:
+    case QImage::Format_ARGB8565_Premultiplied:
+    case QImage::Format_ARGB6666_Premultiplied:
+    case QImage::Format_ARGB8555_Premultiplied:
+    case QImage::Format_ARGB4444_Premultiplied:
+    case QImage::Format_RGBA8888_Premultiplied:
+    case QImage::Format_A2BGR30_Premultiplied:
+    case QImage::Format_A2RGB30_Premultiplied:
+      //case QImage::Format_RGBA64_Premultiplied:
+      return fastuidraw::Image::premultipied_rgba_format;
+    }
+}
 
 fastuidraw::u8vec4
 ImageFromPixmap::
@@ -408,7 +434,7 @@ create_fastuidraw_image(const QImage &image)
 {
   ImageFromPixmap tmp(image);
   return fastuidraw::Image::create(FastUIDraw::imageAtlas(),
-                                   image.width() + 1, image.height() + 1,
+                                   image.width(), image.height(),
                                    tmp, 1);
 }
 
@@ -432,7 +458,10 @@ compose_with_pattern(fastuidraw::PainterBrush &brush,
   vec2_phase = vec2FromFloatPoint(phase);
 
   compose_with_pattern_transformation(brush, patternTransform);
-  brush.apply_translate(fastuidraw::vec2(-phase.x(), -phase.y()));
+  brush
+    .repeat_window(fastuidraw::vec2(srcRect.x(), srcRect.y()),
+                   fastuidraw::vec2(srcRect.width(), srcRect.height()))
+    .apply_translate(fastuidraw::vec2(-phase.x(), -phase.y()));
 }
 
 void

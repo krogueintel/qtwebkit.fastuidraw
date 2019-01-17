@@ -263,15 +263,15 @@ QPixmap* prescaleImageIfRequired(QPainter* painter, QPixmap* image, QPixmap* buf
 void BitmapImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
     const FloatRect& src, CompositeOperator op, BlendMode blendMode, ImageOrientationDescription)
 {
-    QRectF normalizedDst = dst.normalized();
-    QRectF normalizedSrc = src.normalized();
-
     startAnimation();
 
-    if (normalizedSrc.isEmpty() || normalizedDst.isEmpty())
-        return;
-
     if (ctxt.platformContext()->is_qt()) {
+        QRectF normalizedDst = dst.normalized();
+        QRectF normalizedSrc = src.normalized();
+
+        if (normalizedSrc.isEmpty() || normalizedDst.isEmpty())
+          return;
+
         QPixmap* image = nativeImageForCurrentFrame();
         if (!image)
             return;
@@ -312,12 +312,12 @@ void BitmapImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
         fastuidraw::PainterBrush brush;
 
         readyFastUIDrawBrush(brush);
-        brush
-          .apply_translate(fastuidraw::vec2(normalizedSrc.x(), normalizedSrc.y()))
-          .apply_shear(normalizedSrc.width() / normalizedDst.width(),
-                       normalizedSrc.height() / normalizedDst.height())
-          .apply_translate(fastuidraw::vec2(-normalizedDst.x(), -normalizedDst.y()));
-        ctxt.drawImage(brush, dst, op, blendMode);
+        ctxt.save();
+        ctxt.translate(dst.x(), dst.y());
+        ctxt.scale(dst.size());
+        ctxt.scale(FloatSize(1.0f / src.width(), 1.0f / src.height()));
+        ctxt.drawImage(brush, src, op, blendMode);
+        ctxt.restore();
 
         if (imageObserver())
             imageObserver()->didDraw(this);

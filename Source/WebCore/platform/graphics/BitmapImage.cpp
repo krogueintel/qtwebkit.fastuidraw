@@ -659,7 +659,12 @@ void BitmapImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
     brush.reset();
     f = frameAtIndexInternal(currentFrame());
     if (f) {
-        brush.image(f->fastuidraw_image(), fastuidraw::PainterBrush::image_filter_linear);
+        const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im(f->fastuidraw_image());
+        brush
+          .image(im,
+                 fastuidraw::PainterBrush::image_filter_linear);
+    } else {
+      Image::readyFastUIDrawBrush(brush);
     }
 }
 
