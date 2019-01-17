@@ -283,6 +283,9 @@ public:
 
     WEBCORE_EXPORT void setForcePendingWebGLPolicy(bool);
     bool isForcePendingWebGLPolicy() const { return m_forcePendingWebGLPolicy; }
+
+    WEBCORE_EXPORT void setUseFastUIDrawCanvas(bool);
+    bool useFastUIDrawCanvas() const { return m_useFastUIDrawCanvas; }
     
 #if PLATFORM(IOS)
     WEBCORE_EXPORT static float defaultMinimumZoomFontSize();
@@ -341,6 +344,7 @@ private:
     bool m_fontFallbackPrefersPictographs : 1;
 
     bool m_forcePendingWebGLPolicy : 1;
+    bool m_useFastUIDrawCanvas : 1;
 
 #if ENABLE(RESOURCE_USAGE)
     bool m_resourceUsageOverlayVisible { false };

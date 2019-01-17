@@ -450,6 +450,10 @@ QWebView::QWebView(QWidget *parent)
     d->m_allowFastUIDrawStrokeAA = true;
     d->m_drawFastUIDrawStats = false;
 
+    if (page()) {
+      page()->settings()->setUseFastUIDrawCanvas(d->m_drawWithFastUIDraw);
+    }
+
 #if !defined(Q_WS_QWS)
     setAttribute(Qt::WA_InputMethodEnabled);
 #endif
@@ -566,6 +570,9 @@ void QWebView::setPage(QWebPage* page)
             this, SLOT(_q_pageDestroyed()));
     }
     setAttribute(Qt::WA_OpaquePaintEvent, d->page);
+    if (d->page) {
+        d->page->settings()->setUseFastUIDrawCanvas(d->m_drawWithFastUIDraw);
+    }
     update();
 }
 
@@ -1117,6 +1124,10 @@ void QWebView::drawWithFastUIDraw(bool v)
 {
     if (v != d->m_drawWithFastUIDraw) {
         d->m_drawWithFastUIDraw = v;
+        if (page()) {
+            page()->settings()->setUseFastUIDrawCanvas(d->m_drawWithFastUIDraw);
+        }
+
         update();
     }
 }

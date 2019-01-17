@@ -217,6 +217,7 @@ Settings::Settings(Page* page)
     , m_hiddenPageCSSAnimationSuspensionEnabled(false)
     , m_fontFallbackPrefersPictographs(false)
     , m_forcePendingWebGLPolicy(false)
+    , m_useFastUIDrawCanvas(false)
 {
     // A Frame may not have been created yet, so we initialize the AtomicString
     // hash before trying to use it.
@@ -443,6 +444,11 @@ void Settings::setImagesEnabled(bool areImagesEnabled)
 void Settings::setForcePendingWebGLPolicy(bool forced)
 {
     m_forcePendingWebGLPolicy = forced;
+}
+
+void Settings::setUseFastUIDrawCanvas(bool v)
+{
+    m_useFastUIDrawCanvas = v;
 }
 
 void Settings::setPluginsEnabled(bool arePluginsEnabled)

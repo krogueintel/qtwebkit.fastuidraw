@@ -717,6 +717,18 @@ QString QWebSettings::defaultTextEncoding() const
     return d->defaultTextEncoding;
 }
 
+void QWebSettings::setUseFastUIDrawCanvas(bool b)
+{
+    if (d->settings) {
+      d->settings->setUseFastUIDrawCanvas(b);
+    }
+}
+
+bool QWebSettings::useFastUIDrawCanvas() const
+{
+    return d->settings && d->settings->useFastUIDrawCanvas();
+}
+
 /*!
     Sets the path of the icon database to \a path. The icon database is used
     to store "favicons" associated with web sites.

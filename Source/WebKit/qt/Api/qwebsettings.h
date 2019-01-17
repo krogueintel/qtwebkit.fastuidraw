@@ -136,6 +136,9 @@ public:
     void setDefaultTextEncoding(const QString &encoding);
     QString defaultTextEncoding() const;
 
+    void setUseFastUIDrawCanvas(bool);
+    bool useFastUIDrawCanvas() const;
+
     static void setIconDatabasePath(const QString &location);
     static QString iconDatabasePath();
     static void clearIconDatabase();
