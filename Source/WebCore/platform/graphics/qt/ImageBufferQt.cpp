@@ -60,6 +60,7 @@ ImageBuffer::ImageBuffer(const IntSize& size, ColorSpace, QOpenGLContext* compat
         return;
 
     m_data.m_context = std::make_unique<GraphicsContext>(m_data.m_platform_context);
+    warningFastUIDraw("ImageBuffer created");
 }
 #endif
 
@@ -74,6 +75,7 @@ ImageBuffer::ImageBuffer(const FloatSize& size, float resolutionScale, ColorSpac
         return;
 
     m_data.m_context = std::make_unique<GraphicsContext>(m_data.m_platform_context);
+    warningFastUIDraw("ImageBuffer created");
 }
 
 ImageBuffer::~ImageBuffer()
@@ -95,6 +97,7 @@ GraphicsContext& ImageBuffer::context() const
 {
     ASSERT(m_data.m_platform_context->qt().isActive());
 
+    warningFastUIDraw("");
     return *m_data.m_context;
 }
 
@@ -103,11 +106,13 @@ RefPtr<Image> ImageBuffer::copyImage(BackingStoreCopy copyBehavior, ScaleBehavio
     if (copyBehavior == CopyBackingStore)
         return m_data.m_impl->copyImage();
 
+    warningFastUIDraw("");
     return m_data.m_impl->image();
 }
 
 RefPtr<Image> ImageBuffer::sinkIntoImage(std::unique_ptr<ImageBuffer> imageBuffer, ScaleBehavior)
 {
+    warningFastUIDraw("");
     return imageBuffer->m_data.m_impl->takeImage();
 }
 
@@ -118,23 +123,27 @@ BackingStoreCopy ImageBuffer::fastCopyImageMode()
 
 void ImageBuffer::drawConsuming(std::unique_ptr<ImageBuffer> imageBuffer, GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect, CompositeOperator op, BlendMode blendMode)
 {
+    warningFastUIDraw("");
     imageBuffer->draw(destContext, destRect, srcRect, op, blendMode);
 }
 
 void ImageBuffer::draw(GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect,
     CompositeOperator op, BlendMode blendMode)
 {
+    warningFastUIDraw("");
     m_data.m_impl->draw(destContext, destRect, srcRect, op, blendMode, &destContext == &context());
 }
 
 void ImageBuffer::drawPattern(GraphicsContext& destContext, const FloatRect& srcRect, const AffineTransform& patternTransform,
                               const FloatPoint& phase, const FloatSize& spacing, CompositeOperator op, const FloatRect& destRect, BlendMode blendMode)
 {
+    warningFastUIDraw("");
     m_data.m_impl->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode, &destContext == &context());
 }
 
 void ImageBuffer::platformTransformColorSpace(const Vector<int>& lookUpTable)
 {
+    warningFastUIDraw("");
     m_data.m_impl->platformTransformColorSpace(lookUpTable);
 }
 
@@ -144,7 +153,7 @@ PassRefPtr<Uint8ClampedArray> getImageData(const IntRect& unscaledRect, float sc
 {
     IntRect rect(unscaledRect);
 
-    std::cout << "FUID: Insanity of extracting pixels of ImageBuffer\n";
+    warningFastUIDraw("Insanity of extracting pixels of ImageBuffer");
 
     if (coordinateSystem == ImageBuffer::LogicalCoordinateSystem)
         rect.scale(scale);
@@ -186,7 +195,7 @@ void ImageBuffer::putByteArray(Multiply multiplied, Uint8ClampedArray* source, c
 {
     ASSERT(sourceRect.width() > 0);
     ASSERT(sourceRect.height() > 0);
-    warningFastUIDraw("FUID: grabbing image data insanity");
+    warningFastUIDraw("");
 
     if (m_data.m_platform_context->is_qt()) {
         bool isPainting = m_data.m_platform_context->qt().isActive();
@@ -246,6 +255,7 @@ static bool encodeImage(const QPixmap& pixmap, const String& format, const doubl
 String ImageBuffer::toDataURL(const String& mimeType, const double* quality, CoordinateSystem) const
 {
     ASSERT(MIMETypeRegistry::isSupportedImageMIMETypeForEncoding(mimeType));
+    warningFastUIDraw("");
 
     // QImageWriter does not support mimetypes. It does support Qt image formats (png,
     // gif, jpeg..., xpm) so skip the image/ to get the Qt image format used to encode
@@ -261,6 +271,7 @@ String ImageBuffer::toDataURL(const String& mimeType, const double* quality, Coo
 
 PlatformLayer* ImageBuffer::platformLayer() const
 {
+    warningFastUIDraw("");
     return m_data.m_impl->platformLayer();
 }
 
