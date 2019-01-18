@@ -72,15 +72,22 @@ Qt WebKit: rendering.
                        ^ GradientImage is for caching a gradient render; 
                        ^ NamedImageGeneratedImage, appears to be used for theme rendering; likely not active (?)
                        ^ BitmapImage
-                  * StillImage appears to be for rending an image that does not change
+                  * SVGImage is for caching renders of SVG when it is rendered in drawPattern.
+                  * StillImage is used for presenting contents of off-screen renders.
               - NativeImagePtr is likely the type to pass around for drawing images;
                 for most platforms PassNativeImagePtr is an alias to NativeImagePtr
                 (including Qt). To get the PassNativeImagePtr for an image, the
                 virtual method Image::nativeImageForCurrentFrame() is to be overridden
               - Rendering to offscreen has additional class, ImageBuffer and ImageBufferData
                 that adds more layers of C++ code.
-              - Plan: add to Image class an interface function readyFastUIDrawBrush()
+              - (Mostly Done) Plan: add to Image class an interface function readyFastUIDrawBrush()
                 whose job is to ready a fastuidraw::PainterBrush to brush with the image.
+              - Plan: ImageBuffer/ImageBufferData change createCompatibleBuffer() to examine the
+                backend of the passed context and use that method as much as possible. For when
+                a context is not available use the page settings to decide.
+              - SVGImage is going to be a pain; we can in theory use the ImageBuffer interface, but
+                that really sucks because it looks like it regenerates the image every time drawPattern
+                is hit.
                   
        b. text
          i. modify GlyphBuffer and/or TextRun to have a fastuidraw structs for text.
