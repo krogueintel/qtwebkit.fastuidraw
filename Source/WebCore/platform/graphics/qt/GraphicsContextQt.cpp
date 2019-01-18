@@ -861,6 +861,7 @@ GraphicsContextPlatformPrivate::~GraphicsContextPlatformPrivate()
 // GraphicsContext methods
 void GraphicsContext::platformInit(PlatformGraphicsContext *painter)
 {
+    GC_TRACE;
     if (!painter)
         return;
 
@@ -887,6 +888,7 @@ void GraphicsContext::platformInit(PlatformGraphicsContext *painter)
 
 void GraphicsContext::platformDestroy()
 {
+    GC_TRACE;
     if (m_data && m_data->is_qt()) {
         while (!m_data->layers.isEmpty())
             endTransparencyLayer();
@@ -897,11 +899,13 @@ void GraphicsContext::platformDestroy()
 
 PlatformGraphicsContext* GraphicsContext::platformContext() const
 {
+    GC_TRACE;
     return m_data->platform_gc();
 }
 
 AffineTransform GraphicsContext::getCTM(IncludeDeviceScale includeScale) const
 {
+    GC_TRACE;
     if (paintingDisabled())
         return AffineTransform();
 
@@ -921,6 +925,7 @@ AffineTransform GraphicsContext::getCTM(IncludeDeviceScale includeScale) const
 
 void GraphicsContext::savePlatformState()
 {
+    GC_TRACE;
     if (m_data->is_qt()) {
         if (!m_data->layers.isEmpty() && !m_data->layers.top()->alphaMask.isNull())
             ++m_data->layers.top()->saveCounter;
@@ -934,6 +939,7 @@ void GraphicsContext::savePlatformState()
 
 void GraphicsContext::restorePlatformState()
 {
+    GC_TRACE;
     if (m_data->is_qt()) {
         if (!m_data->layers.isEmpty() && !m_data->layers.top()->alphaMask.isNull())
             if (!--m_data->layers.top()->saveCounter)
@@ -952,6 +958,7 @@ void GraphicsContext::restorePlatformState()
 // thus it must not cast any shadow.
 void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1006,6 +1013,7 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
 // Must not cast any shadow.
 void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point2)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1121,6 +1129,7 @@ void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point
 // This method is only used to draw the little circles used in lists.
 void GraphicsContext::drawEllipse(const FloatRect& rect)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1167,6 +1176,7 @@ bool GraphicsContext::drawGradientPattern(const Gradient &gradient,
                                           const FloatPoint& phase, const FloatSize& spacing, CompositeOperator compositeOp,
                                           const FloatRect& dstRect, BlendMode blendMode)
 {
+    GC_TRACE;
     if (m_data->is_qt()) {
         return false;
     }
@@ -1194,6 +1204,7 @@ bool GraphicsContext::drawGradientPattern(const Gradient &gradient,
 void GraphicsContext::drawPattern(Image& image, const FloatRect& tileRect, const AffineTransform& patternTransform,
     const FloatPoint& phase, const FloatSize& spacing, CompositeOperator op, const FloatRect &destRect, BlendMode blendMode)
 {
+    GC_TRACE;
     if (paintingDisabled() || !patternTransform.isInvertible())
         return;
 
@@ -1343,6 +1354,7 @@ void GraphicsContext::clipConvexPolygon(size_t numPoints, const FloatPoint* poin
 
 void GraphicsContext::fillPath(const Path& path)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1419,6 +1431,7 @@ inline static void fillPathStroke(QPainter* painter, const QPainterPath& platfor
 
 void GraphicsContext::strokePath(const Path& path)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1525,6 +1538,7 @@ static inline void drawRepeatPattern(QPainter* p, Pattern& pattern, const FloatR
 
 void GraphicsContext::fillRect(const FloatRect& rect)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1596,6 +1610,7 @@ void GraphicsContext::fillRect(const FloatRect& rect)
 
 void GraphicsContext::fillRect(const FloatRect& rect, const Color& color)
 {
+    GC_TRACE;
     if (paintingDisabled() || !color.isValid())
         return;
 
@@ -1627,6 +1642,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, const Color& color)
 
 void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1647,6 +1663,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
 
 void GraphicsContext::platformFillRoundedRect(const FloatRoundedRect& rect, const Color& color)
 {
+    GC_TRACE;
     if (paintingDisabled() || !color.isValid())
         return;
 
@@ -1682,6 +1699,7 @@ void GraphicsContext::platformFillRoundedRect(const FloatRoundedRect& rect, cons
 
 void GraphicsContext::fillRectWithRoundedHole(const FloatRect& rect, const FloatRoundedRect& roundedHoleRect, const Color& color)
 {
+    GC_TRACE;
     if (paintingDisabled() || !color.isValid())
         return;
 
@@ -1723,6 +1741,7 @@ void GraphicsContext::fillRectWithRoundedHole(const FloatRect& rect, const Float
 
 void GraphicsContext::clip(const FloatRect& rect)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1735,6 +1754,7 @@ void GraphicsContext::clip(const FloatRect& rect)
 
 IntRect GraphicsContext::clipBounds() const
 {
+    GC_TRACE;
     if (m_data->is_qt()) {
         QPainter* p = m_data->p();
         QRectF clipRect;
@@ -1757,6 +1777,7 @@ IntRect GraphicsContext::clipBounds() const
 
 bool GraphicsContext::platformClipRoundedRect(const FloatRoundedRect &rect)
 {
+    GC_TRACE;
     if (m_data->is_qt())
         return false;
 
@@ -1769,6 +1790,7 @@ bool GraphicsContext::platformClipRoundedRect(const FloatRoundedRect &rect)
 
 bool GraphicsContext::platformClipOutRoundedRect(const FloatRoundedRect &rect)
 {
+    GC_TRACE;
     if (m_data->is_qt())
         return false;
 
@@ -1781,6 +1803,7 @@ bool GraphicsContext::platformClipOutRoundedRect(const FloatRoundedRect &rect)
 
 void GraphicsContext::clipPath(const Path& path, WindRule clipRule)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1796,6 +1819,7 @@ void GraphicsContext::clipPath(const Path& path, WindRule clipRule)
 
 void GraphicsContext::clipToImageBuffer(ImageBuffer& buffer, const FloatRect& destRect)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1829,6 +1853,7 @@ void drawFocusRingForPath(QPainter* p, const QPainterPath& path, const Color& co
 
 void GraphicsContext::drawFocusRing(const Path& path, float /* width */, float /* offset */, const Color& color)
 {
+    GC_TRACE;
     // FIXME: Use 'offset' for something? http://webkit.org/b/49909
 
     if (paintingDisabled() || !color.isValid())
@@ -1848,6 +1873,7 @@ void GraphicsContext::drawFocusRing(const Path& path, float /* width */, float /
  */
 void GraphicsContext::drawFocusRing(const Vector<FloatRect>& rects, float width, float offset, const Color& color)
 {
+    GC_TRACE;
     if (paintingDisabled() || !color.isValid())
         return;
 
@@ -1875,6 +1901,7 @@ void GraphicsContext::drawFocusRing(const Vector<FloatRect>& rects, float width,
 
 void GraphicsContext::drawLineForText(const FloatPoint& origin, float width, bool printing, bool doubleLines)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1935,6 +1962,7 @@ void GraphicsContext::drawLineForText(const FloatPoint& origin, float width, boo
 // NOTE: this code is based on GraphicsContextCG implementation
 void GraphicsContext::drawLinesForText(const FloatPoint& origin, const DashArray& widths, bool printing, bool doubleLines)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2064,11 +2092,13 @@ static void drawErrorUnderline(QPainter *painter, qreal x, qreal y, qreal width,
 
 void GraphicsContext::updateDocumentMarkerResources()
 {
+    GC_TRACE;
     // Unnecessary, since our document markers don't use resources.
 }
 
 void GraphicsContext::drawLineForDocumentMarker(const FloatPoint& origin, float width, DocumentMarkerLineStyle style)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2096,6 +2126,7 @@ void GraphicsContext::drawLineForDocumentMarker(const FloatPoint& origin, float 
 
 FloatRect GraphicsContext::roundToDevicePixels(const FloatRect& frect, RoundingMode)
 {
+    GC_TRACE;
     // It is not enough just to round to pixels in device space. The rotation part of the
     // affine transform matrix to device space can mess with this conversion if we have a
     // rotating image like the hands of the world clock widget. We just need the scale, so
@@ -2129,6 +2160,7 @@ FloatRect GraphicsContext::roundToDevicePixels(const FloatRect& frect, RoundingM
 
 void GraphicsContext::setPlatformShadow(const FloatSize& size, float, const Color&)
 {
+    GC_TRACE;
     // Qt doesn't support shadows natively, they are drawn manually in the draw*
     // functions
     if (m_state.shadowsIgnoreTransforms) {
@@ -2140,10 +2172,12 @@ void GraphicsContext::setPlatformShadow(const FloatSize& size, float, const Colo
 
 void GraphicsContext::clearPlatformShadow()
 {
+    GC_TRACE;
 }
 
 void GraphicsContext::pushTransparencyLayerInternal(const QRect &rect, qreal opacity, QPixmap& alphaMask)
 {
+    GC_TRACE;
     /*
      * this method is only used to implement clipping when rendering to an
      * an offscreen buffer (the stack is
@@ -2169,6 +2203,7 @@ void GraphicsContext::pushTransparencyLayerInternal(const QRect &rect, qreal opa
 
 void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
 {
+    GC_TRACE;
     if (paintingDisabled() || !EnableGraphicsContextTransparencyLayer)
         return;
 
@@ -2212,6 +2247,7 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
 
 void GraphicsContext::popTransparencyLayerInternal()
 {
+    GC_TRACE;
     /*
      * this method is only used internally in imlpementing
      * endPlatformTransparencyLayer() when popping transparency
@@ -2237,6 +2273,7 @@ void GraphicsContext::popTransparencyLayerInternal()
 
 void GraphicsContext::endPlatformTransparencyLayer()
 {
+    GC_TRACE;
     if (paintingDisabled() || !EnableGraphicsContextTransparencyLayer)
         return;
 
@@ -2313,16 +2350,19 @@ void GraphicsContext::endPlatformTransparencyLayer()
 
 bool GraphicsContext::supportsTransparencyLayers()
 {
+    GC_TRACE;
     return EnableGraphicsContextTransparencyLayer;
 }
 
 void GraphicsContext::supportsTransparencyLayers(bool v)
 {
+    GC_TRACE;
     EnableGraphicsContextTransparencyLayer = v;
 }
 
 void GraphicsContext::clearRect(const FloatRect& rect)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2345,6 +2385,7 @@ void GraphicsContext::clearRect(const FloatRect& rect)
 
 void GraphicsContext::strokeRect(const FloatRect& rect, float lineWidth)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2384,6 +2425,7 @@ void GraphicsContext::strokeRect(const FloatRect& rect, float lineWidth)
 
 void GraphicsContext::setLineCap(LineCap lc)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2399,6 +2441,7 @@ void GraphicsContext::setLineCap(LineCap lc)
 
 void GraphicsContext::setLineDash(const DashArray& dashes, float dashOffset)
 {
+    GC_TRACE;
     if (m_data->is_qt()) {
         QPainter* p = m_data->p();
         QPen pen = p->pen();
@@ -2428,6 +2471,7 @@ void GraphicsContext::setLineDash(const DashArray& dashes, float dashOffset)
 
 void GraphicsContext::setLineJoin(LineJoin lj)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2443,6 +2487,7 @@ void GraphicsContext::setLineJoin(LineJoin lj)
 
 void GraphicsContext::setMiterLimit(float limit)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2458,6 +2503,7 @@ void GraphicsContext::setMiterLimit(float limit)
 
 void GraphicsContext::setPlatformAlpha(float opacity)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2481,6 +2527,7 @@ void GraphicsContext::setPlatformAlpha(float opacity)
 
 void GraphicsContext::setPlatformCompositeOperation(CompositeOperator op, BlendMode blendMode)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2507,6 +2554,7 @@ void GraphicsContext::setPlatformCompositeOperation(CompositeOperator op, BlendM
 
 void GraphicsContext::canvasClip(const Path& path, WindRule windRule)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2521,6 +2569,7 @@ void GraphicsContext::canvasClip(const Path& path, WindRule windRule)
 
 void GraphicsContext::clipOut(const Path& path)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2547,6 +2596,7 @@ void GraphicsContext::clipOut(const Path& path)
 
 void GraphicsContext::translate(float x, float y)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2559,6 +2609,7 @@ void GraphicsContext::translate(float x, float y)
 
 void GraphicsContext::rotate(float radians)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2572,6 +2623,7 @@ void GraphicsContext::rotate(float radians)
 
 void GraphicsContext::scale(const FloatSize& s)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2584,6 +2636,7 @@ void GraphicsContext::scale(const FloatSize& s)
 
 void GraphicsContext::clipOut(const FloatRect& rect)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2610,6 +2663,7 @@ void GraphicsContext::clipOut(const FloatRect& rect)
 
 void GraphicsContext::concatCTM(const AffineTransform& transform)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2624,6 +2678,7 @@ void GraphicsContext::concatCTM(const AffineTransform& transform)
 
 void GraphicsContext::setCTM(const AffineTransform& transform)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2637,6 +2692,7 @@ void GraphicsContext::setCTM(const AffineTransform& transform)
 #if ENABLE(3D_TRANSFORMS)
 TransformationMatrix GraphicsContext::get3DTransform() const
 {
+    GC_TRACE;
     if (paintingDisabled())
         return TransformationMatrix();
 
@@ -2652,6 +2708,7 @@ TransformationMatrix GraphicsContext::get3DTransform() const
 
 void GraphicsContext::concat3DTransform(const TransformationMatrix& transform)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2666,6 +2723,7 @@ void GraphicsContext::concat3DTransform(const TransformationMatrix& transform)
 
 void GraphicsContext::set3DTransform(const TransformationMatrix& transform)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2679,6 +2737,7 @@ void GraphicsContext::set3DTransform(const TransformationMatrix& transform)
 
 void GraphicsContext::setURLForRect(const URL& url, const IntRect& rect)
 {
+    GC_TRACE;
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     if (paintingDisabled())
         return;
@@ -2696,6 +2755,7 @@ void GraphicsContext::setURLForRect(const URL& url, const IntRect& rect)
 
 void GraphicsContext::setPlatformStrokeColor(const Color& color)
 {
+    GC_TRACE;
     /* Qt notes:
      *   - QPainter::pen/setPen define how to stroke paths; a pen contains a brush as well.
      *   - QPainter::brush/setBrush define how to fill
@@ -2718,6 +2778,7 @@ void GraphicsContext::setPlatformStrokeColor(const Color& color)
 
 void GraphicsContext::setPlatformStrokeStyle(StrokeStyle strokeStyle)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2733,6 +2794,7 @@ void GraphicsContext::setPlatformStrokeStyle(StrokeStyle strokeStyle)
 
 void GraphicsContext::setPlatformStrokeThickness(float thickness)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -2748,6 +2810,7 @@ void GraphicsContext::setPlatformStrokeThickness(float thickness)
 
 void GraphicsContext::setPlatformFillColor(const Color& color)
 {
+    GC_TRACE;
     /* Qt notes:
      *   - QPainter::pen/setPen define how to stroke paths; a pen contains a brush as well.
      *   - QPainter::brush/setBrush define how to fill
@@ -2767,6 +2830,7 @@ void GraphicsContext::setPlatformFillColor(const Color& color)
 
 void GraphicsContext::setPlatformStrokePatternGradient(const RefPtr<Pattern> &pattern, const RefPtr<Gradient> &gr)
 {
+    GC_TRACE;
     if (m_data->is_qt()) {
     } else {
       setPatternGradientOfFastUIDrawBrush(pattern, gr,
@@ -2777,6 +2841,7 @@ void GraphicsContext::setPlatformStrokePatternGradient(const RefPtr<Pattern> &pa
 
 void GraphicsContext::setPlatformFillPatternGradient(const RefPtr<Pattern> &pattern, const RefPtr<Gradient> &gr)
 {
+    GC_TRACE;
     if (m_data->is_qt()) {
     } else {
         setPatternGradientOfFastUIDrawBrush(pattern, gr,
@@ -2787,6 +2852,7 @@ void GraphicsContext::setPlatformFillPatternGradient(const RefPtr<Pattern> &patt
 
 void GraphicsContext::setPlatformShouldAntialias(bool enable)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
     if (m_data->is_qt()) {
@@ -2806,6 +2872,7 @@ void GraphicsContext::setPlatformShouldAntialias(bool enable)
 
 HDC GraphicsContext::getWindowsContext(const IntRect& dstRect, bool supportAlphaBlend, bool mayCreateBitmap)
 {
+    GC_TRACE;
     // painting through native HDC is only supported for plugin, where mayCreateBitmap is always true
     Q_ASSERT(mayCreateBitmap);
 
@@ -2865,6 +2932,7 @@ HDC GraphicsContext::getWindowsContext(const IntRect& dstRect, bool supportAlpha
 
 void GraphicsContext::releaseWindowsContext(HDC hdc, const IntRect& dstRect, bool supportAlphaBlend, bool mayCreateBitmap)
 {
+    GC_TRACE;
     // painting through native HDC is only supported for plugin, where mayCreateBitmap is always true
     Q_ASSERT(mayCreateBitmap);
 
@@ -2890,6 +2958,7 @@ void GraphicsContext::releaseWindowsContext(HDC hdc, const IntRect& dstRect, boo
 
 void GraphicsContext::setPlatformImageInterpolationQuality(InterpolationQuality quality)
 {
+    GC_TRACE;
     m_data->imageInterpolationQuality = quality;
     if (m_data->is_qt()) {
         // FIXME
@@ -2921,11 +2990,13 @@ void GraphicsContext::setPlatformImageInterpolationQuality(InterpolationQuality 
 
 void GraphicsContext::takeOwnershipOfPlatformContext()
 {
+    GC_TRACE;
     m_data->takeOwnershipOfPlatformContext();
 }
 
 bool GraphicsContext::isAcceleratedContext() const
 {
+    GC_TRACE;
     if (!platformContext())
         return false;
 
@@ -2938,12 +3009,14 @@ bool GraphicsContext::isAcceleratedContext() const
 
 void GraphicsContext::strokeText(const fastuidraw::GlyphRun& glyphRun)
 {
+    GC_TRACE;
     FASTUIDRAWassert(m_data && m_data->is_fastuidraw());
     unimplementedFastUIDraw();
 }
 
 void GraphicsContext::fillText(const fastuidraw::GlyphRun& glyphRun)
 {
+    GC_TRACE;
     FASTUIDRAWassert(m_data && m_data->is_fastuidraw());
 
     fastuidraw::PainterData pd(m_data->fastuidraw_state().m_fill_brush.packed_value());
@@ -2954,6 +3027,7 @@ void GraphicsContext::drawImage(const fastuidraw::PainterBrush &brush,
                                 const FloatRect& dst,
                                 CompositeOperator op, BlendMode blendMode)
 {
+    GC_TRACE;
     FASTUIDRAWassert(m_data && m_data->is_fastuidraw());
     
     if (hasShadow()) {

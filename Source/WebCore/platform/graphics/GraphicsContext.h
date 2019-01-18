@@ -38,6 +38,8 @@
 #include "Pattern.h"
 #include <wtf/Noncopyable.h>
 #include <fastuidraw/painter/painter.hpp>
+#include <iostream>
+#include <sstream>
 
 #if USE(CG)
 typedef struct CGContext PlatformGraphicsContext;
@@ -523,6 +525,9 @@ public:
     void drawImage(const fastuidraw::PainterBrush &brush,
                    const FloatRect& dst,
                    CompositeOperator op, BlendMode blendMode);
+    static void startTracking(void);
+    static void endTracking(void);
+    static bool trackingActive(void);
 #endif
 
     void drawFocusRing(const Vector<FloatRect>&, float width, float offset, const Color&);
@@ -783,5 +788,17 @@ private:
 };
 
 } // namespace WebCore
+
+class GcTrace
+{
+public:
+  GcTrace(bool active, const char *file, int line, const char *function);
+  GcTrace(bool active, const char *file, int line, const char *function, const char *message);
+  ~GcTrace();
+};
+
+#define GC_TRACE GcTrace FlopFlopFlopper(GraphicsContext::trackingActive(), __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define GC_TRACE_D(X) std::string FlopFlopFlopperMessage; { std::ostringstream str; str << X; FlopFlopFlopperMessage = str.str(); } \
+  GcTrace FlopFlopFlopper(GraphicsContext::trackingActive(), __FILE__, __LINE__, __PRETTY_FUNCTION__, FlopFlopFlopperMessage.c_str())
 
 #endif // GraphicsContext_h

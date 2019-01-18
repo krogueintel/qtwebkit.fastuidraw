@@ -357,6 +357,7 @@ GraphicsContext::~GraphicsContext()
 
 void GraphicsContext::save()
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -372,6 +373,7 @@ void GraphicsContext::save()
 
 void GraphicsContext::restore()
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -397,6 +399,7 @@ void GraphicsContext::restore()
 
 void GraphicsContext::drawRaisedEllipse(const FloatRect& rect, const Color& ellipseColor, const Color& shadowColor)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -417,6 +420,7 @@ void GraphicsContext::drawRaisedEllipse(const FloatRect& rect, const Color& elli
 
 void GraphicsContext::setStrokeThickness(float thickness)
 {
+    GC_TRACE;
     m_state.strokeThickness = thickness;
     if (isRecording()) {
         m_displayListRecorder->updateState(m_state, GraphicsContextState::StrokeThicknessChange);
@@ -428,6 +432,7 @@ void GraphicsContext::setStrokeThickness(float thickness)
 
 void GraphicsContext::setStrokeStyle(StrokeStyle style)
 {
+    GC_TRACE;
     m_state.strokeStyle = style;
     if (isRecording()) {
         m_displayListRecorder->updateState(m_state, GraphicsContextState::StrokeStyleChange);
@@ -438,6 +443,7 @@ void GraphicsContext::setStrokeStyle(StrokeStyle style)
 
 void GraphicsContext::setStrokeColor(const Color& color)
 {
+    GC_TRACE;
     m_state.strokeColor = color;
     m_state.strokeGradient = nullptr;
     m_state.strokePattern = nullptr;
@@ -450,6 +456,7 @@ void GraphicsContext::setStrokeColor(const Color& color)
 
 void GraphicsContext::setShadow(const FloatSize& offset, float blur, const Color& color)
 {
+    GC_TRACE;
     m_state.shadowOffset = offset;
     m_state.shadowBlur = blur;
     m_state.shadowColor = color;
@@ -465,6 +472,7 @@ void GraphicsContext::setShadow(const FloatSize& offset, float blur, const Color
 
 void GraphicsContext::setLegacyShadow(const FloatSize& offset, float blur, const Color& color)
 {
+    GC_TRACE;
     m_state.shadowOffset = offset;
     m_state.shadowBlur = blur;
     m_state.shadowColor = color;
@@ -480,6 +488,7 @@ void GraphicsContext::setLegacyShadow(const FloatSize& offset, float blur, const
 
 void GraphicsContext::clearShadow()
 {
+    GC_TRACE;
     m_state.shadowOffset = FloatSize();
     m_state.shadowBlur = 0;
     m_state.shadowColor = Color();
@@ -496,6 +505,7 @@ void GraphicsContext::clearShadow()
 
 bool GraphicsContext::getShadow(FloatSize& offset, float& blur, Color& color) const
 {
+    GC_TRACE;
     offset = m_state.shadowOffset;
     blur = m_state.shadowBlur;
     color = m_state.shadowColor;
@@ -506,6 +516,7 @@ bool GraphicsContext::getShadow(FloatSize& offset, float& blur, Color& color) co
 #if PLATFORM(QT) || USE(CAIRO)
 bool GraphicsContext::mustUseShadowBlur() const
 {
+    GC_TRACE;
     // We can't avoid ShadowBlur if the shadow has blur.
     if (hasBlurredShadow())
         return true;
@@ -523,6 +534,7 @@ bool GraphicsContext::mustUseShadowBlur() const
 
 void GraphicsContext::setFillColor(const Color& color)
 {
+    GC_TRACE;
     m_state.fillColor = color;
     m_state.fillGradient = nullptr;
     m_state.fillPattern = nullptr;
@@ -537,6 +549,7 @@ void GraphicsContext::setFillColor(const Color& color)
 
 void GraphicsContext::setShadowsIgnoreTransforms(bool shadowsIgnoreTransforms)
 {
+    GC_TRACE;
     m_state.shadowsIgnoreTransforms = shadowsIgnoreTransforms;
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::ShadowsIgnoreTransformsChange);
@@ -544,6 +557,7 @@ void GraphicsContext::setShadowsIgnoreTransforms(bool shadowsIgnoreTransforms)
 
 void GraphicsContext::setShouldAntialias(bool shouldAntialias)
 {
+    GC_TRACE;
     m_state.shouldAntialias = shouldAntialias;
 
     if (isRecording()) {
@@ -556,6 +570,7 @@ void GraphicsContext::setShouldAntialias(bool shouldAntialias)
 
 void GraphicsContext::setShouldSmoothFonts(bool shouldSmoothFonts)
 {
+    GC_TRACE;
     m_state.shouldSmoothFonts = shouldSmoothFonts;
     
     if (isRecording()) {
@@ -568,6 +583,7 @@ void GraphicsContext::setShouldSmoothFonts(bool shouldSmoothFonts)
 
 void GraphicsContext::setShouldSubpixelQuantizeFonts(bool shouldSubpixelQuantizeFonts)
 {
+    GC_TRACE;
     m_state.shouldSubpixelQuantizeFonts = shouldSubpixelQuantizeFonts;
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::ShouldSubpixelQuantizeFontsChange);
@@ -575,6 +591,7 @@ void GraphicsContext::setShouldSubpixelQuantizeFonts(bool shouldSubpixelQuantize
 
 void GraphicsContext::setImageInterpolationQuality(InterpolationQuality imageInterpolationQuality)
 {
+    GC_TRACE;
     m_state.imageInterpolationQuality = imageInterpolationQuality;
 
     if (paintingDisabled())
@@ -590,6 +607,7 @@ void GraphicsContext::setImageInterpolationQuality(InterpolationQuality imageInt
 
 void GraphicsContext::setAntialiasedFontDilationEnabled(bool antialiasedFontDilationEnabled)
 {
+    GC_TRACE;
     m_state.antialiasedFontDilationEnabled = antialiasedFontDilationEnabled;
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::AntialiasedFontDilationEnabledChange);
@@ -597,6 +615,7 @@ void GraphicsContext::setAntialiasedFontDilationEnabled(bool antialiasedFontDila
 
 void GraphicsContext::setStrokePattern(Ref<Pattern>&& pattern)
 {
+    GC_TRACE;
     m_state.strokeGradient = nullptr;
     m_state.strokePattern = WTFMove(pattern);
     if (isRecording())
@@ -606,6 +625,7 @@ void GraphicsContext::setStrokePattern(Ref<Pattern>&& pattern)
 
 void GraphicsContext::setFillPattern(Ref<Pattern>&& pattern)
 {
+    GC_TRACE;
     m_state.fillGradient = nullptr;
     m_state.fillPattern = WTFMove(pattern);
     if (isRecording())
@@ -615,6 +635,7 @@ void GraphicsContext::setFillPattern(Ref<Pattern>&& pattern)
 
 void GraphicsContext::setStrokeGradient(Ref<Gradient>&& gradient)
 {
+    GC_TRACE;
     m_state.strokeGradient = WTFMove(gradient);
     m_state.strokePattern = nullptr;
     if (isRecording())
@@ -624,6 +645,7 @@ void GraphicsContext::setStrokeGradient(Ref<Gradient>&& gradient)
 
 void GraphicsContext::setFillRule(WindRule fillRule)
 {
+    GC_TRACE;
     m_state.fillRule = fillRule;
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::FillRuleChange);
@@ -631,6 +653,7 @@ void GraphicsContext::setFillRule(WindRule fillRule)
 
 void GraphicsContext::setFillGradient(Ref<Gradient>&& gradient)
 {
+    GC_TRACE;
     m_state.fillGradient = WTFMove(gradient);
     m_state.fillPattern = nullptr;
     if (isRecording())
@@ -640,6 +663,7 @@ void GraphicsContext::setFillGradient(Ref<Gradient>&& gradient)
 
 void GraphicsContext::beginTransparencyLayer(float opacity)
 {
+    GC_TRACE;
     if (isRecording()) {
         m_displayListRecorder->beginTransparencyLayer(opacity);
         return;
@@ -650,6 +674,7 @@ void GraphicsContext::beginTransparencyLayer(float opacity)
 
 void GraphicsContext::endTransparencyLayer()
 {
+    GC_TRACE;
     if (isRecording()) {
         m_displayListRecorder->endTransparencyLayer();
         return;
@@ -661,6 +686,7 @@ void GraphicsContext::endTransparencyLayer()
 
 float GraphicsContext::drawText(const FontCascade& font, const TextRun& run, const FloatPoint& point, int from, int to)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return 0;
 
@@ -670,6 +696,7 @@ float GraphicsContext::drawText(const FontCascade& font, const TextRun& run, con
 
 void GraphicsContext::drawGlyphs(const FontCascade& fontCascade, const Font& font, const GlyphBuffer& buffer, int from, int numGlyphs, const FloatPoint& point)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -683,6 +710,7 @@ void GraphicsContext::drawGlyphs(const FontCascade& fontCascade, const Font& fon
 
 void GraphicsContext::drawEmphasisMarks(const FontCascade& font, const TextRun& run, const AtomicString& mark, const FloatPoint& point, int from, int to)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -691,6 +719,7 @@ void GraphicsContext::drawEmphasisMarks(const FontCascade& font, const TextRun& 
 
 void GraphicsContext::drawBidiText(const FontCascade& font, const TextRun& run, const FloatPoint& point, FontCascade::CustomFontNotReadyAction customFontNotReadyAction)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -725,11 +754,13 @@ void GraphicsContext::drawBidiText(const FontCascade& font, const TextRun& run, 
 
 void GraphicsContext::drawImage(Image& image, const FloatPoint& destination, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     drawImage(image, FloatRect(destination, image.size()), FloatRect(FloatPoint(), image.size()), imagePaintingOptions);
 }
 
 void GraphicsContext::drawImage(Image& image, const FloatRect& destination, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
 #if PLATFORM(IOS)
     FloatRect srcRect(FloatPoint(), image.originalSize());
 #else
@@ -741,6 +772,7 @@ void GraphicsContext::drawImage(Image& image, const FloatRect& destination, cons
 
 void GraphicsContext::drawImage(Image& image, const FloatRect& destination, const FloatRect& source, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -755,6 +787,7 @@ void GraphicsContext::drawImage(Image& image, const FloatRect& destination, cons
 
 void GraphicsContext::drawTiledImage(Image& image, const FloatRect& destination, const FloatPoint& source, const FloatSize& tileSize, const FloatSize& spacing, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -770,6 +803,7 @@ void GraphicsContext::drawTiledImage(Image& image, const FloatRect& destination,
 void GraphicsContext::drawTiledImage(Image& image, const FloatRect& destination, const FloatRect& source, const FloatSize& tileScaleFactor,
     Image::TileRule hRule, Image::TileRule vRule, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -790,16 +824,19 @@ void GraphicsContext::drawTiledImage(Image& image, const FloatRect& destination,
 
 void GraphicsContext::drawImageBuffer(ImageBuffer& image, const FloatPoint& destination, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     drawImageBuffer(image, FloatRect(destination, image.logicalSize()), FloatRect(FloatPoint(), image.logicalSize()), imagePaintingOptions);
 }
 
 void GraphicsContext::drawImageBuffer(ImageBuffer& image, const FloatRect& destination, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     drawImageBuffer(image, destination, FloatRect(FloatPoint(), FloatSize(image.logicalSize())), imagePaintingOptions);
 }
 
 void GraphicsContext::drawImageBuffer(ImageBuffer& image, const FloatRect& destination, const FloatRect& source, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -809,6 +846,7 @@ void GraphicsContext::drawImageBuffer(ImageBuffer& image, const FloatRect& desti
 
 void GraphicsContext::drawConsumingImageBuffer(std::unique_ptr<ImageBuffer> image, const FloatPoint& destination, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     if (!image)
         return;
     IntSize imageLogicalSize = image->logicalSize();
@@ -817,6 +855,7 @@ void GraphicsContext::drawConsumingImageBuffer(std::unique_ptr<ImageBuffer> imag
 
 void GraphicsContext::drawConsumingImageBuffer(std::unique_ptr<ImageBuffer> image, const FloatRect& destination, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     if (!image)
         return;
     IntSize imageLogicalSize = image->logicalSize();
@@ -825,6 +864,7 @@ void GraphicsContext::drawConsumingImageBuffer(std::unique_ptr<ImageBuffer> imag
 
 void GraphicsContext::drawConsumingImageBuffer(std::unique_ptr<ImageBuffer> image, const FloatRect& destination, const FloatRect& source, const ImagePaintingOptions& imagePaintingOptions)
 {
+    GC_TRACE;
     if (paintingDisabled() || !image)
         return;
     
@@ -834,6 +874,7 @@ void GraphicsContext::drawConsumingImageBuffer(std::unique_ptr<ImageBuffer> imag
 
 void GraphicsContext::clipRoundedRect(const FloatRoundedRect& rect)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -846,6 +887,7 @@ void GraphicsContext::clipRoundedRect(const FloatRoundedRect& rect)
 
 void GraphicsContext::clipOutRoundedRect(const FloatRoundedRect& rect)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -864,6 +906,7 @@ void GraphicsContext::clipOutRoundedRect(const FloatRoundedRect& rect)
 #if !USE(CG) && !PLATFORM(QT) && !USE(CAIRO)
 IntRect GraphicsContext::clipBounds() const
 {
+    GC_TRACE;
     ASSERT_NOT_REACHED();
     return IntRect();
 }
@@ -871,6 +914,7 @@ IntRect GraphicsContext::clipBounds() const
 
 void GraphicsContext::setTextDrawingMode(TextDrawingModeFlags mode)
 {
+    GC_TRACE;
     m_state.textDrawingMode = mode;
     if (paintingDisabled())
         return;
@@ -885,6 +929,7 @@ void GraphicsContext::setTextDrawingMode(TextDrawingModeFlags mode)
 #if 0
 void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -899,6 +944,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
 
 void GraphicsContext::fillRect(const FloatRect& rect, const Color& color, CompositeOperator op, BlendMode blendMode)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -915,6 +961,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, const Color& color, Compos
 
 void GraphicsContext::fillRoundedRect(const FloatRoundedRect& rect, const Color& color, BlendMode blendMode)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -934,6 +981,7 @@ void GraphicsContext::fillRoundedRect(const FloatRoundedRect& rect, const Color&
 #if !USE(CG) && !PLATFORM(QT) && !USE(CAIRO)
 void GraphicsContext::fillRectWithRoundedHole(const IntRect& rect, const FloatRoundedRect& roundedHoleRect, const Color& color)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -960,6 +1008,7 @@ void GraphicsContext::fillRectWithRoundedHole(const IntRect& rect, const FloatRo
 
 void GraphicsContext::setAlpha(float alpha)
 {
+    GC_TRACE_D("alpha=" << alpha);
     m_state.alpha = alpha;
     if (isRecording()) {
         m_displayListRecorder->updateState(m_state, GraphicsContextState::AlphaChange);
@@ -970,6 +1019,7 @@ void GraphicsContext::setAlpha(float alpha)
 
 void GraphicsContext::setCompositeOperation(CompositeOperator compositeOperation, BlendMode blendMode)
 {
+    GC_TRACE_D("Comp=" << compositeOperation << "blend=" << blendMode);
     m_state.compositeOperator = compositeOperation;
     m_state.blendMode = blendMode;
     if (isRecording()) {
@@ -981,6 +1031,7 @@ void GraphicsContext::setCompositeOperation(CompositeOperator compositeOperation
 
 void GraphicsContext::setDrawLuminanceMask(bool drawLuminanceMask)
 {
+    GC_TRACE;
     m_state.drawLuminanceMask = drawLuminanceMask;
     if (isRecording())
         m_displayListRecorder->updateState(m_state, GraphicsContextState::DrawLuminanceMaskChange);
@@ -996,6 +1047,7 @@ void GraphicsContext::setPlatformTextDrawingMode(TextDrawingModeFlags)
 #if !PLATFORM(QT) && !USE(CAIRO)
 void GraphicsContext::setPlatformStrokeStyle(StrokeStyle)
 {
+    GC_TRACE;
 }
 #endif
 
@@ -1008,12 +1060,14 @@ void GraphicsContext::setPlatformShouldSmoothFonts(bool)
 #if !USE(CG) && !USE(CAIRO) && !PLATFORM(QT)
 bool GraphicsContext::isAcceleratedContext() const
 {
+    GC_TRACE;
     return false;
 }
 #endif
 
 void GraphicsContext::adjustLineToPixelBoundaries(FloatPoint& p1, FloatPoint& p2, float strokeWidth, StrokeStyle penStyle)
 {
+    GC_TRACE;
     // For odd widths, we add in 0.5 to the appropriate x/y so that the float arithmetic
     // works out.  For example, with a border width of 3, WebKit will pass us (y1+y2)/2, e.g.,
     // (50+53)/2 = 103/2 = 51 when we want 51.5.  It is always true that an even width gave
@@ -1043,11 +1097,13 @@ void GraphicsContext::adjustLineToPixelBoundaries(FloatPoint& p1, FloatPoint& p2
 
 static bool scalesMatch(AffineTransform a, AffineTransform b)
 {
+    GC_TRACE;
     return a.xScale() == b.xScale() && a.yScale() == b.yScale();
 }
 
 std::unique_ptr<ImageBuffer> GraphicsContext::createCompatibleBuffer(const FloatSize& size, bool hasAlpha) const
 {
+    GC_TRACE;
     // Make the buffer larger if the context's transform is scaling it so we need a higher
     // resolution than one pixel per unit. Also set up a corresponding scale factor on the
     // graphics context.
@@ -1066,6 +1122,7 @@ std::unique_ptr<ImageBuffer> GraphicsContext::createCompatibleBuffer(const Float
 
 bool GraphicsContext::isCompatibleWithBuffer(ImageBuffer& buffer) const
 {
+    GC_TRACE;
     GraphicsContext& bufferContext = buffer.context();
 
     return scalesMatch(getCTM(), bufferContext.getCTM()) && isAcceleratedContext() == bufferContext.isAcceleratedContext();
@@ -1079,6 +1136,7 @@ void GraphicsContext::platformApplyDeviceScaleFactor(float)
 
 void GraphicsContext::applyDeviceScaleFactor(float deviceScaleFactor)
 {
+    GC_TRACE;
     scale(FloatSize(deviceScaleFactor, deviceScaleFactor));
 
     if (isRecording()) {
@@ -1091,11 +1149,13 @@ void GraphicsContext::applyDeviceScaleFactor(float deviceScaleFactor)
 
 void GraphicsContext::fillEllipse(const FloatRect& ellipse)
 {
+    GC_TRACE;
     platformFillEllipse(ellipse);
 }
 
 void GraphicsContext::strokeEllipse(const FloatRect& ellipse)
 {
+    GC_TRACE;
     platformStrokeEllipse(ellipse);
 }
 
@@ -1108,6 +1168,7 @@ void GraphicsContext::fillEllipseAsPath(const FloatRect& ellipse)
 
 void GraphicsContext::strokeEllipseAsPath(const FloatRect& ellipse)
 {
+    GC_TRACE;
     Path path;
     path.addEllipse(ellipse);
     strokePath(path);
@@ -1116,6 +1177,7 @@ void GraphicsContext::strokeEllipseAsPath(const FloatRect& ellipse)
 #if !USE(CG)
 void GraphicsContext::platformFillEllipse(const FloatRect& ellipse)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1124,6 +1186,7 @@ void GraphicsContext::platformFillEllipse(const FloatRect& ellipse)
 
 void GraphicsContext::platformStrokeEllipse(const FloatRect& ellipse)
 {
+    GC_TRACE;
     if (paintingDisabled())
         return;
 
@@ -1133,12 +1196,14 @@ void GraphicsContext::platformStrokeEllipse(const FloatRect& ellipse)
 
 FloatRect GraphicsContext::computeUnderlineBoundsForText(const FloatPoint& point, float width, bool printing)
 {
+    GC_TRACE;
     Color dummyColor;
     return computeLineBoundsAndAntialiasingModeForText(point, width, printing, dummyColor);
 }
 
 FloatRect GraphicsContext::computeLineBoundsAndAntialiasingModeForText(const FloatPoint& point, float width, bool printing, Color& color)
 {
+    GC_TRACE;
     FloatPoint origin = point;
     float thickness = std::max(strokeThickness(), 0.5f);
     if (printing)
@@ -1167,6 +1232,7 @@ FloatRect GraphicsContext::computeLineBoundsAndAntialiasingModeForText(const Flo
 
 void GraphicsContext::applyState(const GraphicsContextState& state)
 {
+    GC_TRACE;
     setPlatformShadow(state.shadowOffset, state.shadowBlur, state.shadowColor);
     setPlatformStrokeThickness(state.strokeThickness);
     setPlatformTextDrawingMode(state.textDrawingMode);
@@ -1181,12 +1247,47 @@ void GraphicsContext::applyState(const GraphicsContextState& state)
 
 bool GraphicsContext::supportsShadow()
 {
+    GC_TRACE;
     return GraphicsContextSupportsShadow;
 }
 
 void GraphicsContext::supportsShadow(bool v)
 {
+    GC_TRACE;
     GraphicsContextSupportsShadow = v;
 }
 
+static int gc_tracking_active = 0;
+void GraphicsContext::startTracking(void)
+{
+  ++gc_tracking_active;
 }
+void GraphicsContext::endTracking(void)
+{
+  --gc_tracking_active;
+}
+bool GraphicsContext::trackingActive(void) { return gc_tracking_active != 0; }
+
+}
+
+static int gc_depth = 0;
+GcTrace::GcTrace(bool active, const char *file, int line, const char *function)
+{
+  if (active)
+    {
+      std::cout << "FUID" << std::string(gc_depth, ' ') << "[" << file << ", "
+                << line << ", " << function << "\n";
+    }
+  ++gc_depth;
+}
+GcTrace::GcTrace(bool active, const char *file, int line, const char *function, const char *message)
+{
+  if (active)
+    {
+      std::cout << "FUID" << std::string(gc_depth, ' ') << "[" << file << ", "
+                << line << ", " << function << ":" << message << "\n";
+    }
+  ++gc_depth;
+}
+
+GcTrace::~GcTrace() { --gc_depth; }
