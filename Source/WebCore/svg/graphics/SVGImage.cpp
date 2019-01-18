@@ -202,37 +202,41 @@ PassNativeImagePtr SVGImage::nativeImageForCurrentFrame()
 void SVGImage::drawPatternForContainer(GraphicsContext& context, const FloatSize& containerSize, float zoom, const FloatRect& srcRect,
     const AffineTransform& patternTransform, const FloatPoint& phase, const FloatSize& spacing, CompositeOperator compositeOp, const FloatRect& dstRect, BlendMode blendMode)
 {
-    FloatRect zoomedContainerRect = FloatRect(FloatPoint(), containerSize);
-    zoomedContainerRect.scale(zoom);
+    if (context.platformContext()->is_qt()) {
+        FloatRect zoomedContainerRect = FloatRect(FloatPoint(), containerSize);
+        zoomedContainerRect.scale(zoom);
 
-    // The ImageBuffer size needs to be scaled to match the final resolution.
-    AffineTransform transform = context.getCTM();
-    FloatSize imageBufferScale = FloatSize(transform.xScale(), transform.yScale());
-    ASSERT(imageBufferScale.width());
-    ASSERT(imageBufferScale.height());
+        // The ImageBuffer size needs to be scaled to match the final resolution.
+        AffineTransform transform = context.getCTM();
+        FloatSize imageBufferScale = FloatSize(transform.xScale(), transform.yScale());
+        ASSERT(imageBufferScale.width());
+        ASSERT(imageBufferScale.height());
 
-    FloatRect imageBufferSize = zoomedContainerRect;
-    imageBufferSize.scale(imageBufferScale.width(), imageBufferScale.height());
+        FloatRect imageBufferSize = zoomedContainerRect;
+        imageBufferSize.scale(imageBufferScale.width(), imageBufferScale.height());
 
-    std::unique_ptr<ImageBuffer> buffer = ImageBuffer::createCompatibleBuffer(expandedIntSize(imageBufferSize.size()), 1, ColorSpaceSRGB, context, true);
-    if (!buffer) // Failed to allocate buffer.
-        return;
-    drawForContainer(buffer->context(), containerSize, zoom, imageBufferSize, zoomedContainerRect, CompositeSourceOver, BlendModeNormal);
-    if (context.drawLuminanceMask())
-        buffer->convertToLuminanceMask();
+        std::unique_ptr<ImageBuffer> buffer = ImageBuffer::createCompatibleBuffer(expandedIntSize(imageBufferSize.size()), 1, ColorSpaceSRGB, context, true);
+        if (!buffer) // Failed to allocate buffer.
+            return;
+        drawForContainer(buffer->context(), containerSize, zoom, imageBufferSize, zoomedContainerRect, CompositeSourceOver, BlendModeNormal);
+        if (context.drawLuminanceMask())
+            buffer->convertToLuminanceMask();
 
-    RefPtr<Image> image = ImageBuffer::sinkIntoImage(WTFMove(buffer), Unscaled);
-    if (!image)
-        return;
+        RefPtr<Image> image = ImageBuffer::sinkIntoImage(WTFMove(buffer), Unscaled);
+        if (!image)
+            return;
 
-    // Adjust the source rect and transform due to the image buffer's scaling.
-    FloatRect scaledSrcRect = srcRect;
-    scaledSrcRect.scale(imageBufferScale.width(), imageBufferScale.height());
-    AffineTransform unscaledPatternTransform(patternTransform);
-    unscaledPatternTransform.scale(1 / imageBufferScale.width(), 1 / imageBufferScale.height());
+        // Adjust the source rect and transform due to the image buffer's scaling.
+        FloatRect scaledSrcRect = srcRect;
+        scaledSrcRect.scale(imageBufferScale.width(), imageBufferScale.height());
+        AffineTransform unscaledPatternTransform(patternTransform);
+        unscaledPatternTransform.scale(1 / imageBufferScale.width(), 1 / imageBufferScale.height());
 
-    context.setDrawLuminanceMask(false);
-    image->drawPattern(context, scaledSrcRect, unscaledPatternTransform, phase, spacing, compositeOp, dstRect, blendMode);
+        context.setDrawLuminanceMask(false);
+        image->drawPattern(context, scaledSrcRect, unscaledPatternTransform, phase, spacing, compositeOp, dstRect, blendMode);
+    } else {
+        unimplementedFastUIDraw();
+    }
 }
 
 void SVGImage::draw(GraphicsContext& context, const FloatRect& dstRect, const FloatRect& srcRect, CompositeOperator compositeOp, BlendMode blendMode, ImageOrientationDescription)
