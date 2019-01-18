@@ -2198,7 +2198,8 @@ void GraphicsContext::beginPlatformTransparencyLayer(float opacity)
         ++m_data->layerCount;
     } else {
         if (m_data->fastuidraw_options().m_use_fastuidaw_layers) {
-          m_data->fastuidraw()->begin_layer(TransparencyLayerColor(opacity));
+            m_data->fastuidraw()->begin_layer(TransparencyLayerColor(opacity));
+            m_data->m_fastuidraw_state_stack.push_back(m_data->fastuidraw_state());
         } else {
             fastuidraw::reference_counted_ptr<fastuidraw::Painter> p(m_data->fastuidraw());
 
@@ -2265,6 +2266,7 @@ void GraphicsContext::endPlatformTransparencyLayer()
         delete layer;
     } else {
         if (m_data->fastuidraw_options().m_use_fastuidaw_layers) {
+            m_data->m_fastuidraw_state_stack.pop_back();
             m_data->fastuidraw()->end_layer();
         } else {
             FastUIDrawTransparencyLayer layer(m_data->m_fastuidraw_layers.back());
