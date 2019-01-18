@@ -38,7 +38,7 @@
 #include <math.h>
 #include <wtf/MainThread.h>
 #include <wtf/StdLibExtras.h>
-
+#include <iostream>
 #if USE(CG)
 #include <CoreFoundation/CoreFoundation.h>
 #endif
@@ -91,7 +91,7 @@ void Image::fillWithSolidColor(GraphicsContext& ctxt, const FloatRect& dstRect, 
 }
 
 void Image::drawTiled(GraphicsContext& ctxt, const FloatRect& destRect, const FloatPoint& srcPoint, const FloatSize& scaledTileSize, const FloatSize& spacing, CompositeOperator op, BlendMode blendMode)
-{    
+{
     if (mayFillWithSolidColor()) {
         fillWithSolidColor(ctxt, destRect, solidColor(), op);
         return;
@@ -310,6 +310,11 @@ void Image::computeIntrinsicDimensions(Length& intrinsicWidth, Length& intrinsic
 #endif
     intrinsicWidth = Length(intrinsicRatio.width(), Fixed);
     intrinsicHeight = Length(intrinsicRatio.height(), Fixed);
+}
+
+void Image::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
+{
+    FastUIDraw::setBrushToNullImage(brush);
 }
 
 void Image::dump(TextStream& ts) const

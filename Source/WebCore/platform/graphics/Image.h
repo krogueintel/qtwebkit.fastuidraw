@@ -145,7 +145,7 @@ public:
     virtual ImageOrientation orientationForCurrentFrame() { return ImageOrientation(); }
 
     /* Ready a fastuidraw::PainterBrush to draw the contents of this Image. */
-    virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) { FastUIDraw::setBrushToNullImage(brush); }
+    virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush);
 
     // Accessors for native image formats.
 
