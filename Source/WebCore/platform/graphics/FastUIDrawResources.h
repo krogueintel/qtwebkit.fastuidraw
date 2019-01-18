@@ -59,6 +59,9 @@ namespace WebCore {
 
     void
     unimplementedFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p);
+
+    void
+    warningFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p);
   }
 }
 
@@ -70,6 +73,11 @@ namespace WebCore {
 #define unimplementedFastUIDrawMessage(X) do {                          \
     static unsigned int count = 0;                                      \
     WebCore::FastUIDraw::unimplementedFastUIDrawFunc(__FILE__, __LINE__, __PRETTY_FUNCTION__, count, X); \
+  } while(0)
+
+#define warningFastUIDraw(X) do {                                       \
+    static unsigned int count = 0;                                      \
+    WebCore::FastUIDraw::warningFastUIDrawFunc(__FILE__, __LINE__, __PRETTY_FUNCTION__, count, X); \
   } while(0)
 
 #endif

@@ -670,7 +670,18 @@ unimplementedFastUIDrawFunc(const char *file, int line, const char *function, un
 {
   if (count < 1)
     {
-      std::cerr << "[" << file << ", " << line << ": " << function << p << "] unimplemented \n";
+      std::cout << "FUID: [" << file << ", " << line << ", " << function << "] unimplemented" << p << "\n";
+    }
+  ++count;
+}
+
+void
+WebCore::FastUIDraw::
+warningFastUIDrawFunc(const char *file, int line, const char *function, unsigned int &count, const char *p)
+{
+  if (true || count < 1)
+    {
+      std::cout << "FUID: Warning[" << file << ", " << line << ", " << function << "]: " << p << "\n";
     }
   ++count;
 }
