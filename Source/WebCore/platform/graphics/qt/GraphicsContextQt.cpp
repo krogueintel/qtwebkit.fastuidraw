@@ -1768,8 +1768,9 @@ IntRect GraphicsContext::clipBounds() const
     } else {
         fastuidraw::vec2 min_bb, max_bb, size_bb;
 
-        m_data->fastuidraw()->clip_region_bounds(&min_bb, &max_bb);
+        m_data->fastuidraw()->clip_region_logical_bounds(&min_bb, &max_bb);
         size_bb = max_bb - min_bb;
+        
         return enclosingIntRect(QRectF(min_bb.x(), min_bb.y(),
                                        size_bb.x(), size_bb.y()));
     }
