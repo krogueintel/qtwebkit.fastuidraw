@@ -262,6 +262,7 @@ static fastuidraw::Painter::composite_mode_t toFastUIDrawCompositeMode(Composite
     case CompositePlusDarker:
     case CompositePlusLighter:
     case CompositeDifference:
+        warningFastUIDraw("Unsupported composite mode");
         break;
     default:
         ASSERT_NOT_REACHED();
@@ -349,6 +350,7 @@ static fastuidraw::Painter::blend_w3c_mode_t toFastUIDrawBlendMode(BlendMode op)
         ASSERT_NOT_REACHED();
     }
 
+    warningFastUIDraw("Unsupported blend mode");
     return fastuidraw::Painter::blend_w3c_normal;
 }
 
@@ -538,19 +540,21 @@ void setPatternGradientOfFastUIDrawBrush(const RefPtr<Pattern> &pattern, const R
     brush.reset();
     if (gr) {
         gr->readyFastUIDrawBrush(brush);
-    }
-
-    if (pattern && pattern->tileImage()) {
-        FloatSize srcSize(pattern->tileImage()->width(),
-                          pattern->tileImage()->height());
-        FloatRect srcRect(FloatPoint(0.0f, 0.0f), srcSize);
-        FloatPoint phase(0.0f, 0.0f);
-        FloatSize spacing(0.0f, 0.0f);
+    } else if (pattern) {
+        if (pattern->tileImage()) {
+            FloatSize srcSize(pattern->tileImage()->width(),
+                              pattern->tileImage()->height());
+            FloatRect srcRect(FloatPoint(0.0f, 0.0f), srcSize);
+            FloatPoint phase(0.0f, 0.0f);
+            FloatSize spacing(0.0f, 0.0f);
         
-        pattern->tileImage()->readyFastUIDrawBrush(brush);
-        compose_with_pattern(brush, srcRect,
-                             pattern->getPatternSpaceTransform(),
-                             phase, spacing);
+            pattern->tileImage()->readyFastUIDrawBrush(brush);
+            compose_with_pattern(brush, srcRect,
+                                 pattern->getPatternSpaceTransform(),
+                                 phase, spacing);
+        } else {
+            warningFastUIDraw("Pattern with tileImage() = nullptr");
+        }
     }
 
     brush.color(1.0f, 1.0f, 1.0f, alpha);
@@ -1582,8 +1586,9 @@ void GraphicsContext::fillRect(const FloatRect& rect)
         if (hasShadow()) {
             unimplementedFastUIDrawMessage("->Shadow");
         }
+        QRectF normalizedRect = rect.normalized();
         m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
-                                        rectFromFloatRect(rect),
+                                        rectFromFloatRect(normalizedRect),
                                         m_data->fastuidraw_state().m_fill_aa);
     }
 }
