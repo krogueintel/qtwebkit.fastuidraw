@@ -209,60 +209,69 @@ void ImageBufferDataPrivateAccelerated::invalidateState() const
 void ImageBufferDataPrivateAccelerated::draw(GraphicsContext& destContext, const FloatRect& destRect,
     const FloatRect& srcRect, CompositeOperator op, BlendMode blendMode, bool /*ownContext*/)
 {
-    if (destContext.isAcceleratedContext() && destContext.platformContext()->is_qt()) {
-        invalidateState();
+    if (destContext.platformContext()->is_qt()) {
+        if (destContext.isAcceleratedContext()) {
+            invalidateState();
 
-        // If accelerated compositing is disabled, this may be the painter of the QGLWidget, which is a QGL2PaintEngineEx.
-        QOpenGL2PaintEngineEx* acceleratedPaintEngine = dynamic_cast<QOpenGL2PaintEngineEx*>(destContext.platformContext()->qt().paintEngine()); // toQOpenGL2PaintEngineEx(destContext.platformContext()->paintEngine());
-        if (acceleratedPaintEngine) {
-            QPaintDevice* targetPaintDevice = acceleratedPaintEngine->paintDevice();
+            // If accelerated compositing is disabled, this may be the painter of the QGLWidget, which is a QGL2PaintEngineEx.
+            QOpenGL2PaintEngineEx* acceleratedPaintEngine = dynamic_cast<QOpenGL2PaintEngineEx*>(destContext.platformContext()->qt().paintEngine()); // toQOpenGL2PaintEngineEx(destContext.platformContext()->paintEngine());
+            if (acceleratedPaintEngine) {
+                QPaintDevice* targetPaintDevice = acceleratedPaintEngine->paintDevice();
+                QRect rect(QPoint(), m_paintDevice->size());
 
-            QRect rect(QPoint(), m_paintDevice->size());
+                // drawTexture's rendering is flipped relative to QtWebKit's convention, so we need to compensate
+                FloatRect srcRectFlipped = m_paintDevice->paintFlipped()
+                  ? FloatRect(srcRect.x(), srcRect.maxY(), srcRect.width(), -srcRect.height())
+                  : FloatRect(srcRect.x(), rect.height() - srcRect.maxY(), srcRect.width(), srcRect.height());
 
-            // drawTexture's rendering is flipped relative to QtWebKit's convention, so we need to compensate
-            FloatRect srcRectFlipped = m_paintDevice->paintFlipped()
-                ? FloatRect(srcRect.x(), srcRect.maxY(), srcRect.width(), -srcRect.height())
-                : FloatRect(srcRect.x(), rect.height() - srcRect.maxY(), srcRect.width(), srcRect.height());
+                // Using the same texture as source and target of a rendering operation is undefined in OpenGL,
+                // so if that's the case we need to use a temporary intermediate buffer.
+                if (m_paintDevice == targetPaintDevice) {
+                    m_context->makeCurrentIfNeeded();
 
-            // Using the same texture as source and target of a rendering operation is undefined in OpenGL,
-            // so if that's the case we need to use a temporary intermediate buffer.
-            if (m_paintDevice == targetPaintDevice) {
-                m_context->makeCurrentIfNeeded();
+                    QFramebufferPaintDevice device(rect.size(), QOpenGLFramebufferObject::NoAttachment, false);
 
-                QFramebufferPaintDevice device(rect.size(), QOpenGLFramebufferObject::NoAttachment, false);
+                    // We disable flipping in order to do a pure blit into the intermediate buffer
+                    device.setPaintFlipped(false);
 
-                // We disable flipping in order to do a pure blit into the intermediate buffer
-                device.setPaintFlipped(false);
+                    QPainter painter(&device);
+                    QOpenGL2PaintEngineEx* pe = static_cast<QOpenGL2PaintEngineEx*>(painter.paintEngine());
+                    pe->drawTexture(rect, m_paintDevice->texture(), rect.size(), rect);
+                    painter.end();
 
-                QPainter painter(&device);
-                QOpenGL2PaintEngineEx* pe = static_cast<QOpenGL2PaintEngineEx*>(painter.paintEngine());
-                pe->drawTexture(rect, m_paintDevice->texture(), rect.size(), rect);
-                painter.end();
-
-                acceleratedPaintEngine->drawTexture(destRect, device.texture(), rect.size(), srcRectFlipped);
-            } else {
-                acceleratedPaintEngine->drawTexture(destRect, m_paintDevice->texture(), rect.size(), srcRectFlipped);
+                    acceleratedPaintEngine->drawTexture(destRect, device.texture(), rect.size(), srcRectFlipped);
+                } else {
+                  acceleratedPaintEngine->drawTexture(destRect, m_paintDevice->texture(), rect.size(), srcRectFlipped);
+                }
+                return;
             }
-
-            return;
         }
+        RefPtr<Image> image = StillImage::create(QPixmap::fromImage(toQImage()));
+        destContext.drawImage(*image, destRect, srcRect, ImagePaintingOptions(op, blendMode, DoNotRespectImageOrientation));
+    } else {
+        warningFastUIDraw("Attempted to draw Qt-ImageBufferData with FastUIDraw");
     }
-    RefPtr<Image> image = StillImage::create(QPixmap::fromImage(toQImage()));
-    destContext.drawImage(*image, destRect, srcRect, ImagePaintingOptions(op, blendMode, DoNotRespectImageOrientation));
 }
-
 
 void ImageBufferDataPrivateAccelerated::drawPattern(GraphicsContext& destContext, const FloatRect& srcRect, const AffineTransform& patternTransform,
     const FloatPoint& phase, const FloatSize& spacing, CompositeOperator op, const FloatRect& destRect, BlendMode blendMode, bool /*ownContext*/)
 {
-    RefPtr<Image> image = StillImage::create(QPixmap::fromImage(toQImage()));
-    image->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
+    if (destContext.platformContext()->is_qt()) {
+        RefPtr<Image> image = StillImage::create(QPixmap::fromImage(toQImage()));
+        image->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
+    } else {
+        warningFastUIDraw("Attempted to draw Qt-ImageBufferData with FastUIDraw");
+    }
 }
 
 void ImageBufferDataPrivateAccelerated::clip(GraphicsContext& context, const IntRect& rect) const
 {
-    QPixmap alphaMask = QPixmap::fromImage(toQImage());
-    context.pushTransparencyLayerInternal(rect, 1.0, alphaMask);
+    if (context.platformContext()->is_qt()) {
+        QPixmap alphaMask = QPixmap::fromImage(toQImage());
+        context.pushTransparencyLayerInternal(rect, 1.0, alphaMask);
+    } else {
+      warningFastUIDraw("FUID: Attempted to clip Qt-ImageBufferData with FastUIDraw");
+    }
 }
 
 void ImageBufferDataPrivateAccelerated::platformTransformColorSpace(const Vector<int>& lookUpTable)
@@ -417,34 +426,47 @@ RefPtr<Image> ImageBufferDataPrivateUnaccelerated::takeImage()
 void ImageBufferDataPrivateUnaccelerated::draw(GraphicsContext& destContext, const FloatRect& destRect,
     const FloatRect& srcRect, CompositeOperator op, BlendMode blendMode, bool ownContext)
 {
-    if (ownContext) {
-        // We're drawing into our own buffer. In order for this to work, we need to copy the source buffer first.
-        RefPtr<Image> copy = copyImage();
-        destContext.drawImage(*copy, destRect, srcRect, ImagePaintingOptions(op, blendMode, ImageOrientationDescription()));
-    } else
-        destContext.drawImage(*m_image, destRect, srcRect, ImagePaintingOptions(op, blendMode, ImageOrientationDescription()));
+    if (destContext.platformContext()->is_qt()) {
+        if (ownContext) {
+            // We're drawing into our own buffer. In order for this to work, we need to copy the source buffer first.
+          RefPtr<Image> copy = copyImage();
+          destContext.drawImage(*copy, destRect, srcRect, ImagePaintingOptions(op, blendMode, ImageOrientationDescription()));
+        } else
+            destContext.drawImage(*m_image, destRect, srcRect, ImagePaintingOptions(op, blendMode, ImageOrientationDescription()));
+    } else {
+        warningFastUIDraw("Attempted to draw Qt-ImageBufferData with FastUIDraw");
+    }
 }
 
 void ImageBufferDataPrivateUnaccelerated::drawPattern(GraphicsContext& destContext, const FloatRect& srcRect, const AffineTransform& patternTransform,
     const FloatPoint& phase, const FloatSize& spacing, CompositeOperator op,
     const FloatRect& destRect, BlendMode blendMode, bool ownContext)
 {
-    if (ownContext) {
-        // We're drawing into our own buffer. In order for this to work, we need to copy the source buffer first.
-        RefPtr<Image> copy = copyImage();
-        copy->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
-    } else
-        m_image->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
+    if (destContext.platformContext()->is_qt()) {
+        if (ownContext) {
+            // We're drawing into our own buffer. In order for this to work, we need to copy the source buffer first.
+            RefPtr<Image> copy = copyImage();
+            copy->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
+        } else {
+            m_image->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
+        }
+    } else {
+        warningFastUIDraw("FUID: Attempted to clip Qt-ImageBufferData with FastUIDraw");
+    }
 }
 
 void ImageBufferDataPrivateUnaccelerated::clip(GraphicsContext& context, const IntRect& rect) const
 {
-    QPixmap* nativeImage = m_image->nativeImageForCurrentFrame();
-    if (!nativeImage)
-        return;
+    if (context.platformContext()->is_qt()) {
+        QPixmap* nativeImage = m_image->nativeImageForCurrentFrame();
+        if (!nativeImage)
+            return;
 
-    QPixmap alphaMask = *nativeImage;
-    context.pushTransparencyLayerInternal(rect, 1.0, alphaMask);
+        QPixmap alphaMask = *nativeImage;
+        context.pushTransparencyLayerInternal(rect, 1.0, alphaMask);
+    } else {
+      warningFastUIDraw("FUID: Attempted to clip Qt-ImageBufferData with FastUIDraw");
+    }
 }
 
 void ImageBufferDataPrivateUnaccelerated::platformTransformColorSpace(const Vector<int>& lookUpTable)

@@ -186,39 +186,44 @@ void ImageBuffer::putByteArray(Multiply multiplied, Uint8ClampedArray* source, c
 {
     ASSERT(sourceRect.width() > 0);
     ASSERT(sourceRect.height() > 0);
+    warningFastUIDraw("FUID: grabbing image data insanity");
 
-    bool isPainting = m_data.m_platform_context->qt().isActive();
-    if (!isPainting)
-        m_data.m_platform_context->qt().begin(m_data.m_impl->paintDevice());
-    else {
-        m_data.m_platform_context->qt().save();
+    if (m_data.m_platform_context->is_qt()) {
+        bool isPainting = m_data.m_platform_context->qt().isActive();
+        if (!isPainting)
+            m_data.m_platform_context->qt().begin(m_data.m_impl->paintDevice());
+        else {
+            m_data.m_platform_context->qt().save();
 
-        // putImageData() should be unaffected by painter state
-        m_data.m_platform_context->qt().resetTransform();
-        m_data.m_platform_context->qt().setOpacity(1.0);
-        m_data.m_platform_context->qt().setClipping(false);
+            // putImageData() should be unaffected by painter state
+            m_data.m_platform_context->qt().resetTransform();
+            m_data.m_platform_context->qt().setOpacity(1.0);
+            m_data.m_platform_context->qt().setClipping(false);
+        }
+
+        // source rect & size need scaling from the device coords to image coords
+        IntSize scaledSourceSize(sourceSize);
+        IntRect scaledSourceRect(sourceRect);
+        if (coordinateSystem == LogicalCoordinateSystem) {
+            scaledSourceSize.scale(m_resolutionScale);
+            scaledSourceRect.scale(m_resolutionScale);
+        }
+
+        // Let drawImage deal with the conversion.
+        QImage::Format format = (multiplied == Unmultiplied) ? QImage::Format_RGBA8888 : QImage::Format_RGBA8888_Premultiplied;
+        QImage image(source->data(), scaledSourceSize.width(), scaledSourceSize.height(), format);
+        image.setDevicePixelRatio(m_resolutionScale);
+
+        m_data.m_platform_context->qt().setCompositionMode(QPainter::CompositionMode_Source);
+        m_data.m_platform_context->qt().drawImage(destPoint + sourceRect.location(), image, scaledSourceRect);
+
+        if (!isPainting)
+            m_data.m_platform_context->qt().end();
+        else
+            m_data.m_platform_context->qt().restore();
+    } else {
+        unimplementedFastUIDraw();
     }
-
-    // source rect & size need scaling from the device coords to image coords
-    IntSize scaledSourceSize(sourceSize);
-    IntRect scaledSourceRect(sourceRect);
-    if (coordinateSystem == LogicalCoordinateSystem) {
-        scaledSourceSize.scale(m_resolutionScale);
-        scaledSourceRect.scale(m_resolutionScale);
-    }
-
-    // Let drawImage deal with the conversion.
-    QImage::Format format = (multiplied == Unmultiplied) ? QImage::Format_RGBA8888 : QImage::Format_RGBA8888_Premultiplied;
-    QImage image(source->data(), scaledSourceSize.width(), scaledSourceSize.height(), format);
-    image.setDevicePixelRatio(m_resolutionScale);
-
-    m_data.m_platform_context->qt().setCompositionMode(QPainter::CompositionMode_Source);
-    m_data.m_platform_context->qt().drawImage(destPoint + sourceRect.location(), image, scaledSourceRect);
-
-    if (!isPainting)
-        m_data.m_platform_context->qt().end();
-    else
-        m_data.m_platform_context->qt().restore();
 }
 
 static bool encodeImage(const QPixmap& pixmap, const String& format, const double* quality, QByteArray& data)

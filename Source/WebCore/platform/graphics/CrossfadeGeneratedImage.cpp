@@ -98,16 +98,20 @@ void CrossfadeGeneratedImage::draw(GraphicsContext& context, const FloatRect& ds
 
 void CrossfadeGeneratedImage::drawPattern(GraphicsContext& context, const FloatRect& srcRect, const AffineTransform& patternTransform, const FloatPoint& phase, const FloatSize& spacing, CompositeOperator compositeOp, const FloatRect& dstRect, BlendMode blendMode)
 {
-    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(size(), context.renderingMode());
-    if (!imageBuffer)
-        return;
+    if (context.platformContext()->is_qt()) {
+        std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(size(), context.renderingMode());
+        if (!imageBuffer)
+            return;
 
-    // Fill with the cross-faded image.
-    GraphicsContext& graphicsContext = imageBuffer->context();
-    drawCrossfade(graphicsContext);
+        // Fill with the cross-faded image.
+        GraphicsContext& graphicsContext = imageBuffer->context();
+        drawCrossfade(graphicsContext);
 
-    // Tile the image buffer into the context.
-    imageBuffer->drawPattern(context, srcRect, patternTransform, phase, spacing, compositeOp, dstRect, blendMode);
+        // Tile the image buffer into the context.
+        imageBuffer->drawPattern(context, srcRect, patternTransform, phase, spacing, compositeOp, dstRect, blendMode);
+    } else {
+        unimplementedFastUIDraw();
+    }
 }
 
 void CrossfadeGeneratedImage::dump(TextStream& ts) const
