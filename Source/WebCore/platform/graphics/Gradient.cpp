@@ -277,6 +277,7 @@ static inline enum fastuidraw::PainterBrush::spread_type_t toFastUIDrawGradientS
         return fastuidraw::PainterBrush::spread_mirror_repeat;
         break;
     }
+    return fastuidraw::PainterBrush::spread_repeat;
 }
 
 void Gradient::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) const
