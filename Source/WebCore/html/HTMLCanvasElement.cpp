@@ -680,7 +680,7 @@ void HTMLCanvasElement::createImageBuffer() const
     RenderingMode renderingMode = shouldAccelerate(bufferSize) ? Accelerated : Unaccelerated;
 
     /* FastUIDrawTODO: the craziness needed for rendeding with FastUIDraw */
-#if PLATFORM(QT) && ENABLE(ACCELERATED_2D_CANVAS)
+#if PLATFORM(QT) && ENABLE(ACCELERATED_2D_CANVAS) && false
     if (renderingMode == Accelerated) {
         QWebPageClient* client = document().page()->chrome().platformPageClient();
         // The WebKit2 Chrome does not have a pageclient.
@@ -689,7 +689,7 @@ void HTMLCanvasElement::createImageBuffer() const
     } else
 #endif
     {
-        setImageBuffer(ImageBuffer::create(size(), renderingMode));
+        setImageBuffer(ImageBuffer::create(document().useFastUIDraw(), size(), renderingMode));
     }
 
     Settings *settings = document().settings();

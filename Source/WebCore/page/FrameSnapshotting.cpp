@@ -99,7 +99,8 @@ std::unique_ptr<ImageBuffer> snapshotFrameRect(Frame& frame, const IntRect& imag
     if (frame.settings().delegatesPageScaling())
         scaleFactor *= frame.page()->pageScaleFactor();
 
-    std::unique_ptr<ImageBuffer> buffer = ImageBuffer::create(imageRect.size(), Unaccelerated, scaleFactor);
+    std::unique_ptr<ImageBuffer> buffer = ImageBuffer::create(frame.document()->useFastUIDraw(), imageRect.size(),
+                                                              Unaccelerated, scaleFactor);
     if (!buffer)
         return nullptr;
     buffer->context().translate(-imageRect.x(), -imageRect.y());

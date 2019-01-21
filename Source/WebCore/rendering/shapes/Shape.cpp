@@ -39,6 +39,7 @@
 #include "RasterShape.h"
 #include "RectangleShape.h"
 #include "WindRule.h"
+#include "FastUIDrawUtil.h"
 
 namespace WebCore {
 
@@ -180,7 +181,9 @@ std::unique_ptr<Shape> Shape::createRasterShape(Image* image, float threshold, c
     IntRect marginRect = snappedIntRect(marginR);
     auto intervals = std::make_unique<RasterShapeIntervals>(marginRect.height(), -marginRect.y());
     // FIXME (149420): This buffer should not be unconditionally unaccelerated.
-    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(imageRect.size(), Unaccelerated);
+    
+    warningFastUIDraw("Shape active, not support in FastUIDraw rendering");
+    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(false, imageRect.size(), Unaccelerated);
 
     if (imageBuffer) {
         GraphicsContext& graphicsContext = imageBuffer->context();

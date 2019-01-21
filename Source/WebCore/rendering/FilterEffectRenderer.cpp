@@ -321,9 +321,10 @@ void FilterEffectRenderer::allocateBackingStoreIfNeeded()
     // source image sizes set. We just need to attach the graphic
     // buffer if we have not yet done so.
     if (!m_graphicsBufferAttached) {
+        warningFastUIDraw("FilterEffectRenderer active, not supported in FastUIDraw rendering");
         IntSize logicalSize(m_sourceDrawingRegion.width(), m_sourceDrawingRegion.height());
         if (!sourceImage() || sourceImage()->logicalSize() != logicalSize)
-            setSourceImage(ImageBuffer::create(logicalSize, renderingMode(), filterScale()));
+            setSourceImage(ImageBuffer::create(false, logicalSize, renderingMode(), filterScale()));
         m_graphicsBufferAttached = true;
     }
 }

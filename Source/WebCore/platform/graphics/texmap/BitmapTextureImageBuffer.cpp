@@ -28,6 +28,7 @@
 #include "BitmapTextureImageBuffer.h"
 
 #include "GraphicsLayer.h"
+#include "FastUIDrawUtil.h"
 
 #if PLATFORM(QT)
 #include "GraphicsContext.h"
@@ -64,6 +65,8 @@ void BitmapTextureImageBuffer::updateContents(const void* data, const IntRect& t
 
 void BitmapTextureImageBuffer::updateContents(TextureMapper&, GraphicsLayer* sourceLayer, const IntRect& targetRect, const IntPoint& sourceOffset, UpdateContentsFlag, float scale)
 {
+    warningFastUIDraw("BitmapTextureImageBuffer active, not supported in FastUIDraw rendering");
+
     // QTFIXME: Handle scale, like BitmapTexture::updateContents
     GraphicsContext& context = m_image->context();
 
@@ -80,7 +83,8 @@ void BitmapTextureImageBuffer::updateContents(TextureMapper&, GraphicsLayer* sou
 
 void BitmapTextureImageBuffer::didReset()
 {
-    m_image = ImageBuffer::create(contentSize(), Unaccelerated);
+    warningFastUIDraw("BitmapTextureImageBuffer active, not support in FastUIDraw rendering");
+    m_image = ImageBuffer::create(false, contentSize(), Unaccelerated);
 }
 
 void BitmapTextureImageBuffer::updateContents(Image* image, const IntRect& targetRect, const IntPoint& offset, UpdateContentsFlag)

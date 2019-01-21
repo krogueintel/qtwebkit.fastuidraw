@@ -26,6 +26,7 @@
 
 #include "config.h"
 #include "BitmapTexturePool.h"
+#include "FastUIDrawUtil.h"
 
 #if USE(TEXTURE_MAPPER_GL)
 #include "BitmapTextureGL.h"
@@ -116,6 +117,8 @@ void BitmapTexturePool::releaseUnusedTexturesTimerFired()
 
 RefPtr<BitmapTexture> BitmapTexturePool::createTexture(const BitmapTexture::Flags flags)
 {
+  warningFastUIDraw("BitmapTexturePool active, not supported in FastUIDraw rendering");
+
 #if PLATFORM(QT) && USE(TEXTURE_MAPPER_GL)
     if (!m_context3D)
         return BitmapTextureImageBuffer::create();

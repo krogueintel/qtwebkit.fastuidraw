@@ -166,9 +166,21 @@ bool ImageBuffer::copyToPlatformTexture(GraphicsContext3D&, GC3Denum, Platform3D
 }
 #endif
 
-std::unique_ptr<ImageBuffer> ImageBuffer::createCompatibleBuffer(const FloatSize& size, float resolutionScale, ColorSpace colorSpace, const GraphicsContext& context, bool)
+std::unique_ptr<ImageBuffer> ImageBuffer::createCompatibleBuffer(const FloatSize& size, float resolutionScale, ColorSpace colorSpace,
+                                                                 const GraphicsContext& context, bool)
 {
-    return create(size, context.renderingMode(), resolutionScale, colorSpace);
+    return create(context.platformContext()->is_fastuidraw(), size,
+                  context.renderingMode(), resolutionScale, colorSpace);
+}
+
+std::unique_ptr<ImageBuffer> ImageBuffer::create(bool useFastUIDraw, const FloatSize& size, RenderingMode renderingMode,
+                                                 float resolutionScale, ColorSpace colorSpace)
+{
+    bool success = false;
+    std::unique_ptr<ImageBuffer> buffer(new ImageBuffer(size, resolutionScale, colorSpace, renderingMode, success));
+    if (!success)
+        return nullptr;
+    return buffer;
 }
 
 }

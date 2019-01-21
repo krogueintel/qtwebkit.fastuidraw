@@ -30,14 +30,16 @@
 #include "GraphicsLayer.h"
 #include "ImageBuffer.h"
 #include "TextureMapper.h"
+#include "FastUIDrawUtil.h"
 
 namespace WebCore {
 
 void BitmapTexture::updateContents(TextureMapper& textureMapper, GraphicsLayer* sourceLayer, const IntRect& targetRect, const IntPoint& offset, UpdateContentsFlag updateContentsFlag, float scale)
 {
+    warningFastUIDraw("BitmapTexture active, not support in FastUIDraw rendering");
     // Making an unconditionally unaccelerated buffer here is OK because this code
     // isn't used by any platforms that respect the accelerated bit.
-    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(targetRect.size(), Unaccelerated);
+    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(false, targetRect.size(), Unaccelerated);
 
     if (!imageBuffer)
         return;

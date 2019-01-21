@@ -76,16 +76,11 @@ class ImageBuffer {
     friend class IOSurface;
 public:
     // Will return a null pointer on allocation failure.
-    static std::unique_ptr<ImageBuffer> create(const FloatSize& size, RenderingMode renderingMode, float resolutionScale = 1, ColorSpace colorSpace = ColorSpaceSRGB)
-    {
-        bool success = false;
-        std::unique_ptr<ImageBuffer> buffer(new ImageBuffer(size, resolutionScale, colorSpace, renderingMode, success));
-        if (!success)
-            return nullptr;
-        return buffer;
-    }
+    static std::unique_ptr<ImageBuffer> create(bool useFastUIDraw, const FloatSize& size, RenderingMode renderingMode,
+                                               float resolutionScale = 1, ColorSpace colorSpace = ColorSpaceSRGB);
 
-    static std::unique_ptr<ImageBuffer> createCompatibleBuffer(const FloatSize&, float resolutionScale, ColorSpace, const GraphicsContext&, bool hasAlpha);
+    static std::unique_ptr<ImageBuffer> createCompatibleBuffer(const FloatSize&, float resolutionScale,
+                                                               ColorSpace, const GraphicsContext&, bool hasAlpha);
 #if PLATFORM(QT) && ENABLE(ACCELERATED_2D_CANVAS)
     static std::unique_ptr<ImageBuffer> createCompatibleBuffer(const IntSize&, ColorSpace, QOpenGLContext*);
 #endif

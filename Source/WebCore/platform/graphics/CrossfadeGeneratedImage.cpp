@@ -99,7 +99,7 @@ void CrossfadeGeneratedImage::draw(GraphicsContext& context, const FloatRect& ds
 void CrossfadeGeneratedImage::drawPattern(GraphicsContext& context, const FloatRect& srcRect, const AffineTransform& patternTransform, const FloatPoint& phase, const FloatSize& spacing, CompositeOperator compositeOp, const FloatRect& dstRect, BlendMode blendMode)
 {
     if (context.platformContext()->is_qt()) {
-        std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(size(), context.renderingMode());
+        std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(false, size(), context.renderingMode());
         if (!imageBuffer)
             return;
 

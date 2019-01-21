@@ -27,6 +27,7 @@
 #include "Filter.h"
 #include "ImageBuffer.h"
 #include "TextStream.h"
+#include "FastUIDrawUtil.h"
 #include <runtime/JSCInlines.h>
 #include <runtime/TypedArrayInlines.h>
 #include <runtime/Uint8ClampedArray.h>
@@ -221,7 +222,8 @@ ImageBuffer* FilterEffect::asImageBuffer()
         return nullptr;
     if (m_imageBufferResult)
         return m_imageBufferResult.get();
-    m_imageBufferResult = ImageBuffer::create(m_absolutePaintRect.size(), m_filter.renderingMode(), m_filter.filterScale(), m_resultColorSpace);
+    warningFastUIDraw("Filter effect active, not support in FastUIDraw rendering");
+    m_imageBufferResult = ImageBuffer::create(false, m_absolutePaintRect.size(), m_filter.renderingMode(), m_filter.filterScale(), m_resultColorSpace);
     if (!m_imageBufferResult)
         return nullptr;
 
@@ -387,7 +389,8 @@ ImageBuffer* FilterEffect::createImageBufferResult()
         return nullptr;
 
     FloatSize clampedSize = ImageBuffer::clampedSize(m_absolutePaintRect.size());
-    m_imageBufferResult = ImageBuffer::create(clampedSize, m_filter.renderingMode(), m_filter.filterScale(), m_resultColorSpace);
+    warningFastUIDraw("Filter effect active, not support in FastUIDraw rendering");
+    m_imageBufferResult = ImageBuffer::create(false, clampedSize, m_filter.renderingMode(), m_filter.filterScale(), m_resultColorSpace);
     if (!m_imageBufferResult)
         return nullptr;
 
