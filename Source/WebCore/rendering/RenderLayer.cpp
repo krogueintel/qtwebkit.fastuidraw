@@ -54,6 +54,7 @@
 #include "DocumentMarkerController.h"
 #include "Element.h"
 #include "EventHandler.h"
+#include "FastUIDrawUtil.h"
 #include "FEColorMatrix.h"
 #include "FEMerge.h"
 #include "FilterEffectRenderer.h"
@@ -4146,6 +4147,10 @@ std::unique_ptr<FilterEffectRendererHelper> RenderLayer::setupFilters(GraphicsCo
 {
     if (!hasFilterThatIsPainting(context, paintFlags))
         return nullptr;
+
+    /* For now, don't allow any filter effects period. */
+    warningFastUIDraw("Preventing Filter Effects");
+    return nullptr;
 
     FilterInfo* filterInfo = FilterInfo::getIfExists(*this);
     bool hasPaintedFilter = filterInfo && filterInfo->renderer() && paintsWithFilters();
