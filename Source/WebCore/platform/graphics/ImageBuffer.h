@@ -167,7 +167,7 @@ private:
 
     // This constructor will place its success into the given out-variable
     // so that create() knows when it should return failure.
-    WEBCORE_EXPORT ImageBuffer(const FloatSize&, float resolutionScale, ColorSpace, RenderingMode, bool& success);
+    WEBCORE_EXPORT ImageBuffer(bool useFastUIDraw, const FloatSize&, float resolutionScale, ColorSpace, RenderingMode, bool& success);
 #if PLATFORM(QT) && ENABLE(ACCELERATED_2D_CANVAS)
     ImageBuffer(const IntSize&, ColorSpace, QOpenGLContext*, bool& success);
 #endif

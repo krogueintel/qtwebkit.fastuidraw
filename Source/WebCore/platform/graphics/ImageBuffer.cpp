@@ -177,7 +177,7 @@ std::unique_ptr<ImageBuffer> ImageBuffer::create(bool useFastUIDraw, const Float
                                                  float resolutionScale, ColorSpace colorSpace)
 {
     bool success = false;
-    std::unique_ptr<ImageBuffer> buffer(new ImageBuffer(size, resolutionScale, colorSpace, renderingMode, success));
+    std::unique_ptr<ImageBuffer> buffer(new ImageBuffer(useFastUIDraw, size, resolutionScale, colorSpace, renderingMode, success));
     if (!success)
         return nullptr;
     return buffer;

@@ -502,12 +502,13 @@ void ImageBufferDataPrivateUnaccelerated::platformTransformColorSpace(const Vect
 
 // ---------------------- ImageBufferData
 
-ImageBufferData::ImageBufferData(const FloatSize& size, float resolutionScale)
+ImageBufferData::ImageBufferData(bool useFastUIDraw, const FloatSize& size, float resolutionScale)
 {
     m_painter = new QPainter;
     m_platform_context = new PlatformGraphicsContext(m_painter);
     m_impl = new ImageBufferDataPrivateUnaccelerated(size, resolutionScale);
-    std::cout << "FUID:ImageBufferData (Unaccelerated):" << m_painter << "\n";
+    std::cout << "FUID:ImageBufferData (Unaccelerated):"
+              << m_painter << ", useFastUIDraw = " << useFastUIDraw << "\n";
 
     if (!m_impl->paintDevice())
         return;
