@@ -496,3 +496,56 @@ compose_with_pattern_transformation(fastuidraw::PainterBrush &brush,
     .apply_translate(T)
     .apply_matrix(N);
 }
+
+//////////////////////////////////////////
+// WebCore::FastUIDraw::FUIDTrace methods
+static int fuid_tracking_active = 0;
+void
+WebCore::FastUIDraw::FUIDTrace::
+startTracking(void)
+{
+  ++fuid_tracking_active;
+}
+
+void
+WebCore::FastUIDraw::FUIDTrace::
+endTracking(void)
+{
+  --fuid_tracking_active;
+}
+
+bool
+WebCore::FastUIDraw::FUIDTrace::
+trackingActive(void)
+{
+  return fuid_tracking_active != 0;
+}
+
+static int fuid_depth = 0;
+WebCore::FastUIDraw::FUIDTrace::
+FUIDTrace(const char *file, int line, const char *function)
+{
+  if (fuid_tracking_active != 0)
+    {
+      std::cout << "FUID" << std::string(fuid_depth, ' ') << "[" << file << ", "
+                << line << ", " << function << "\n";
+    }
+  ++fuid_depth;
+}
+
+WebCore::FastUIDraw::FUIDTrace::
+FUIDTrace(const char *file, int line, const char *function, const char *message)
+{
+  if (fuid_tracking_active != 0)
+    {
+      std::cout << "FUID" << std::string(fuid_depth, ' ') << "[" << file << ", "
+                << line << ", " << function << ":" << message << "\n";
+    }
+  ++fuid_depth;
+}
+
+WebCore::FastUIDraw::FUIDTrace::
+~FUIDTrace()
+{
+  --fuid_depth;
+}

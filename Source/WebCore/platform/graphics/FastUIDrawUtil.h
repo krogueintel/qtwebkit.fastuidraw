@@ -1,6 +1,7 @@
 #ifndef FastUIDrawUtil_h
 #define FastUIDrawUtil_h
 
+#include <sstream>
 #include <QTransform>
 #include <fastuidraw/text/font_freetype.hpp>
 #include <fastuidraw/painter/glyph_sequence.hpp>
@@ -29,6 +30,18 @@ namespace WebCore {
 
     fastuidraw::reference_counted_ptr<const fastuidraw::Image>
     create_fastuidraw_image(const QPixmap &image);
+
+    class FUIDTrace
+    {
+    public:
+      FUIDTrace(const char *file, int line, const char *function);
+      FUIDTrace(const char *file, int line, const char *function, const char *message);
+      ~FUIDTrace();
+
+      static void startTracking(void);
+      static void endTracking(void);
+      static bool trackingActive(void);
+    };
 
     void
     compose_with_pattern(fastuidraw::PainterBrush &brush,
@@ -111,5 +124,13 @@ namespace WebCore {
     }
   }
 }
+
+#define FUID_TRACE \
+  WebCore::FastUIDraw::FUIDTrace fuid_trace_(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+
+#define FUID_TRACE_D(X) \
+  std::string fuid_trace_string_;        \
+  { std::ostringstream str; str << X; fuid_trace_string_ = str.str(); } \
+  WebCore::FastUIDraw::FUIDTrace fuid_trace_(__FILE__, __LINE__, __PRETTY_FUNCTION__, fuid_trace_string_.c_str())
 
 #endif
