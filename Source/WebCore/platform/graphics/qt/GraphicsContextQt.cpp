@@ -787,6 +787,21 @@ public:
             platform->fastuidraw() :
             m_fastuidraw_layers.back().m_painter->painter();
     }
+
+    void fastuidraw_fill_rect(const fastuidraw::PainterData &data,
+                              const FloatRect &rect)
+    {
+        const fastuidraw::float3x3 &tr(fastuidraw()->transformation());
+        bool should_apply_aa;
+
+        should_apply_aa = (tr(0, 1) != 0.0f || tr(1, 0) != 0.0f
+                           || tr(2, 0) != 0.0f || tr(2, 1) != 0.0f);
+        
+        enum fastuidraw::Painter::shader_anti_alias_t aa;
+        aa = (should_apply_aa) ? fastuidraw_state().m_fill_aa : fastuidraw::Painter::shader_anti_alias_none;
+        fastuidraw()->fill_rect(data, rectFromFloatRect(rect), aa);
+    }
+  
 private:
     PlatformGraphicsContext *platform;
     bool platformContextIsOwned;
@@ -980,32 +995,37 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
         p->setPen(oldPen);
         p->setRenderHint(QPainter::Antialiasing, antiAlias);
     } else {
-        fastuidraw::Rect fRect(rectFromFloatRect(rect));
+        fastuidraw::PainterData pd(m_data->fastuidraw_state().m_fill_brush.packed_value());
+        m_data->fastuidraw_fill_rect(pd, rect);
 
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
-                                        fRect, m_data->fastuidraw_state().m_fill_aa);
+        // not clear, but doing the below stroke gives incorrect render on github.
+        if (borderThickness >= 0.0f && false) {
+            fastuidraw::Rect fRect(rectFromFloatRect(rect));
+            fastuidraw::Path P;
+            fastuidraw::PainterStrokeParams stroke_params;
 
-        /**
-        fastuidraw::Path P;
-        fastuidraw::PainterStrokeParams stroke_params;
+            P << fRect.point(fastuidraw::Rect::minx_miny_corner)
+              << fRect.point(fastuidraw::Rect::minx_maxy_corner)
+              << fRect.point(fastuidraw::Rect::maxx_maxy_corner)
+              << fRect.point(fastuidraw::Rect::maxx_miny_corner)
+              << fastuidraw::Path::contour_close();
 
-        P << fRect.point(fastuidraw::Rect::minx_miny_corner)
-          << fRect.point(fastuidraw::Rect::minx_maxy_corner)
-          << fRect.point(fastuidraw::Rect::maxx_maxy_corner)
-          << fRect.point(fastuidraw::Rect::maxx_miny_corner)
-          << fastuidraw::Path::contour_close();
+            if (borderThickness == 0.0f) {
+                stroke_params
+                  .width(1.0f)
+                  .stroking_units(fastuidraw::PainterStrokeParams::pixel_stroking_units);
+            } else {
+                stroke_params
+                  .width(borderThickness)
+                  .stroking_units(fastuidraw::PainterStrokeParams::path_stroking_units);
+            }
 
-        // not clear, but using the stroke brush give incorrect render on github
-        stroke_params
-          .width(borderThickness)
-          .stroking_units(fastuidraw::PainterStrokeParams::path_stroking_units);
-
-        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value(),
-                                                                  &stroke_params),
-                                          P,
-                                          m_data->fastuidraw_state().m_stroke_style,
-                                          m_data->fastuidraw_state().m_stroke_aa);
-        **/
+            m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brush.packed_value(),
+                                                                      &stroke_params),
+                                              P,
+                                              m_data->fastuidraw_state().m_stroke_style,
+                                              m_data->fastuidraw_state().m_stroke_aa);
+        }
     }
 }
 
@@ -1192,10 +1212,7 @@ bool GraphicsContext::drawGradientPattern(const Gradient &gradient,
     compose_with_pattern(brush, srcRect, patternTransform, phase, spacing);
     brush
       .apply_translate(fastuidraw::vec2(-dstRect.x(), -dstRect.y()));
-    m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
-                                    rectFromFloatRect(dstRect),
-                                    m_data->fastuidraw_state().m_fill_aa);
-    
+    m_data->fastuidraw_fill_rect(fastuidraw::PainterData(&brush), dstRect);
     m_data->fastuidraw()->restore();
 
     return true;
@@ -1289,10 +1306,7 @@ void GraphicsContext::drawPattern(Image& image, const FloatRect& tileRect, const
 
         image.readyFastUIDrawBrush(brush);
         compose_with_pattern(brush, tileRect, patternTransform, phase, spacing);
-
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
-                                        rectFromFloatRect(destRect),
-                                        m_data->fastuidraw_state().m_fill_aa);
+        m_data->fastuidraw_fill_rect(fastuidraw::PainterData(&brush), destRect);
     
         m_data->fastuidraw()->restore();
     }
@@ -1601,9 +1615,8 @@ void GraphicsContext::fillRect(const FloatRect& rect)
             unimplementedFastUIDrawMessage("->Shadow");
         }
         QRectF normalizedRect = rect.normalized();
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
-                                        rectFromFloatRect(normalizedRect),
-                                        m_data->fastuidraw_state().m_fill_aa);
+        m_data->fastuidraw_fill_rect(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
+                                     normalizedRect);
     }
 }
 
@@ -1634,9 +1647,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, const Color& color)
         }
         fastuidraw::PainterBrush fillBrush;
         fillBrush.color(FastUIDrawColorValue(color, alpha()));
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&fillBrush),
-                                        rectFromFloatRect(rect),
-                                        m_data->fastuidraw_state().m_fill_aa);
+        m_data->fastuidraw_fill_rect(fastuidraw::PainterData(&fillBrush), rect);
     }
 }
 
@@ -1654,10 +1665,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
         fastuidraw::PainterBrush brush;
 
         gradient.readyFastUIDrawBrush(brush);
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
-                                        fastuidraw::Rect()
-                                        .min_point(rect.x(), rect.y())
-                                        .size(rect.width(), rect.height()));
+        m_data->fastuidraw_fill_rect(fastuidraw::PainterData(&brush), rect);
     }
 }
 
@@ -2377,9 +2385,7 @@ void GraphicsContext::clearRect(const FloatRect& rect)
         m_data->fastuidraw()->save();
         m_data->fastuidraw()->composite_shader(fastuidraw::Painter::composite_porter_duff_clear);
         m_data->fastuidraw()->blend_shader(fastuidraw::Painter::blend_w3c_normal);
-        m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(m_data->m_packed_black_brush),
-                                        rectFromFloatRect(rect),
-                                        m_data->fastuidraw_state().m_fill_aa);
+        m_data->fastuidraw_fill_rect(fastuidraw::PainterData(m_data->m_packed_black_brush), rect);
         m_data->fastuidraw()->restore();
     }
 }
@@ -3039,10 +3045,7 @@ void GraphicsContext::drawImage(const fastuidraw::PainterBrush &brush,
     BlendMode previousBlendMode = blendModeOperation();
 
     setCompositeOperation(op, blendMode);
-    m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
-                                    fastuidraw::Rect()
-                                    .min_point(fastuidraw::vec2(dst.x(), dst.y()))
-                                    .size(fastuidraw::vec2(dst.width(), dst.height())));
+    m_data->fastuidraw_fill_rect(fastuidraw::PainterData(&brush), dst);
     setCompositeOperation(previousOperator, previousBlendMode);
 }
 
