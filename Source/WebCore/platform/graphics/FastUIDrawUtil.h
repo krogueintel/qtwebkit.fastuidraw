@@ -43,6 +43,13 @@ namespace WebCore {
       static bool trackingActive(void);
     };
 
+    class FUIDTraceTracker
+    {
+    public:
+      FUIDTraceTracker(void) { FUIDTrace::startTracking(); }
+      ~FUIDTraceTracker() { FUIDTrace::endTracking(); }
+    };
+
     void
     compose_with_pattern(fastuidraw::PainterBrush &brush,
                          const FloatRect& srcRect, const AffineTransform& patternTransform,
@@ -132,5 +139,7 @@ namespace WebCore {
   std::string fuid_trace_string_;        \
   { std::ostringstream str; str << X; fuid_trace_string_ = str.str(); } \
   WebCore::FastUIDraw::FUIDTrace fuid_trace_(__FILE__, __LINE__, __PRETTY_FUNCTION__, fuid_trace_string_.c_str())
+
+#define FUID_TRACE_ACTIVE WebCore::FastUIDraw::FUIDTraceTracker fuid_trace_active_
 
 #endif

@@ -19,6 +19,7 @@
 #include <fastuidraw/gl_backend/gl_binding.hpp>
 #include <fastuidraw/gl_backend/painter_backend_gl.hpp>
 #include <fastuidraw/gl_backend/ngl_header.hpp>
+#include <QOpenGLContext>
 
 namespace {
 
@@ -72,9 +73,75 @@ namespace {
     return str;
   }
 
+  class FontConfig:public fastuidraw::reference_counted<FontConfig>::default_base
+  {
+  public:
+    FontConfig();
+    ~FontConfig();
+    
+    void
+    add_system_fonts(const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> &dst);
+
+    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
+    select_font(int weight, int slant,
+                fastuidraw::c_string style,
+                fastuidraw::c_string family,
+                fastuidraw::c_string foundry,
+                fastuidraw::c_array<const fastuidraw::c_string> langs,
+                fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> font_database);
+
+    void
+    install_custom_font(int weight, int slant,
+                        fastuidraw::c_string style,
+                        fastuidraw::c_string family,
+                        fastuidraw::c_string foundry,
+                        fastuidraw::c_array<const fastuidraw::c_string > langs,
+                        fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font)
+    {
+      std::lock_guard<std::mutex> M(m_mutex);
+      CustomFontKey K(make_custom_font_key(weight, slant, style, family, foundry, langs));
+
+      //std::cout << "FUID: InstallCustom" << K << "@" << font.get();
+      if (m_custom_fonts.find(K) == m_custom_fonts.end())
+        {
+          //std::cout << ":OK \n";
+          m_custom_fonts[K] = font;
+        }
+      else
+        {
+          std::cout << "FUID: attemptyed to add font when key"
+                    << K << " is already present\n";
+        }
+    }
+
+  private:
+    static
+    std::string
+    get_string(FcPattern *pattern, const char *label, std::string default_value = std::string());
+
+    static
+    int
+    get_int(FcPattern *pattern, const char *label, int default_value = 0);
+
+    static
+    bool
+    get_bool(FcPattern *pattern, const char *label, bool default_value = false);
+
+    static
+    fastuidraw::FontProperties
+    get_font_properties(FcPattern *pattern);
+
+    std::mutex m_mutex;
+    FcConfig* m_fc;
+    fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> m_lib;
+    std::map<CustomFontKey, fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> > m_custom_fonts;
+  };
+
   class AtlasSet:fastuidraw::noncopyable
   {
   public:
+    static int InitCount;
+    
     static
     AtlasSet&
     atlas_set(void)
@@ -92,90 +159,18 @@ namespace {
 
     fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> m_glyph_cache;
     fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> m_font_database;
+    fastuidraw::reference_counted_ptr<const fastuidraw::Image> m_checkerboard_image;
+    fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> m_three_stops_color_stops;
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> m_backend;
     std::vector<fastuidraw::reference_counted_ptr<fastuidraw::Painter> > m_painters;
+    fastuidraw::reference_counted_ptr<FontConfig> m_font_config;
     std::mutex m_mutex;
     int m_reference_counter;
   private:
     AtlasSet(void):
+      m_font_config(nullptr),
       m_reference_counter(0)
     {}
-  };
-
-  class FontConfig
-  {
-  public:
-    static
-    void
-    add_system_fonts(const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> &dst);
-
-    static
-    fastuidraw::reference_counted_ptr<const fastuidraw::FontBase>
-    select_font(int weight, int slant,
-                fastuidraw::c_string style,
-                fastuidraw::c_string family,
-                fastuidraw::c_string foundry,
-                fastuidraw::c_array<const fastuidraw::c_string> langs,
-                fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> font_database);
-
-    static
-    void
-    install_custom_font(int weight, int slant,
-                        fastuidraw::c_string style,
-                        fastuidraw::c_string family,
-                        fastuidraw::c_string foundry,
-                        fastuidraw::c_array<const fastuidraw::c_string > langs,
-                        fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font)
-    {
-      std::lock_guard<std::mutex> M(get().m_mutex);
-      CustomFontKey K(make_custom_font_key(weight, slant, style, family, foundry, langs));
-
-      //std::cout << "FUID: InstallCustom" << K << "@" << font.get();
-      if (get().m_custom_fonts.find(K) == get().m_custom_fonts.end())
-        {
-          //std::cout << ":OK \n";
-          get().m_custom_fonts[K] = font;
-        }
-      else
-        {
-          std::cout << "FUID: attemptyed to add font when key"
-                    << K << " is already present\n";
-        }
-    }
-
-  private:
-
-    FontConfig(void);
-    ~FontConfig(void);
-
-    static
-    std::string
-    get_string(FcPattern *pattern, const char *label, std::string default_value = std::string());
-
-    static
-    int
-    get_int(FcPattern *pattern, const char *label, int default_value = 0);
-
-    static
-    bool
-    get_bool(FcPattern *pattern, const char *label, bool default_value = false);
-
-    static
-    fastuidraw::FontProperties
-    get_font_properties(FcPattern *pattern);
-
-    static
-    FontConfig&
-    get(void)
-    {
-      static FontConfig R;
-      return R;
-    }
-
-    std::mutex m_mutex;
-    FcConfig* m_fc;
-    fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> m_lib;
-    std::map<CustomFontKey, fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> > m_custom_fonts;
   };
 
   /* The purpose of the DataBufferHolder is to -DELAY-
@@ -265,6 +260,8 @@ namespace {
 
 ///////////////////////////////////////
 // AtlasSet methods
+int AtlasSet::InitCount = 0;
+
 void
 AtlasSet::
 initialize_resources(void *get_proc_data,
@@ -311,8 +308,30 @@ initialize_resources(void *get_proc_data,
       FASTUIDRAWassert(!"fastuidraw::PainterBackendGL::program_with_discard failed link");
     }
 
+  fastuidraw::vecN<fastuidraw::u8vec4, 4> im;
+  im[0] = fastuidraw::u8vec4(255, 255, 255, 255);
+  im[1] = fastuidraw::u8vec4(0, 0, 0, 255);
+  im[2] = fastuidraw::u8vec4(0, 0, 0, 255);
+  im[3] = fastuidraw::u8vec4(255, 255, 255, 255);
+  m_checkerboard_image = fastuidraw::Image::create(gl_image_atlas, 2, 2, im,
+                                                   fastuidraw::Image::rgba_format, 2);
+
+  fastuidraw::ColorStopSequence cs;
+  cs.add(fastuidraw::ColorStop(fastuidraw::u8vec4(255, 0, 0, 255), 0.0f));
+  cs.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0, 255, 0, 255), 0.5f));
+  cs.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0, 0, 255, 255), 1.0f));
+  m_three_stops_color_stops = FASTUIDRAWnew fastuidraw::ColorStopSequenceOnAtlas(cs, gl_colorstop_atlas, 8);
+
   /* Populate m_font_database using FontConfig. */
-  FontConfig::add_system_fonts(m_font_database);
+  m_font_config = FASTUIDRAWnew FontConfig();
+  m_font_config->add_system_fonts(m_font_database);
+  ++InitCount;
+
+  std::cout << "FUID-FUZZ: Initialize resources, current_context = "
+            << QOpenGLContext::currentContext() << "(group = "
+            << QOpenGLContext::currentContext()->shareGroup() << ") global_share_context = "
+            << QOpenGLContext::globalShareContext() << "(group = "
+            << QOpenGLContext::globalShareContext()->shareGroup() << ")\n";
 }
 
 void
@@ -327,9 +346,13 @@ clear_resources(void)
                 << "FUID:\tGL_RENDERER=" << fastuidraw_glGetString(GL_RENDERER) << "\n";
       m_font_database.clear();
       m_glyph_cache.clear();
+      m_checkerboard_image.clear();
+      m_three_stops_color_stops.clear();
       m_backend.clear();
       m_painters.clear();
+      m_font_config.clear();
       m_reference_counter = 0;
+      ++InitCount;
     }
   else
     {
@@ -417,9 +440,9 @@ add_system_fonts(const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabas
 {
   FASTUIDRAWassert(font_database);
 
-  std::lock_guard<std::mutex> M(get().m_mutex);
-  FcConfig *config(get().m_fc);
-  fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib(get().m_lib);
+  std::lock_guard<std::mutex> M(m_mutex);
+  FcConfig *config(m_fc);
+  fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib(m_lib);
   FcObjectSet *object_set;
   FcFontSet *font_set;
   FcPattern* pattern;
@@ -492,15 +515,15 @@ select_font(int weight, int slant,
   //std::cout << "FUID: FcFont" << K << "--->";
 
   std::map<CustomFontKey, fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> >::const_iterator iter;
-  iter = get().m_custom_fonts.find(K);
-  if (iter != get().m_custom_fonts.end())
+  iter = m_custom_fonts.find(K);
+  if (iter != m_custom_fonts.end())
     {
       //std::cout << "Custom(" << iter->second.get() << ")\n";
       return iter->second;
     }
 
-  FcConfig *config(get().m_fc);
-  fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib(get().m_lib);
+  FcConfig *config(m_fc);
+  fastuidraw::reference_counted_ptr<fastuidraw::FreeTypeLib> lib(m_lib);
   FcPattern* pattern;
   FcLangSet* lang_set(nullptr);
   fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> return_value;
@@ -641,7 +664,29 @@ selectFont(int weight, int slant,
            fastuidraw::c_string foundry,
            fastuidraw::c_array<const fastuidraw::c_string> langs)
 {
-  return FontConfig::select_font(weight, slant, style, family, foundry, langs, fontDatabase());
+  AtlasSet &S(AtlasSet::atlas_set());
+  if (S.m_font_config)
+    {
+      return S.m_font_config->select_font(weight, slant, style, family, foundry, langs, fontDatabase());
+    }
+  else
+    {
+      return nullptr;
+    }
+}
+
+const fastuidraw::reference_counted_ptr<const fastuidraw::Image>&
+WebCore::FastUIDraw::
+checkerboardImage(void)
+{
+  return AtlasSet::atlas_set().m_checkerboard_image;
+}
+
+const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>&
+WebCore::FastUIDraw::
+threeStopColorStops(void)
+{
+  return AtlasSet::atlas_set().m_three_stops_color_stops;
 }
 
 void
@@ -653,15 +698,23 @@ installCustomFont(int weight, int slant,
                   fastuidraw::c_array<const fastuidraw::c_string> langs,
                   fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> font)
 {
-  FontConfig::install_custom_font(weight, slant, style, family, foundry, langs, font);
+  AtlasSet &S(AtlasSet::atlas_set());
+  if (S.m_font_config)
+    {
+      S.m_font_config->install_custom_font(weight, slant, style, family, foundry, langs, font);
+    }
 }
 
 void
 WebCore::FastUIDraw::
 setBrushToNullImage(fastuidraw::PainterBrush &brush)
 {
-  brush.reset();
-  brush.color(0.5f, 0.75f, 0.3f, 0.8f);
+  brush
+    .reset()
+    .color(0.0f, 1.0f, 0.0f, 1.0f)
+    .image(checkerboardImage())
+    .repeat_window(fastuidraw::vec2(0.0f, 0.0f),
+                   fastuidraw::vec2(checkerboardImage()->dimensions()));
 }
 
 void
@@ -670,7 +723,7 @@ unimplementedFastUIDrawFunc(const char *file, int line, const char *function, un
 {
   if (count < 1)
     {
-      std::cout << "FUID: [" << file << ", " << line << ", " << function << "] unimplemented" << p << "\n";
+      std::cout << "\nFUID: [" << file << ", " << line << ", " << function << "] unimplemented" << p << "\n";
     }
   ++count;
 }
@@ -681,7 +734,7 @@ warningFastUIDrawFunc(const char *file, int line, const char *function, unsigned
 {
   if (true || count < 1)
     {
-      std::cout << "FUID: Warning[" << file << ", " << line << ", " << function << "]: " << p << "\n";
+      std::cout << "\nFUID: Warning[" << file << ", " << line << ", " << function << "]: " << p << "\n";
     }
   ++count;
 }
@@ -707,6 +760,7 @@ PainterHolder(void)
       m_painter = S.m_painters.back();
       S.m_painters.pop_back();
     }
+  m_atlas_set_init_count_value = AtlasSet::InitCount;
 }
 
 WebCore::FastUIDraw::PainterHolder::
@@ -715,8 +769,7 @@ WebCore::FastUIDraw::PainterHolder::
   AtlasSet &S(AtlasSet::atlas_set());
   std::lock_guard<std::mutex> M(S.m_mutex);
 
-  if (S.m_backend &&
-      S.m_backend->painter_shader_registrar() == m_painter->painter_shader_registrar())
+  if (m_atlas_set_init_count_value == AtlasSet::InitCount)
     {
       S.m_painters.push_back(m_painter);
     }

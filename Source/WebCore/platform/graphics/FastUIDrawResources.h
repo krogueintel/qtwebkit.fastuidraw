@@ -13,6 +13,8 @@ namespace WebCore {
      * Calling this increments a reference counter and
      * only when at entry when the reference counter is zero
      * are objects actually created.
+     * \param get_proc function pointer used to fetch GL functions
+     * \param get_proc_data opaque data pointer passed to get_proc
      */
     void
     initializeResources(void *get_proc_data,
@@ -38,6 +40,12 @@ namespace WebCore {
 
     const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
     fontDatabase(void);
+
+    const fastuidraw::reference_counted_ptr<const fastuidraw::Image>&
+    checkerboardImage(void);
+
+    const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>&
+    threeStopColorStops(void);
 
     void
     setBrushToNullImage(fastuidraw::PainterBrush &brush);

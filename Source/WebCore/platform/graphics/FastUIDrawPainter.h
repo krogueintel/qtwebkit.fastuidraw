@@ -15,6 +15,7 @@ namespace WebCore {
       public fastuidraw::reference_counted<PainterHolder>::default_base
     {
     public:
+      explicit
       WEBCORE_EXPORT PainterHolder(void);
       WEBCORE_EXPORT ~PainterHolder();
       
@@ -25,6 +26,7 @@ namespace WebCore {
       }
     private:
       fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
+      int m_atlas_set_init_count_value;
     };
   }
 }
