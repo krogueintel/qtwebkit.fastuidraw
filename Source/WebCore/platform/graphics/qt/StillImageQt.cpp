@@ -48,8 +48,8 @@ static void genericReadyFastUIDrawBrush(fastuidraw::PainterBrush &brush,
                  fastuidraw::PainterBrush::image_filter_linear)
           .repeat_window(fastuidraw::vec2(0.0f, 0.0f),
                          fastuidraw::vec2(im->dimensions()),
-                         fastuidraw::PainterBrush::spread_repeat,
-                         fastuidraw::PainterBrush::spread_repeat);
+                         fastuidraw::PainterBrush::spread_clamp,
+                         fastuidraw::PainterBrush::spread_clamp);
     } else {
         FastUIDraw::setBrushToNullImage(brush);
     }
@@ -179,6 +179,7 @@ StillImageFastUIDraw::StillImageFastUIDraw(const fastuidraw::reference_counted_p
   m_fastuidraw_painter(p),
   m_fastuidraw_surface(p->painter()->surface())
 {
+    p->painter()->flush();
     m_fastuidraw_image = m_fastuidraw_surface->image(FastUIDraw::imageAtlas());
 }
 
@@ -213,16 +214,20 @@ void StillImageFastUIDraw::draw(GraphicsContext &ctx, const FloatRect& dstRect, 
         warningFastUIDraw("Attempted to draw StillImageFastUIDraw with Qt");
         return;
     }
-    if (m_fastuidraw_painter) {
-        m_fastuidraw_painter->painter()->flush();
+    if (m_fastuidraw_painter && m_fastuidraw_painter->painter()->surface() == m_fastuidraw_surface) {
+        if (fastuidraw::routine_fail == m_fastuidraw_painter->painter()->flush()) {
+            std::cout << "FUID: flush failed\n";
+        }
     }
     genericFastUIDrawImage(m_fastuidraw_image, ctx, dstRect, srcRect, op, bl);
 }
 
 void StillImageFastUIDraw::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
 {
-    if (m_fastuidraw_painter) {
-        m_fastuidraw_painter->painter()->flush();
+    if (m_fastuidraw_painter && m_fastuidraw_painter->painter()->surface() == m_fastuidraw_surface) {
+        if (fastuidraw::routine_fail == m_fastuidraw_painter->painter()->flush()) {
+            std::cout << "FUID: flush failed\n";
+        }
     }
     genericReadyFastUIDrawBrush(brush, m_fastuidraw_image);
 }

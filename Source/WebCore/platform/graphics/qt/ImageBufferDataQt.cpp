@@ -111,7 +111,7 @@ ImageBufferDataPrivateFastUIDraw::~ImageBufferDataPrivateFastUIDraw()
 
 void ImageBufferDataPrivateFastUIDraw::addCheckboardPattern(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &pt)
 {
-    pt->save(); 
+    pt->save();
 
     fastuidraw::PainterBrush brush;
     const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im(FastUIDraw::checkerboardImage());
@@ -140,7 +140,7 @@ QImage ImageBufferDataPrivateFastUIDraw::toQImage() const
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::image() const
 {
   //addCheckboardPattern(m_painter->painter());
-  return copyImage();
+  //return copyImage();
   return StillImageFastUIDraw::create(m_painter);
 }
 
@@ -156,7 +156,9 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
 
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::takeImage()
 {
-    return copyImage();
+    m_painter->painter()->end();
+    return StillImageFastUIDraw::create(m_surface->image(FastUIDraw::imageAtlas()));
+    m_surface.clear();
 }
 
 void ImageBufferDataPrivateFastUIDraw::draw(GraphicsContext& destContext, const FloatRect& destRect,
@@ -171,6 +173,7 @@ void ImageBufferDataPrivateFastUIDraw::draw(GraphicsContext& destContext, const 
     FUID_TRACE;
     if (ownContext) {
         RefPtr<Image> im = copyImage();
+        warningFastUIDraw("Insanity");
         destContext.drawImage(*im, destRect, srcRect, ImagePaintingOptions(op, blend, ImageOrientationDescription()));
     } else {
         RefPtr<Image> im = image();
@@ -191,6 +194,7 @@ void ImageBufferDataPrivateFastUIDraw::drawPattern(GraphicsContext& destContext,
     FUID_TRACE;
     if (ownContext) {
         RefPtr<Image> im = copyImage();
+        warningFastUIDraw("Insanity");
         im->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blend);
     } else {
         RefPtr<Image> im = image();
@@ -203,6 +207,7 @@ void ImageBufferDataPrivateFastUIDraw::clip(GraphicsContext &destContext, const 
   /* TODO: This is where the implementation of GraphicsContext::clipToImageBuffer
    * is done. This means clipIn on destContext where m_surface has alpha > 0
    */
+  unimplementedFastUIDraw();
 }
 
 void ImageBufferDataPrivateFastUIDraw::platformTransformColorSpace(const Vector<int>& lookUpTable)
@@ -211,6 +216,7 @@ void ImageBufferDataPrivateFastUIDraw::platformTransformColorSpace(const Vector<
    * (lookUpTable[red], lookUpTable[green], lookUpTable(blue), alpha);
    * note that alpha is not changed. Why does this even exists?
    */
+  unimplementedFastUIDraw();
 }
 
 #if ENABLE(ACCELERATED_2D_CANVAS)
