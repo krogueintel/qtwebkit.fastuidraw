@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+div {
+  width: 300px;
+  height: 200px;
+  background-color: yellow;
+  border: 1px solid black;
+}
+
+div#myDiv {
+    animation-name: spin;
+    animation-duration: 4000ms;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+@keyframes spin {
+    from {
+        transform:rotate(0deg);
+    }
+    to {
+        transform:rotate(360deg);
+    }
+}
+</style>
+</head>
+<body>
+
+<h1>The rotate() Method</h1>
+<p>The rotate() method rotates an element clockwise or counter-clockwise.</p>
+
+<div>
+This a normal div element.
+</div>
+
+<div id="myDiv">
+This div element is rotated clockwise 20 degrees.
+
+    <canvas id="myCanvas" width="300" height="200"></canvas>
+    <script>
+      var canvas = document.getElementById('myCanvas');
+      var context = canvas.getContext('2d');
+
+      context.beginPath();
+      context.moveTo(100, 50);
+      context.lineTo(175, 100);
+      context.lineTo(175, 150);
+      context.lineTo(100, 50);
+      context.lineWidth = 10;
+
+      // set line color
+      context.strokeStyle = '#ff0000';
+      context.fillStyle = '#0000ff';
+      context.fill();
+      context.stroke();
+    </script>
+</div>
+
+</body>
+</html>
