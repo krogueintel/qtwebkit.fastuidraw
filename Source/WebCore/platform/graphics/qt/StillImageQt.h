@@ -28,6 +28,9 @@
 #ifndef StillImageQt_h
 #define StillImageQt_h
 
+#include <fastuidraw/image.hpp>
+#include "FastUIDrawUtil.h"
+#include "FastUIDrawPainter.h"
 #include "Image.h"
 
 namespace WebCore {
@@ -73,6 +76,33 @@ namespace WebCore {
         bool m_ownsPixmap;
     };
 
+    /* this is the FastUIDraw analogue of StillImage but backed solely by a fastuidraw::Image */
+    class StillImageFastUIDraw final : public Image {
+    public:
+        static RefPtr<StillImageFastUIDraw> create(const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im)
+        {
+          return adoptRef(new StillImageFastUIDraw(im));
+        }
+        static RefPtr<StillImageFastUIDraw> create(const fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> &p)
+        {
+          return adoptRef(new StillImageFastUIDraw(p));
+        }
+
+        bool currentFrameKnownToBeOpaque() override;
+        void destroyDecodedData(bool destroyAll = true) override { FASTUIDRAWunused(destroyAll); }
+        FloatSize size() const override;
+        PassNativeImagePtr nativeImageForCurrentFrame() override;
+        void draw(GraphicsContext&, const FloatRect& dstRect, const FloatRect& srcRect, CompositeOperator, BlendMode, ImageOrientationDescription) override;
+        virtual void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) override;
+    private:
+        StillImageFastUIDraw(const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im);
+        StillImageFastUIDraw(const fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> &p);
+
+        fastuidraw::reference_counted_ptr<const fastuidraw::Image> m_fastuidraw_image;
+        fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> m_fastuidraw_painter;
+        fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> m_fastuidraw_surface;
+        QPixmap m_empty_pixmap;
+    };
 }
 
 #endif

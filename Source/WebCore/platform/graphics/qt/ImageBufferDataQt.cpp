@@ -34,11 +34,14 @@
 #include "GraphicsSurface.h"
 #include "IntRect.h"
 #include "StillImageQt.h"
+#include "FastUIDrawResources.h"
+#include "FastUIDrawPainter.h"
 
 #include <QImage>
 #include <QPaintEngine>
 #include <QPainter>
 #include <QPixmap>
+#include <QOpenGLContext>
 
 #include <iostream>
 
@@ -55,7 +58,160 @@
 #include <private/qopenglpaintengine_p.h>
 #endif
 
+#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+
 namespace WebCore {
+  
+class ImageBufferDataPrivateFastUIDraw final : public ImageBufferDataPrivate {
+public:
+    explicit
+    ImageBufferDataPrivateFastUIDraw(const FloatSize&);
+    ~ImageBufferDataPrivateFastUIDraw();
+    bool is_qt(void) const final { return false; }
+    QPaintDevice* paintDevice() final { return nullptr; }
+    QImage toQImage() const final;
+    RefPtr<Image> image() const final;
+    RefPtr<Image> copyImage() const final;
+    RefPtr<Image> takeImage() final;
+    bool isAccelerated() const final { return true; }
+    PlatformLayer* platformLayer() final { return 0; }
+    void draw(GraphicsContext& destContext, const FloatRect& destRect,
+        const FloatRect& srcRect, CompositeOperator, BlendMode, bool ownContext) final;
+    void drawPattern(GraphicsContext& destContext, const FloatRect& srcRect, const AffineTransform& patternTransform,
+        const FloatPoint& phase, const FloatSize& spacing, CompositeOperator,
+        const FloatRect& destRect, BlendMode, bool ownContext) final;
+    void clip(GraphicsContext&, const IntRect& floatRect) const final;
+    void platformTransformColorSpace(const Vector<int>& lookUpTable) final;
+
+    static void addCheckboardPattern(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &pt);
+    static fastuidraw::vec4 clear_color(void) { return fastuidraw::vec4(0.0f, 0.0f, 0.0f, 0.0f); }
+
+    fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> m_painter;
+    mutable fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> m_surface;
+};
+
+ImageBufferDataPrivateFastUIDraw::ImageBufferDataPrivateFastUIDraw(const FloatSize &sz)
+{
+    fastuidraw::ivec2 wh(sz.width(), sz.height());
+
+    m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(wh);
+    fastuidraw::PainterBackend::Surface::Viewport vwp(0, 0, wh.x(), wh.y());
+    m_surface->viewport(vwp);
+    m_surface->clear_color(clear_color());
+    m_painter->painter()->begin(m_surface, fastuidraw::Painter::y_increases_downwards);
+}
+
+ImageBufferDataPrivateFastUIDraw::~ImageBufferDataPrivateFastUIDraw()
+{
+    if (m_painter->painter()->surface()) {
+        m_painter->painter()->end();
+    }
+}
+
+void ImageBufferDataPrivateFastUIDraw::addCheckboardPattern(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &pt)
+{
+    pt->save(); 
+
+    fastuidraw::PainterBrush brush;
+    const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im(FastUIDraw::checkerboardImage());
+    fastuidraw::vec2 dims(pt->surface()->viewport().m_dimensions);
+    fastuidraw::float_orthogonal_projection_params orth(0.0f, dims.x(), 0.0f, dims.y());
+    brush
+      .image(im)
+      .color(fastuidraw::vec4(1.0f, 1.0f, 0.0f, 0.5f))
+      .repeat_window(fastuidraw::vec2(0.0f, 0.0f),
+                     fastuidraw::vec2(im->dimensions()))
+      .apply_shear(0.05f, 0.05f);
+    pt->transformation(orth);
+    pt->composite_shader(fastuidraw::Painter::composite_porter_duff_src_over);
+    pt->fill_rect(fastuidraw::PainterData(&brush),
+                  fastuidraw::Rect().size(dims));
+    pt->restore();
+}
+
+QImage ImageBufferDataPrivateFastUIDraw::toQImage() const
+{
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
+    return QImage();
+}
+  
+RefPtr<Image> ImageBufferDataPrivateFastUIDraw::image() const
+{
+  //addCheckboardPattern(m_painter->painter());
+  return copyImage();
+  return StillImageFastUIDraw::create(m_painter);
+}
+
+RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
+{
+    fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> old_surface(m_surface);
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(m_surface->dimensions());
+    m_surface->viewport(old_surface->viewport());
+    m_surface->clear_color(clear_color());
+    m_painter->painter()->flush(m_surface);
+    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::imageAtlas()));
+}
+
+RefPtr<Image> ImageBufferDataPrivateFastUIDraw::takeImage()
+{
+    return copyImage();
+}
+
+void ImageBufferDataPrivateFastUIDraw::draw(GraphicsContext& destContext, const FloatRect& destRect,
+                                            const FloatRect& srcRect, CompositeOperator op,
+                                            BlendMode blend, bool ownContext)
+{
+    if (destContext.platformContext()->is_qt()) {
+        warningFastUIDraw("Attempted to draw FastUIDrawImageBufferData with Qt");
+        return;
+    }
+
+    FUID_TRACE;
+    if (ownContext) {
+        RefPtr<Image> im = copyImage();
+        destContext.drawImage(*im, destRect, srcRect, ImagePaintingOptions(op, blend, ImageOrientationDescription()));
+    } else {
+        RefPtr<Image> im = image();
+        destContext.drawImage(*im, destRect, srcRect, ImagePaintingOptions(op, blend, ImageOrientationDescription()));
+    }
+
+}
+
+void ImageBufferDataPrivateFastUIDraw::drawPattern(GraphicsContext& destContext, const FloatRect& srcRect, const AffineTransform& patternTransform,
+                                                   const FloatPoint& phase, const FloatSize& spacing, CompositeOperator op,
+                                                   const FloatRect& destRect, BlendMode blend, bool ownContext)
+{
+    if (destContext.platformContext()->is_qt()) {
+        warningFastUIDraw("Attempted to draw FastUIDrawImageBufferData with Qt");
+        return;
+    }
+
+    FUID_TRACE;
+    if (ownContext) {
+        RefPtr<Image> im = copyImage();
+        im->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blend);
+    } else {
+        RefPtr<Image> im = image();
+        im->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blend);
+    }
+}
+
+void ImageBufferDataPrivateFastUIDraw::clip(GraphicsContext &destContext, const IntRect& floatRect) const
+{
+  /* TODO: This is where the implementation of GraphicsContext::clipToImageBuffer
+   * is done. This means clipIn on destContext where m_surface has alpha > 0
+   */
+}
+
+void ImageBufferDataPrivateFastUIDraw::platformTransformColorSpace(const Vector<int>& lookUpTable)
+{
+  /* This hideos beast means to substitute (red, green, blue, alpha) with
+   * (lookUpTable[red], lookUpTable[green], lookUpTable(blue), alpha);
+   * note that alpha is not changed. Why does this even exists?
+   */
+}
 
 #if ENABLE(ACCELERATED_2D_CANVAS)
 
@@ -426,15 +582,16 @@ RefPtr<Image> ImageBufferDataPrivateUnaccelerated::takeImage()
 void ImageBufferDataPrivateUnaccelerated::draw(GraphicsContext& destContext, const FloatRect& destRect,
     const FloatRect& srcRect, CompositeOperator op, BlendMode blendMode, bool ownContext)
 {
-    if (destContext.platformContext()->is_qt()) {
-        if (ownContext) {
-            // We're drawing into our own buffer. In order for this to work, we need to copy the source buffer first.
-          RefPtr<Image> copy = copyImage();
-          destContext.drawImage(*copy, destRect, srcRect, ImagePaintingOptions(op, blendMode, ImageOrientationDescription()));
-        } else
-            destContext.drawImage(*m_image, destRect, srcRect, ImagePaintingOptions(op, blendMode, ImageOrientationDescription()));
+    if (!destContext.platformContext()->is_qt()) {
+        warningFastUIDraw("Drawing Qt-ImageBufferData with FastUIDraw, image copied to FastUIDraw");
+    }
+
+    if (ownContext || !destContext.platformContext()->is_qt()) {
+        // We're drawing into our own buffer. In order for this to work, we need to copy the source buffer first.
+        RefPtr<Image> copy = copyImage();
+        destContext.drawImage(*copy, destRect, srcRect, ImagePaintingOptions(op, blendMode, ImageOrientationDescription()));
     } else {
-        warningFastUIDraw("Attempted to draw Qt-ImageBufferData with FastUIDraw");
+        destContext.drawImage(*m_image, destRect, srcRect, ImagePaintingOptions(op, blendMode, ImageOrientationDescription()));
     }
 }
 
@@ -442,16 +599,16 @@ void ImageBufferDataPrivateUnaccelerated::drawPattern(GraphicsContext& destConte
     const FloatPoint& phase, const FloatSize& spacing, CompositeOperator op,
     const FloatRect& destRect, BlendMode blendMode, bool ownContext)
 {
-    if (destContext.platformContext()->is_qt()) {
-        if (ownContext) {
-            // We're drawing into our own buffer. In order for this to work, we need to copy the source buffer first.
-            RefPtr<Image> copy = copyImage();
-            copy->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
-        } else {
-            m_image->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
-        }
+    if (!destContext.platformContext()->is_qt()) {
+        warningFastUIDraw("Drawing Qt-ImageBufferData with FastUIDraw, image copied to FastUIDraw");
+    }
+
+    if (ownContext || !destContext.platformContext()->is_qt()) {
+        // We're drawing into our own buffer. In order for this to work, we need to copy the source buffer first.
+        RefPtr<Image> copy = copyImage();
+        copy->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
     } else {
-        warningFastUIDraw("FUID: Attempted to clip Qt-ImageBufferData with FastUIDraw");
+        m_image->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode);
     }
 }
 
@@ -465,7 +622,7 @@ void ImageBufferDataPrivateUnaccelerated::clip(GraphicsContext& context, const I
         QPixmap alphaMask = *nativeImage;
         context.pushTransparencyLayerInternal(rect, 1.0, alphaMask);
     } else {
-      warningFastUIDraw("FUID: Attempted to clip Qt-ImageBufferData with FastUIDraw");
+        warningFastUIDraw("Attempted to clip Qt-ImageBufferData with FastUIDraw");
     }
 }
 
@@ -504,18 +661,28 @@ void ImageBufferDataPrivateUnaccelerated::platformTransformColorSpace(const Vect
 
 ImageBufferData::ImageBufferData(bool useFastUIDraw, const FloatSize& size, float resolutionScale)
 {
-    m_painter = new QPainter;
-    m_platform_context = new PlatformGraphicsContext(m_painter);
-    m_impl = new ImageBufferDataPrivateUnaccelerated(size, resolutionScale);
-    std::cout << "FUID:ImageBufferData (Unaccelerated):"
-              << m_painter << ", useFastUIDraw = " << useFastUIDraw << "\n";
+    if (useFastUIDraw) {
+        ImageBufferDataPrivateFastUIDraw *impl;
+        m_painter = nullptr;
+        m_impl = impl = new ImageBufferDataPrivateFastUIDraw(size);
 
-    if (!m_impl->paintDevice())
-        return;
-    if (!m_painter->begin(m_impl->paintDevice()))
-        return;
+        PlatformGraphicsContext::FastUIDrawOption options;
+        options.m_use_fastuidaw_layers = true;
+        options.m_allow_fill_aa = true;
+        options.m_allow_stroke_aa = true;
+        m_platform_context = new PlatformGraphicsContext(impl->m_painter->painter(), options);
+    } else {
+        m_painter = new QPainter;
+        m_platform_context = new PlatformGraphicsContext(m_painter);
+        m_impl = new ImageBufferDataPrivateUnaccelerated(size, resolutionScale);
 
-    initPainter();
+        if (!m_impl->paintDevice())
+          return;
+        if (!m_painter->begin(m_impl->paintDevice()))
+          return;
+
+        initPainter();
+    }
 }
 
 #if ENABLE(ACCELERATED_2D_CANVAS)
@@ -524,7 +691,6 @@ ImageBufferData::ImageBufferData(const FloatSize& size, QOpenGLContext* compatib
     m_painter = new QPainter;
     m_platform_context = new PlatformGraphicsContext(m_painter);
     m_impl = new ImageBufferDataPrivateAccelerated(size, compatibleContext);
-    std::cout << "FUID:ImageBufferData (Accelerated):" << m_painter << "\n";
 
     if (!m_impl->paintDevice())
         return;
@@ -541,8 +707,10 @@ ImageBufferData::~ImageBufferData()
     if (m_impl->isAccelerated())
         static_cast<QFramebufferPaintDevice*>(m_impl->paintDevice())->ensureActiveTarget();
 #endif
-    m_painter->end();
-    delete m_painter;
+    if (m_painter) {
+        m_painter->end();
+        delete m_painter;
+    }
     delete m_impl;
     delete m_platform_context;
 }

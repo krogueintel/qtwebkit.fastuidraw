@@ -69,12 +69,16 @@ ImageBuffer::ImageBuffer(bool useFastUIDraw, const FloatSize& size, float resolu
     , m_logicalSize(size)
     , m_resolutionScale(resolutionScale)
 {
-    success = m_data.m_platform_context->is_qt() && m_data.m_platform_context->qt().isActive();
+    if (m_data.m_platform_context->is_qt()) {
+        success = m_data.m_platform_context->qt().isActive();
+    } else {
+      success = m_data.m_platform_context->fastuidraw()->surface();
+    }
+
     if (!success)
         return;
 
     m_data.m_context = std::make_unique<GraphicsContext>(m_data.m_platform_context);
-    warningFastUIDraw("ImageBuffer created");
 }
 
 ImageBuffer::~ImageBuffer()
@@ -94,8 +98,7 @@ std::unique_ptr<ImageBuffer> ImageBuffer::createCompatibleBuffer(const IntSize& 
 
 GraphicsContext& ImageBuffer::context() const
 {
-    ASSERT(m_data.m_platform_context->qt().isActive());
-
+    ASSERT(!m_data.m_platform_context->is_qt() || m_data.m_platform_context->qt().isActive());
     return *m_data.m_context;
 }
 
@@ -119,18 +122,21 @@ BackingStoreCopy ImageBuffer::fastCopyImageMode()
 
 void ImageBuffer::drawConsuming(std::unique_ptr<ImageBuffer> imageBuffer, GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect, CompositeOperator op, BlendMode blendMode)
 {
+    FUID_TRACE;
     imageBuffer->draw(destContext, destRect, srcRect, op, blendMode);
 }
 
 void ImageBuffer::draw(GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect,
     CompositeOperator op, BlendMode blendMode)
 {
+    FUID_TRACE;
     m_data.m_impl->draw(destContext, destRect, srcRect, op, blendMode, &destContext == &context());
 }
 
 void ImageBuffer::drawPattern(GraphicsContext& destContext, const FloatRect& srcRect, const AffineTransform& patternTransform,
                               const FloatPoint& phase, const FloatSize& spacing, CompositeOperator op, const FloatRect& destRect, BlendMode blendMode)
 {
+    FUID_TRACE;
     m_data.m_impl->drawPattern(destContext, srcRect, patternTransform, phase, spacing, op, destRect, blendMode, &destContext == &context());
 }
 
@@ -175,16 +181,23 @@ PassRefPtr<Uint8ClampedArray> getImageData(const IntRect& unscaledRect, float sc
 
 PassRefPtr<Uint8ClampedArray> ImageBuffer::getUnmultipliedImageData(const IntRect& rect, CoordinateSystem coordinateSystem) const
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
     return getImageData<Unmultiplied>(rect, m_resolutionScale, m_data, m_size, coordinateSystem);
 }
 
 PassRefPtr<Uint8ClampedArray> ImageBuffer::getPremultipliedImageData(const IntRect& rect, CoordinateSystem coordinateSystem) const
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
     return getImageData<Premultiplied>(rect, m_resolutionScale, m_data, m_size, coordinateSystem);
 }
 
 void ImageBuffer::putByteArray(Multiply multiplied, Uint8ClampedArray* source, const IntSize& sourceSize, const IntRect& sourceRect, const IntPoint& destPoint, CoordinateSystem coordinateSystem)
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
+
     ASSERT(sourceRect.width() > 0);
     ASSERT(sourceRect.height() > 0);
 
@@ -245,6 +258,8 @@ static bool encodeImage(const QPixmap& pixmap, const String& format, const doubl
 
 String ImageBuffer::toDataURL(const String& mimeType, const double* quality, CoordinateSystem) const
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
     ASSERT(MIMETypeRegistry::isSupportedImageMIMETypeForEncoding(mimeType));
 
     // QImageWriter does not support mimetypes. It does support Qt image formats (png,
@@ -253,7 +268,8 @@ String ImageBuffer::toDataURL(const String& mimeType, const double* quality, Coo
 
     RefPtr<Image> image = copyImage(DontCopyBackingStore);
     QByteArray data;
-    if (!encodeImage(*image->nativeImageForCurrentFrame(), mimeType.substring(sizeof "image"), quality, data))
+    const QPixmap *pixmap(image->nativeImageForCurrentFrame());
+    if (!pixmap || !encodeImage(*pixmap, mimeType.substring(sizeof "image"), quality, data))
         return "data:,";
 
     return "data:" + mimeType + ";base64," + data.toBase64().data();

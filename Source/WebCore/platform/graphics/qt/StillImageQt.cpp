@@ -38,6 +38,46 @@
 
 namespace WebCore {
 
+static void genericReadyFastUIDrawBrush(fastuidraw::PainterBrush &brush,
+                                        const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im)
+{
+    if (im) {
+        brush.reset();
+        brush
+          .image(im,
+                 fastuidraw::PainterBrush::image_filter_linear)
+          .repeat_window(fastuidraw::vec2(0.0f, 0.0f),
+                         fastuidraw::vec2(im->dimensions()),
+                         fastuidraw::PainterBrush::spread_repeat,
+                         fastuidraw::PainterBrush::spread_repeat);
+    } else {
+        FastUIDraw::setBrushToNullImage(brush);
+    }
+}
+
+static void genericFastUIDrawImage(const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im,
+                                   GraphicsContext& ctxt, const FloatRect& dst,
+                                   const FloatRect& src, CompositeOperator op, BlendMode blendMode)
+{
+    FUID_TRACE_D("im=" << im.get());
+    if (ctxt.platformContext()->is_qt()) {
+        warningFastUIDraw("Attempted to draw FastUIDrawImage with Qt with Qt");
+        return;
+    }
+
+    fastuidraw::PainterBrush brush;
+    FloatRect normalizedSrc = src.normalized();
+    FloatRect normalizedDst = dst.normalized();
+
+    genericReadyFastUIDrawBrush(brush, im);
+    brush
+      .apply_translate(fastuidraw::vec2(normalizedSrc.x(), normalizedSrc.y()))
+      .apply_shear(normalizedSrc.width() / normalizedDst.width(),
+                   normalizedSrc.height() / normalizedDst.height())
+      .apply_translate(fastuidraw::vec2(-normalizedDst.x(), -normalizedDst.y()));
+    ctxt.drawImage(brush, normalizedDst, op, blendMode);
+}
+
 StillImage::StillImage(const QPixmap& pixmap)
     : m_pixmap(new QPixmap(pixmap))
     , m_ownsPixmap(true)
@@ -81,7 +121,7 @@ PassNativeImagePtr StillImage::nativeImageForCurrentFrame()
 }
 
 void StillImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
-    const FloatRect& src, CompositeOperator op, BlendMode blendMode, ImageOrientationDescription)
+                      const FloatRect& src, CompositeOperator op, BlendMode blendMode, ImageOrientationDescription)
 {
     if (m_pixmap->isNull())
         return;
@@ -110,17 +150,7 @@ void StillImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
         ctxt.platformContext()->qt().drawPixmap(normalizedDst, *m_pixmap, normalizedSrc);
         ctxt.setCompositeOperation(previousOperator, previousBlendMode);
     } else {
-        fastuidraw::PainterBrush brush;
-        FloatRect normalizedSrc = src.normalized();
-        FloatRect normalizedDst = dst.normalized();
-
-        readyFastUIDrawBrush(brush);
-        brush
-          .apply_translate(fastuidraw::vec2(normalizedSrc.x(), normalizedSrc.y()))
-          .apply_shear(normalizedSrc.width() / normalizedDst.width(),
-                       normalizedSrc.height() / normalizedDst.height())
-          .apply_translate(fastuidraw::vec2(-normalizedDst.x(), -normalizedDst.y()));
-        ctxt.drawImage(brush, normalizedDst, op, blendMode);
+        genericFastUIDrawImage(m_fastuidraw_image, ctxt, dst, src, op, blendMode);
     }
 }
 
@@ -133,20 +163,68 @@ void StillImage::createFastUIDrawImage(void)
 
 void StillImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
 {
+    genericReadyFastUIDrawBrush(brush, m_fastuidraw_image);
     if (m_fastuidraw_image) {
-        brush.reset();
-        brush
-          .image(m_fastuidraw_image,
-                 fastuidraw::PainterBrush::image_filter_linear)
-          .repeat_window(fastuidraw::vec2(0.0f, 0.0f),
-                         fastuidraw::vec2(m_pixmap->width(),
-                                          m_pixmap->height()),
-                         fastuidraw::PainterBrush::spread_clamp,
-                         fastuidraw::PainterBrush::spread_clamp)
-          .apply_shear(m_pixmap->devicePixelRatio(), m_pixmap->devicePixelRatio());
-    } else {
-        FastUIDraw::setBrushToNullImage(brush);
+        brush.apply_shear(m_pixmap->devicePixelRatio(), m_pixmap->devicePixelRatio());
     }
+}
+
+////////////////////////////////////////
+// StillImageFastUIDraw methods
+StillImageFastUIDraw::StillImageFastUIDraw(const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im):
+  m_fastuidraw_image(im)
+{}
+
+StillImageFastUIDraw::StillImageFastUIDraw(const fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> &p):
+  m_fastuidraw_painter(p),
+  m_fastuidraw_surface(p->painter()->surface())
+{
+    m_fastuidraw_image = m_fastuidraw_surface->image(FastUIDraw::imageAtlas());
+}
+
+bool StillImageFastUIDraw::currentFrameKnownToBeOpaque()
+{
+    return false;
+}
+
+FloatSize StillImageFastUIDraw::size() const
+{
+    fastuidraw::ivec2 dims(0, 0);
+
+    if (m_fastuidraw_image) {
+        dims = m_fastuidraw_image->dimensions();
+    } else {
+        warningFastUIDraw("Empty StillImageFastUIDraw");
+    }
+  
+    return FloatSize(dims.x(), dims.y());
+}
+
+PassNativeImagePtr StillImageFastUIDraw::nativeImageForCurrentFrame()
+{
+    FUID_TRACE;
+    return nullptr;
+}
+
+void StillImageFastUIDraw::draw(GraphicsContext &ctx, const FloatRect& dstRect, const FloatRect& srcRect,
+                                CompositeOperator op, BlendMode bl, ImageOrientationDescription)
+{
+    if (ctx.platformContext()->is_qt()) {
+        warningFastUIDraw("Attempted to draw StillImageFastUIDraw with Qt");
+        return;
+    }
+    if (m_fastuidraw_painter) {
+        m_fastuidraw_painter->painter()->flush();
+    }
+    genericFastUIDrawImage(m_fastuidraw_image, ctx, dstRect, srcRect, op, bl);
+}
+
+void StillImageFastUIDraw::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
+{
+    if (m_fastuidraw_painter) {
+        m_fastuidraw_painter->painter()->flush();
+    }
+    genericReadyFastUIDrawBrush(brush, m_fastuidraw_image);
 }
 
 }
