@@ -571,7 +571,15 @@ public:
     , m_fill_brush(p)
     , m_stroke_params(p)
   {
-    
+    m_stroke_brush.change_value().color(0.0f, 0.0f, 0.0f, 1.0f);
+    m_fill_brush.change_value().color(0.0f, 0.0f, 0.0f, 1.0f);
+    m_stroke_style
+      .cap_style(fastuidraw::Painter::flat_caps)
+      .join_style(fastuidraw::Painter::miter_bevel_joins);
+    m_stroke_params.change_value()
+      .width(1.0f)
+      .stroking_units(fastuidraw::PainterStrokeParams::path_stroking_units)
+      .miter_limit(10.0f);
   }
   
   enum fastuidraw::Painter::shader_anti_alias_t m_fill_aa, m_stroke_aa;
@@ -1692,16 +1700,29 @@ void GraphicsContext::platformFillRoundedRect(const FloatRoundedRect& rect, cons
         }
         p->fillPath(path.platformPath(), QColor(color));
     } else {
-        fastuidraw::RoundedRect fud_rect;
-
-        createFastUIDrawRoundedRect(rect, &fud_rect);
         if (hasShadow()) {
             unimplementedFastUIDrawMessage("->Shadow");
         }
+
+        fastuidraw::RoundedRect fud_rect;
         fastuidraw::PainterBrush brush(FastUIDrawColorValue(color, alpha()));
+        enum fastuidraw::Painter::shader_anti_alias_t aa(m_data->fastuidraw_state().m_fill_aa);
+
+        /* admittedly, skipping anti-aliasing just because the rect is
+         * screen aligned is questionable because that means the rounded
+         * edges are never anti-aliased; for now disable this code.
+         */
+        if (0) {
+            bool should_apply_aa;
+            const fastuidraw::float3x3 &tr(m_data->fastuidraw()->transformation());
+            should_apply_aa = (tr(0, 1) != 0.0f || tr(1, 0) != 0.0f
+                               || tr(2, 0) != 0.0f || tr(2, 1) != 0.0f);
+            aa = (should_apply_aa) ? aa : fastuidraw::Painter::shader_anti_alias_none;
+        }
+
+        createFastUIDrawRoundedRect(rect, &fud_rect);
         m_data->fastuidraw()->fill_rounded_rect(fastuidraw::PainterData(&brush),
-                                                fud_rect,
-                                                m_data->fastuidraw_state().m_fill_aa);
+                                                fud_rect, aa);
     }
 }
 
