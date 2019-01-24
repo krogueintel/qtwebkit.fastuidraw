@@ -489,6 +489,8 @@ void CoordinatedGraphicsLayer::setShowRepaintCounter(bool show)
 
 void CoordinatedGraphicsLayer::setContentsToImage(Image* image)
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
     NativeImagePtr nativeImagePtr = image ? image->nativeImageForCurrentFrame() : nullptr;
     if (m_compositedImage == image && m_compositedNativeImagePtr == nativeImagePtr)
         return;

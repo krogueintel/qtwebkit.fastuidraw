@@ -103,6 +103,8 @@ void CoordinatedImageBacking::markDirty()
 
 void CoordinatedImageBacking::update()
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
     releaseSurfaceIfNeeded();
 
     bool changedToVisible;

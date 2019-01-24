@@ -128,6 +128,9 @@ void ImageBuffer::transformColorSpace(ColorSpace srcColorSpace, ColorSpace dstCo
 
 inline void ImageBuffer::genericConvertToLuminanceMask()
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
+
     IntRect luminanceRect(IntPoint(), internalSize());
     RefPtr<Uint8ClampedArray> srcPixelArray = getUnmultipliedImageData(luminanceRect);
     

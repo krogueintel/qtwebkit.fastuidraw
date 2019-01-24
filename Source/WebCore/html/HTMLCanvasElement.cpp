@@ -94,7 +94,7 @@ HTMLCanvasElement::HTMLCanvasElement(const QualifiedName& tagName, Document& doc
 Ref<HTMLCanvasElement> HTMLCanvasElement::create(Document& document)
 {
     std::cout << "FUID: ------------------------------\n"
-              << "FUID:       HTMLCanvasElement\n"
+              << "FUID:  create HTMLCanvasElement\n"
               << "FUID:------------------------------\n";
     return adoptRef(*new HTMLCanvasElement(canvasTag, document));
 }
@@ -102,7 +102,7 @@ Ref<HTMLCanvasElement> HTMLCanvasElement::create(Document& document)
 Ref<HTMLCanvasElement> HTMLCanvasElement::create(const QualifiedName& tagName, Document& document)
 {
     std::cout << "FUID:------------------------------\n"
-              << "FUID:       HTMLCanvasElement\n"
+              << "FUID:  create HTMLCanvasElement\n"
               << "FUID:------------------------------\n";
     return adoptRef(*new HTMLCanvasElement(tagName, document));
 }

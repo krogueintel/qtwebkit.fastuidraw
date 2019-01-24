@@ -63,6 +63,7 @@
 #include <IntSize.h>
 #include <QFileInfo>
 #include <QNetworkRequest>
+#include <iostream>
 
 #if ENABLE(QT_GESTURE_EVENTS)
 #include "PlatformGestureEvent.h"
@@ -848,6 +849,7 @@ QWebHitTestResultPrivate::QWebHitTestResultPrivate(const WebCore::HitTestResult 
     boundingRect = (innerNonSharedNode && innerNonSharedNode->renderer())? innerNonSharedNode->renderer()->absoluteBoundingBoxRect() : IntRect();
     WebCore::Image *img = hitTest.image();
     if (img) {
+        std::cout << "FUID: QWebFrameAdaport nonsense\n";
         QPixmap* pix = img->nativeImageForCurrentFrame();
         if (pix)
             pixmap = *pix;

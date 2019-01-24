@@ -2066,6 +2066,8 @@ RefPtr<ImageData> CanvasRenderingContext2D::webkitGetImageDataHD(float sx, float
 
 RefPtr<ImageData> CanvasRenderingContext2D::getImageData(ImageBuffer::CoordinateSystem coordinateSystem, float sx, float sy, float sw, float sh, ExceptionCode& ec) const
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
     if (!canvas()->originClean()) {
         static NeverDestroyed<String> consoleMessage(ASCIILiteral("Unable to get image data from canvas because the canvas has been tainted by cross-origin data."));
         canvas()->document().addConsoleMessage(MessageSource::Security, MessageLevel::Error, consoleMessage);

@@ -285,6 +285,8 @@ void GraphicsLayerTextureMapper::setContentsToSolidColor(const Color& color)
 
 void GraphicsLayerTextureMapper::setContentsToImage(Image* image)
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
     if (image) {
         // Make the decision about whether the image has changed.
         // This code makes the assumption that pointer equality on a NativeImagePtr is a valid way to tell if the image is changed.

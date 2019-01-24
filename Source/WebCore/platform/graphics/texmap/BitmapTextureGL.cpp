@@ -190,6 +190,9 @@ void BitmapTextureGL::updateContents(const void* srcData, const IntRect& targetR
 
 void BitmapTextureGL::updateContents(Image* image, const IntRect& targetRect, const IntPoint& offset, UpdateContentsFlag updateContentsFlag)
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
+
     if (!image)
         return;
     NativeImagePtr frameImage = image->nativeImageForCurrentFrame();

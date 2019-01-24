@@ -24,6 +24,7 @@
 #include "FloatRect.h"
 #include "FloatSize.h"
 #include "Image.h"
+#include "FastUIDrawUtil.h"
 
 namespace WebCore {
 
@@ -48,6 +49,9 @@ void SVGImageForContainer::drawPattern(GraphicsContext& context, const FloatRect
 
 PassNativeImagePtr SVGImageForContainer::nativeImageForCurrentFrame()
 {
+  FUID_TRACE_ACTIVE;
+  FUID_TRACE;
+  
     return m_image->nativeImageForCurrentFrame();
 }
 

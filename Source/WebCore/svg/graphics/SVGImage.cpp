@@ -241,6 +241,9 @@ void SVGImage::drawPatternForContainer(GraphicsContext& context, const FloatSize
 
 void SVGImage::draw(GraphicsContext& context, const FloatRect& dstRect, const FloatRect& srcRect, CompositeOperator compositeOp, BlendMode blendMode, ImageOrientationDescription)
 {
+    FUID_TRACE_ACTIVE;
+    FUID_TRACE;
+
     if (!m_page)
         return;
 
