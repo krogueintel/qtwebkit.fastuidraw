@@ -260,7 +260,9 @@ static fastuidraw::Painter::composite_mode_t toFastUIDrawCompositeMode(Composite
 
         /* TODO: FastUIDraw needs these additional composite modes */
     case CompositePlusDarker:
+        warningFastUIDraw("Unsupported composite mode");
     case CompositePlusLighter:
+        warningFastUIDraw("Unsupported composite mode");
     case CompositeDifference:
         warningFastUIDraw("Unsupported composite mode");
         break;
