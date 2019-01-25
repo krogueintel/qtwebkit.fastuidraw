@@ -3,10 +3,10 @@
 <head>
 <style>
 div {
-  width: 300px;
-  height: 200px;
+  width: 400px;
+  height: 400px;
   background-color: yellow;
-  border: 1px solid black;
+  border: 2px solid black;
 }
 
 div#myDiv {
@@ -14,6 +14,9 @@ div#myDiv {
     animation-duration: 4000ms;
     animation-iteration-count: infinite;
     animation-timing-function: linear;
+}
+
+div#myDiv2 {
 }
 @keyframes spin {
     from {
@@ -35,25 +38,47 @@ This a normal div element.
 </div>
 
 <div id="myDiv">
-This div element is rotated clockwise 20 degrees.
+This div element is rotating all the time.
 
-    <canvas id="myCanvas" width="300" height="200"></canvas>
+    <canvas id="myCanvas" width="200" height="200"></canvas>
     <script>
-      var canvas = document.getElementById('myCanvas');
-      var context = canvas.getContext('2d');
+	  setInterval(draw, 50);
+      var frameCount = 0;
+      function draw()
+      {
+        var canvas = document.getElementById('myCanvas');
+        var context = canvas.getContext('2d');
 
-      context.beginPath();
-      context.moveTo(100, 50);
-      context.lineTo(175, 100);
-      context.lineTo(175, 150);
-      context.lineTo(100, 50);
-      context.lineWidth = 10;
-
-      // set line color
-      context.strokeStyle = '#ff0000';
-      context.fillStyle = '#0000ff';
-      context.fill();
-      context.stroke();
+        frameCount = frameCount + 1;
+        if (frameCount > 20)
+        {
+			frameCount = 0;
+		}
+		
+		context.save();
+		context.translate(6 * frameCount, 3 * frameCount);
+		context.clearRect(0, 0, canvas.width, canvas.height);
+		context.beginPath();
+		context.moveTo(25, 25);
+		context.lineTo(75, 20);
+		context.lineTo(75, 75);
+		context.closePath();
+		context.lineWidth = 10;
+		
+		if (frameCount < 10)
+		{
+		   context.strokeStyle = '#00ff00';
+		   context.fillStyle = '#ff00ff';
+	    }
+	    else
+	    {
+		   context.fillStyle = '#00ff00';
+		   context.strokeStyle = '#ff00ff';
+		}
+		context.fill();
+		context.stroke();
+		context.restore();
+	  }
     </script>
 </div>
 
