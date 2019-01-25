@@ -286,6 +286,16 @@ public:
 
     WEBCORE_EXPORT void setUseFastUIDrawCanvas(bool);
     bool useFastUIDrawCanvas() const { return m_useFastUIDrawCanvas; }
+
+    WEBCORE_EXPORT void setFastUIDrawCanvasAntiAliasStroking(bool);
+    bool fastUIDrawCanvasAntiAliasStroking() const { return m_fastUIDrawCanvasAntiAliasStroking; }
+
+    WEBCORE_EXPORT void setFastUIDrawCanvasAntiAliasFilling(bool);
+    bool fastUIDrawCanvasAntiAliasFilling() const { return m_fastUIDrawCanvasAntiAliasFilling; }
+
+    WEBCORE_EXPORT void setFastUIDrawCanvasUseLayers(bool);
+    bool fastUIDrawCanvasUseLayers() const { return m_fastUIDrawCanvasUseLayers; }
+
     
 #if PLATFORM(IOS)
     WEBCORE_EXPORT static float defaultMinimumZoomFontSize();
@@ -345,6 +355,9 @@ private:
 
     bool m_forcePendingWebGLPolicy : 1;
     bool m_useFastUIDrawCanvas : 1;
+    bool m_fastUIDrawCanvasAntiAliasStroking : 1;
+    bool m_fastUIDrawCanvasAntiAliasFilling : 1;
+    bool m_fastUIDrawCanvasUseLayers : 1;
 
 #if ENABLE(RESOURCE_USAGE)
     bool m_resourceUsageOverlayVisible { false };

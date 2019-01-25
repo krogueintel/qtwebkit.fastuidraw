@@ -63,8 +63,8 @@ ImageBuffer::ImageBuffer(const IntSize& size, ColorSpace, QOpenGLContext* compat
 }
 #endif
 
-ImageBuffer::ImageBuffer(bool useFastUIDraw, const FloatSize& size, float resolutionScale, ColorSpace, RenderingMode /*renderingMode*/, bool& success)
-    : m_data(useFastUIDraw, size, resolutionScale)
+ImageBuffer::ImageBuffer(const PlatformGraphicsContext::FastUIDrawOption *options, const FloatSize& size, float resolutionScale, ColorSpace, RenderingMode /*renderingMode*/, bool& success)
+    : m_data(options, size, resolutionScale)
     , m_size(size * resolutionScale)
     , m_logicalSize(size)
     , m_resolutionScale(resolutionScale)

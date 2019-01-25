@@ -324,7 +324,7 @@ void FilterEffectRenderer::allocateBackingStoreIfNeeded()
         warningFastUIDraw("FilterEffectRenderer active, not supported in FastUIDraw rendering");
         IntSize logicalSize(m_sourceDrawingRegion.width(), m_sourceDrawingRegion.height());
         if (!sourceImage() || sourceImage()->logicalSize() != logicalSize)
-            setSourceImage(ImageBuffer::create(false, logicalSize, renderingMode(), filterScale()));
+            setSourceImage(ImageBuffer::create(nullptr, logicalSize, renderingMode(), filterScale()));
         m_graphicsBufferAttached = true;
     }
 }

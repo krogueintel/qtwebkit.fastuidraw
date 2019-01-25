@@ -29,6 +29,8 @@
 #include "Image.h"
 
 #include "PlatformLayer.h"
+#include "Settings.h"
+#include "GraphicsContext.h"
 
 #include <QImage>
 #include <QPaintDevice>
@@ -71,7 +73,7 @@ public:
 
 class ImageBufferData {
 public:
-    ImageBufferData(bool useFastUIDraw, const FloatSize&, float resolutionScale);
+    ImageBufferData(const PlatformGraphicsContext::FastUIDrawOption *options, const FloatSize&, float resolutionScale);
 #if ENABLE(ACCELERATED_2D_CANVAS)
     ImageBufferData(const FloatSize&, QOpenGLContext*);
 #endif

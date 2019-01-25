@@ -39,7 +39,7 @@ void BitmapTexture::updateContents(TextureMapper& textureMapper, GraphicsLayer* 
     warningFastUIDraw("BitmapTexture active, not support in FastUIDraw rendering");
     // Making an unconditionally unaccelerated buffer here is OK because this code
     // isn't used by any platforms that respect the accelerated bit.
-    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(false, targetRect.size(), Unaccelerated);
+    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(nullptr, targetRect.size(), Unaccelerated);
 
     if (!imageBuffer)
         return;

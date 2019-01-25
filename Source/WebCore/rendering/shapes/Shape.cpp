@@ -183,7 +183,7 @@ std::unique_ptr<Shape> Shape::createRasterShape(Image* image, float threshold, c
     // FIXME (149420): This buffer should not be unconditionally unaccelerated.
     
     warningFastUIDraw("Shape active, not support in FastUIDraw rendering");
-    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(false, imageRect.size(), Unaccelerated);
+    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(nullptr, imageRect.size(), Unaccelerated);
 
     if (imageBuffer) {
         GraphicsContext& graphicsContext = imageBuffer->context();

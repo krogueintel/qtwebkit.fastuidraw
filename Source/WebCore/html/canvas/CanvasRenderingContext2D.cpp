@@ -1734,8 +1734,9 @@ template<class T> IntRect CanvasRenderingContext2D::calculateCompositingBufferRe
 std::unique_ptr<ImageBuffer> CanvasRenderingContext2D::createCompositingBuffer(const IntRect& bufferRect)
 {
     HTMLCanvasElement *c(canvas());
-    return ImageBuffer::create(c && c->document().useFastUIDraw(),
-                               bufferRect.size(), isAccelerated() ? Accelerated : Unaccelerated);
+    const Settings *s;
+    s = (c) ? c->document().settings() : nullptr;
+    return ImageBuffer::create(s, bufferRect.size(), isAccelerated() ? Accelerated : Unaccelerated);
 }
 
 void CanvasRenderingContext2D::compositeBuffer(ImageBuffer& buffer, const IntRect& bufferRect, CompositeOperator op)

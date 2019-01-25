@@ -480,11 +480,11 @@ static inline fastuidraw::vec4 FastUIDrawColorValue(Color color, float alpha)
 static inline void rectFromFloatRect(const FloatRect &inRect,
                                      fastuidraw::Rect *out_rect)
 {
-  out_rect->m_min_point.x() = fastuidraw::t_min(inRect.x(), inRect.maxX());
-  out_rect->m_min_point.y() = fastuidraw::t_min(inRect.y(), inRect.maxY());
+  out_rect->m_min_point.x() = inRect.x();
+  out_rect->m_min_point.y() = inRect.y();
 
-  out_rect->m_max_point.x() = fastuidraw::t_max(inRect.x(), inRect.maxX());
-  out_rect->m_max_point.y() = fastuidraw::t_max(inRect.y(), inRect.maxY());
+  out_rect->m_max_point.x() = inRect.maxX();
+  out_rect->m_max_point.y() = inRect.maxY();
 }
 
 static inline fastuidraw::Rect rectFromFloatRect(const FloatRect &inRect)
@@ -851,6 +851,8 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
         m_fastuidraw_state_stack.push_back(FastUIDrawStateElement(platform->fastuidraw(), platform->fastuidraw_options()));
         m_packed_black_brush = pool.create_packed_value(fastuidraw::PainterBrush()
                                                         .color(0.0f, 0.0f, 0.0f, 0.0f));
+        platform->fastuidraw()->composite_shader(fastuidraw::Painter::composite_porter_duff_src_over);
+        platform->fastuidraw()->blend_shader(fastuidraw::Painter::blend_w3c_normal);
         m_fastuidraw_square_path << fastuidraw::vec2(0.0f, 0.0f)
                                  << fastuidraw::vec2(0.0f, 1.0f)
                                  << fastuidraw::vec2(1.0f, 1.0f)

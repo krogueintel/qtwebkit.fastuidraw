@@ -139,8 +139,6 @@ QImage ImageBufferDataPrivateFastUIDraw::toQImage() const
   
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::image() const
 {
-  //addCheckboardPattern(m_painter->painter());
-  //return copyImage();
   return StillImageFastUIDraw::create(m_painter);
 }
 
@@ -156,9 +154,7 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
 
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::takeImage()
 {
-    m_painter->painter()->end();
-    return StillImageFastUIDraw::create(m_surface->image(FastUIDraw::imageAtlas()));
-    m_surface.clear();
+    return copyImage();
 }
 
 void ImageBufferDataPrivateFastUIDraw::draw(GraphicsContext& destContext, const FloatRect& destRect,
@@ -665,18 +661,13 @@ void ImageBufferDataPrivateUnaccelerated::platformTransformColorSpace(const Vect
 
 // ---------------------- ImageBufferData
 
-ImageBufferData::ImageBufferData(bool useFastUIDraw, const FloatSize& size, float resolutionScale)
+ImageBufferData::ImageBufferData(const PlatformGraphicsContext::FastUIDrawOption *options, const FloatSize& size, float resolutionScale)
 {
-    if (useFastUIDraw) {
+    if (options) {
         ImageBufferDataPrivateFastUIDraw *impl;
         m_painter = nullptr;
         m_impl = impl = new ImageBufferDataPrivateFastUIDraw(size);
-
-        PlatformGraphicsContext::FastUIDrawOption options;
-        options.m_use_fastuidaw_layers = true;
-        options.m_allow_fill_aa = true;
-        options.m_allow_stroke_aa = true;
-        m_platform_context = new PlatformGraphicsContext(impl->m_painter->painter(), options);
+        m_platform_context = new PlatformGraphicsContext(impl->m_painter->painter(), *options);
     } else {
         m_painter = new QPainter;
         m_platform_context = new PlatformGraphicsContext(m_painter);

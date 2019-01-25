@@ -194,8 +194,6 @@ namespace WebCore {
 
     private:
         PlatformPathPtr m_path;
-        mutable bool m_fastuidraw_path_ready;
-        mutable fastuidraw::Path m_fastuidraw_path;
     };
 
 TextStream& operator<<(TextStream&, const Path&);

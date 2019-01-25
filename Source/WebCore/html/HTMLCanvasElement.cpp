@@ -689,10 +689,8 @@ void HTMLCanvasElement::createImageBuffer() const
     } else
 #endif
     {
-        setImageBuffer(ImageBuffer::create(document().useFastUIDraw(), size(), renderingMode));
+        setImageBuffer(ImageBuffer::create(document().settings(), size(), renderingMode));
     }
-
-    Settings *settings = document().settings();
     
     if (!m_imageBuffer)
         return;

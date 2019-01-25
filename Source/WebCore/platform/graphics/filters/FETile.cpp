@@ -65,7 +65,7 @@ void FETile::platformApplySoftware()
     }
 
     warningFastUIDraw("FETile image buffer, not support in FastUIDraw rendering");
-    auto tileImage = SVGRenderingContext::createImageBuffer(false, tileRect, tileRect, ColorSpaceSRGB, filter().renderingMode());
+    auto tileImage = SVGRenderingContext::createImageBuffer(nullptr, tileRect, tileRect, ColorSpaceSRGB, filter().renderingMode());
     if (!tileImage)
         return;
 

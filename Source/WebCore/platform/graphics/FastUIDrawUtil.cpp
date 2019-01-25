@@ -525,7 +525,7 @@ static int fuid_depth = 0;
 WebCore::FastUIDraw::FUIDTrace::
 FUIDTrace(const char *file, int line, const char *function)
 {
-  if (fuid_tracking_active != 0)
+  if (fuid_tracking_active != 0 && false)
     {
       std::cout << "FUID" << std::string(fuid_depth, ' ') << "[" << file << ", "
                 << line << ", " << function << "\n";
@@ -536,7 +536,7 @@ FUIDTrace(const char *file, int line, const char *function)
 WebCore::FastUIDraw::FUIDTrace::
 FUIDTrace(const char *file, int line, const char *function, const char *message)
 {
-  if (fuid_tracking_active != 0)
+  if (fuid_tracking_active != 0 && false)
     {
       std::cout << "FUID" << std::string(fuid_depth, ' ') << "[" << file << ", "
                 << line << ", " << function << ":" << message << "\n";

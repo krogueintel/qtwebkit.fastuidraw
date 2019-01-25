@@ -218,6 +218,9 @@ Settings::Settings(Page* page)
     , m_fontFallbackPrefersPictographs(false)
     , m_forcePendingWebGLPolicy(false)
     , m_useFastUIDrawCanvas(false)
+    , m_fastUIDrawCanvasAntiAliasStroking(false)
+    , m_fastUIDrawCanvasAntiAliasFilling(false)
+    , m_fastUIDrawCanvasUseLayers(true)
 {
     // A Frame may not have been created yet, so we initialize the AtomicString
     // hash before trying to use it.
@@ -449,6 +452,21 @@ void Settings::setForcePendingWebGLPolicy(bool forced)
 void Settings::setUseFastUIDrawCanvas(bool v)
 {
     m_useFastUIDrawCanvas = v;
+}
+
+void Settings::setFastUIDrawCanvasAntiAliasStroking(bool v)
+{
+    m_fastUIDrawCanvasAntiAliasStroking = v;
+}
+
+void Settings::setFastUIDrawCanvasAntiAliasFilling(bool v)
+{
+    m_fastUIDrawCanvasAntiAliasFilling = v;
+}
+
+void Settings::setFastUIDrawCanvasUseLayers(bool v)
+{
+    m_fastUIDrawCanvasUseLayers = v;
 }
 
 void Settings::setPluginsEnabled(bool arePluginsEnabled)

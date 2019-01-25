@@ -247,7 +247,7 @@ AffineTransform SVGRenderingContext::calculateTransformationToOutermostCoordinat
     return absoluteTransform;
 }
 
-std::unique_ptr<ImageBuffer> SVGRenderingContext::createImageBuffer(bool useFastUIDraw, const FloatRect& targetRect, const AffineTransform& absoluteTransform, ColorSpace colorSpace, RenderingMode renderingMode)
+std::unique_ptr<ImageBuffer> SVGRenderingContext::createImageBuffer(const Settings *useFastUIDraw, const FloatRect& targetRect, const AffineTransform& absoluteTransform, ColorSpace colorSpace, RenderingMode renderingMode)
 {
     IntRect paintRect = calculateImageBufferRect(targetRect, absoluteTransform);
     // Don't create empty ImageBuffers.
@@ -270,7 +270,7 @@ std::unique_ptr<ImageBuffer> SVGRenderingContext::createImageBuffer(bool useFast
     return imageBuffer;
 }
 
-std::unique_ptr<ImageBuffer> SVGRenderingContext::createImageBuffer(bool useFastUIDraw, const FloatRect& targetRect, const FloatRect& clampedRect, ColorSpace colorSpace, RenderingMode renderingMode)
+std::unique_ptr<ImageBuffer> SVGRenderingContext::createImageBuffer(const Settings *useFastUIDraw, const FloatRect& targetRect, const FloatRect& clampedRect, ColorSpace colorSpace, RenderingMode renderingMode)
 {
     IntSize clampedSize = roundedIntSize(clampedRect.size());
     IntSize unclampedSize = roundedIntSize(targetRect.size());

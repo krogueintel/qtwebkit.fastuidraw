@@ -543,7 +543,6 @@ public:
     Frame* frame() const { return m_frame; } // can be NULL
     WEBCORE_EXPORT Page* page() const; // can be NULL
     WEBCORE_EXPORT Settings* settings() const; // can be NULL
-    WEBCORE_EXPORT bool useFastUIDraw() const;
 
     float deviceScaleFactor() const;
 

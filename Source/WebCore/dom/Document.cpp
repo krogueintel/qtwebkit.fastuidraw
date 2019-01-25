@@ -1708,12 +1708,6 @@ Settings* Document::settings() const
     return m_frame ? &m_frame->settings() : nullptr;
 }
 
-bool Document::useFastUIDraw() const
-{
-  Settings *S(settings());
-  return S && S->useFastUIDrawCanvas();
-}
-
 Ref<Range> Document::createRange()
 {
     return Range::create(*this);

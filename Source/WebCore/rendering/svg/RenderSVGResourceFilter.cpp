@@ -188,7 +188,7 @@ bool RenderSVGResourceFilter::applyResource(RenderElement& renderer, const Rende
 
     RenderingMode renderingMode = renderer.frame().settings().acceleratedFiltersEnabled() ? Accelerated : Unaccelerated;
 
-    auto sourceGraphic = SVGRenderingContext::createImageBuffer(document().useFastUIDraw(), filterData->drawingRegion, effectiveTransform, ColorSpaceLinearRGB, renderingMode);
+    auto sourceGraphic = SVGRenderingContext::createImageBuffer(document().settings(), filterData->drawingRegion, effectiveTransform, ColorSpaceLinearRGB, renderingMode);
     if (!sourceGraphic) {
         ASSERT(!m_filter.contains(&renderer));
         filterData->savedContext = context;

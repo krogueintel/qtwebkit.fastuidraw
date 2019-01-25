@@ -172,15 +172,34 @@ bool ImageBuffer::copyToPlatformTexture(GraphicsContext3D&, GC3Denum, Platform3D
 std::unique_ptr<ImageBuffer> ImageBuffer::createCompatibleBuffer(const FloatSize& size, float resolutionScale, ColorSpace colorSpace,
                                                                  const GraphicsContext& context, bool)
 {
-    return create(context.platformContext()->is_fastuidraw(), size,
-                  context.renderingMode(), resolutionScale, colorSpace);
+    bool success = false;
+    PlatformGraphicsContext::FastUIDrawOption *opts(nullptr);
+    PlatformGraphicsContext::FastUIDrawOption option_value;
+    if (context.platformContext()->is_fastuidraw()) {
+        option_value = context.platformContext()->fastuidraw_options();
+        opts = &option_value;
+    }
+
+    std::unique_ptr<ImageBuffer> buffer(new ImageBuffer(opts, size, resolutionScale, colorSpace, context.renderingMode(), success));
+    if (!success)
+        return nullptr;
+    return buffer;
 }
 
-std::unique_ptr<ImageBuffer> ImageBuffer::create(bool useFastUIDraw, const FloatSize& size, RenderingMode renderingMode,
+std::unique_ptr<ImageBuffer> ImageBuffer::create(const Settings *settings, const FloatSize& size, RenderingMode renderingMode,
                                                  float resolutionScale, ColorSpace colorSpace)
 {
     bool success = false;
-    std::unique_ptr<ImageBuffer> buffer(new ImageBuffer(useFastUIDraw, size, resolutionScale, colorSpace, renderingMode, success));
+    PlatformGraphicsContext::FastUIDrawOption options;
+    PlatformGraphicsContext::FastUIDrawOption *opts(nullptr);
+    if (settings && settings->useFastUIDrawCanvas()) {
+        opts = &options;
+        opts->m_allow_stroke_aa = settings->fastUIDrawCanvasAntiAliasStroking();
+        opts->m_allow_fill_aa = settings->fastUIDrawCanvasAntiAliasFilling();
+        opts->m_use_fastuidaw_layers = settings->fastUIDrawCanvasUseLayers();
+    }
+
+    std::unique_ptr<ImageBuffer> buffer(new ImageBuffer(opts, size, resolutionScale, colorSpace, renderingMode, success));
     if (!success)
         return nullptr;
     return buffer;

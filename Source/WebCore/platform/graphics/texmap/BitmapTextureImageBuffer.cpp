@@ -84,7 +84,7 @@ void BitmapTextureImageBuffer::updateContents(TextureMapper&, GraphicsLayer* sou
 void BitmapTextureImageBuffer::didReset()
 {
     warningFastUIDraw("BitmapTextureImageBuffer active, not support in FastUIDraw rendering");
-    m_image = ImageBuffer::create(false, contentSize(), Unaccelerated);
+    m_image = ImageBuffer::create(nullptr, contentSize(), Unaccelerated);
 }
 
 void BitmapTextureImageBuffer::updateContents(Image* image, const IntRect& targetRect, const IntPoint& offset, UpdateContentsFlag)

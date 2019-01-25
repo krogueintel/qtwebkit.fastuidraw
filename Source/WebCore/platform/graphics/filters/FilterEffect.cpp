@@ -223,7 +223,7 @@ ImageBuffer* FilterEffect::asImageBuffer()
     if (m_imageBufferResult)
         return m_imageBufferResult.get();
     warningFastUIDraw("Filter effect active, not support in FastUIDraw rendering");
-    m_imageBufferResult = ImageBuffer::create(false, m_absolutePaintRect.size(), m_filter.renderingMode(), m_filter.filterScale(), m_resultColorSpace);
+    m_imageBufferResult = ImageBuffer::create(nullptr, m_absolutePaintRect.size(), m_filter.renderingMode(), m_filter.filterScale(), m_resultColorSpace);
     if (!m_imageBufferResult)
         return nullptr;
 
@@ -390,7 +390,7 @@ ImageBuffer* FilterEffect::createImageBufferResult()
 
     FloatSize clampedSize = ImageBuffer::clampedSize(m_absolutePaintRect.size());
     warningFastUIDraw("Filter effect active, not support in FastUIDraw rendering");
-    m_imageBufferResult = ImageBuffer::create(false, clampedSize, m_filter.renderingMode(), m_filter.filterScale(), m_resultColorSpace);
+    m_imageBufferResult = ImageBuffer::create(nullptr, clampedSize, m_filter.renderingMode(), m_filter.filterScale(), m_resultColorSpace);
     if (!m_imageBufferResult)
         return nullptr;
 

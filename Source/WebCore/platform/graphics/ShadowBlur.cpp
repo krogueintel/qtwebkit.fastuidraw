@@ -82,7 +82,7 @@ public:
         clearScratchBuffer();
 
         // ShadowBlur is not used with accelerated drawing, so it's OK to make an unconditionally unaccelerated buffer.
-        m_imageBuffer = ImageBuffer::create(false, roundedSize, Unaccelerated, 1);
+        m_imageBuffer = ImageBuffer::create(nullptr, roundedSize, Unaccelerated, 1);
         return m_imageBuffer.get();
     }
 
