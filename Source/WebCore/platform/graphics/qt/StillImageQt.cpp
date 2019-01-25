@@ -39,7 +39,8 @@
 namespace WebCore {
 
 static void genericReadyFastUIDrawBrush(fastuidraw::PainterBrush &brush,
-                                        const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im)
+                                        const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im,
+                                        bool flip_y)
 {
     if (im) {
         brush.reset();
@@ -50,6 +51,11 @@ static void genericReadyFastUIDrawBrush(fastuidraw::PainterBrush &brush,
                          fastuidraw::vec2(im->dimensions()),
                          fastuidraw::PainterBrush::spread_clamp,
                          fastuidraw::PainterBrush::spread_clamp);
+          if (flip_y) {
+              brush
+                .apply_translate(fastuidraw::vec2(0.0f, im->dimensions().y()))
+                .apply_shear(1.0f, -1.0f);
+          }
     } else {
         FastUIDraw::setBrushToNullImage(brush);
     }
@@ -57,7 +63,8 @@ static void genericReadyFastUIDrawBrush(fastuidraw::PainterBrush &brush,
 
 static void genericFastUIDrawImage(const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im,
                                    GraphicsContext& ctxt, const FloatRect& dst,
-                                   const FloatRect& src, CompositeOperator op, BlendMode blendMode)
+                                   const FloatRect& src, CompositeOperator op, BlendMode blendMode,
+                                   bool flip_y)
 {
     FUID_TRACE_D("im=" << im.get());
     if (ctxt.platformContext()->is_qt()) {
@@ -69,7 +76,7 @@ static void genericFastUIDrawImage(const fastuidraw::reference_counted_ptr<const
     FloatRect normalizedSrc = src.normalized();
     FloatRect normalizedDst = dst.normalized();
 
-    genericReadyFastUIDrawBrush(brush, im);
+    genericReadyFastUIDrawBrush(brush, im, flip_y);
     brush
       .apply_translate(fastuidraw::vec2(normalizedSrc.x(), normalizedSrc.y()))
       .apply_shear(normalizedSrc.width() / normalizedDst.width(),
@@ -150,20 +157,22 @@ void StillImage::draw(GraphicsContext& ctxt, const FloatRect& dst,
         ctxt.platformContext()->qt().drawPixmap(normalizedDst, *m_pixmap, normalizedSrc);
         ctxt.setCompositeOperation(previousOperator, previousBlendMode);
     } else {
-        genericFastUIDrawImage(m_fastuidraw_image, ctxt, dst, src, op, blendMode);
+        warningFastUIDraw("Drawing StillImage with FastUIDraw");
+        genericFastUIDrawImage(m_fastuidraw_image, ctxt, dst, src, op, blendMode, false);
     }
 }
 
 void StillImage::createFastUIDrawImage(void)
 {
     if (!m_fastuidraw_image && m_pixmap && !m_pixmap->isNull() && m_ownsPixmap) {
+        warningFastUIDraw("Drawing StillImage with FastUIDraw");
         m_fastuidraw_image = WebCore::FastUIDraw::create_fastuidraw_image(*m_pixmap);
     }
 }
 
 void StillImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
 {
-    genericReadyFastUIDrawBrush(brush, m_fastuidraw_image);
+    genericReadyFastUIDrawBrush(brush, m_fastuidraw_image, false);
     if (m_fastuidraw_image) {
         brush.apply_shear(m_pixmap->devicePixelRatio(), m_pixmap->devicePixelRatio());
     }
@@ -219,7 +228,10 @@ void StillImageFastUIDraw::draw(GraphicsContext &ctx, const FloatRect& dstRect, 
             std::cout << "FUID: flush failed\n";
         }
     }
-    genericFastUIDrawImage(m_fastuidraw_image, ctx, dstRect, srcRect, op, bl);
+    /* The y-coordinate is flipped because in FastUIDraw conventions, y = 0
+     * is the -bottom- of the image, but in Qt it is the top.
+     */
+    genericFastUIDrawImage(m_fastuidraw_image, ctx, dstRect, srcRect, op, bl, true);
 }
 
 void StillImageFastUIDraw::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
@@ -229,7 +241,10 @@ void StillImageFastUIDraw::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
             std::cout << "FUID: flush failed\n";
         }
     }
-    genericReadyFastUIDrawBrush(brush, m_fastuidraw_image);
+    /* The y-coordinate is flipped because in FastUIDraw conventions, y = 0
+     * is the -bottom- of the image, but in Qt it is the top.
+     */
+    genericReadyFastUIDrawBrush(brush, m_fastuidraw_image, true);
 }
 
 }
