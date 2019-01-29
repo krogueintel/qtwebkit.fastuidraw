@@ -729,6 +729,42 @@ bool QWebSettings::useFastUIDrawCanvas() const
     return d->settings && d->settings->useFastUIDrawCanvas();
 }
 
+void QWebSettings::setUseFastUIDrawFillAA(bool b)
+{
+    if (d->settings) {
+      d->settings->setFastUIDrawCanvasAntiAliasFilling(b);
+    }
+}
+
+bool QWebSettings::useFastUIDrawFillAA() const
+{
+    return d->settings && d->settings->fastUIDrawCanvasAntiAliasFilling();
+}
+
+void QWebSettings::setUseFastUIDrawStrokeAA(bool b)
+{
+    if (d->settings) {
+      d->settings->setFastUIDrawCanvasAntiAliasStroking(b);
+    }
+}
+
+bool QWebSettings::useFastUIDrawStrokeAA() const
+{
+    return d->settings && d->settings->fastUIDrawCanvasAntiAliasStroking();
+}
+
+void QWebSettings::setUseFastUIDrawLayers(bool b)
+{
+    if (d->settings) {
+      d->settings->setFastUIDrawCanvasUseLayers(b);
+    }
+}
+
+bool QWebSettings::useFastUIDrawLayers() const
+{
+    return d->settings && d->settings->fastUIDrawCanvasUseLayers();
+}
+
 /*!
     Sets the path of the icon database to \a path. The icon database is used
     to store "favicons" associated with web sites.

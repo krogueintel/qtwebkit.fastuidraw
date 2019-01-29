@@ -138,6 +138,12 @@ public:
 
     void setUseFastUIDrawCanvas(bool);
     bool useFastUIDrawCanvas() const;
+    void setUseFastUIDrawFillAA(bool);
+    bool useFastUIDrawFillAA() const;
+    void setUseFastUIDrawStrokeAA(bool);
+    bool useFastUIDrawStrokeAA() const;
+    void setUseFastUIDrawLayers(bool);
+    bool useFastUIDrawLayers() const;
 
     static void setIconDatabasePath(const QString &location);
     static QString iconDatabasePath();
