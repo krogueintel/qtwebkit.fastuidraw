@@ -452,6 +452,9 @@ QWebView::QWebView(QWidget *parent)
 
     if (page()) {
       page()->settings()->setUseFastUIDrawCanvas(d->m_drawWithFastUIDraw);
+      page()->settings()->setUseFastUIDrawLayers(d->m_useFastUIDrawLayers);
+      page()->settings()->setUseFastUIDrawFillAA(d->m_allowFastUIDrawFillAA);
+      page()->settings()->setUseFastUIDrawStrokeAA(d->m_allowFastUIDrawStrokeAA);
     }
 
 #if !defined(Q_WS_QWS)
@@ -1141,6 +1144,9 @@ void QWebView::useFastUIDrawLayers(bool v)
 {
     if (v != d->m_useFastUIDrawLayers) {
         d->m_useFastUIDrawLayers = v;
+        if (page()) {
+            page()->settings()->setUseFastUIDrawLayers(d->m_useFastUIDrawLayers);
+        }
         update();
     }
 }
@@ -1154,6 +1160,9 @@ void QWebView::allowFastUIDrawFillAA(bool v)
 {
     if (v != d->m_allowFastUIDrawFillAA) {
         d->m_allowFastUIDrawFillAA = v;
+        if (page()) {
+            page()->settings()->setUseFastUIDrawFillAA(d->m_allowFastUIDrawFillAA);
+        }
         update();
     }
 }
@@ -1167,6 +1176,9 @@ void QWebView::allowFastUIDrawStrokeAA(bool v)
 {
     if (v != d->m_allowFastUIDrawStrokeAA) {
         d->m_allowFastUIDrawStrokeAA = v;
+        if (page()) {
+            page()->settings()->setUseFastUIDrawFillAA(d->m_allowFastUIDrawStrokeAA);
+        }
         update();
     }
 }
