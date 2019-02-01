@@ -40,6 +40,7 @@
 
 #include "FastUIDrawResources.h"
 #include "FastUIDrawPainter.h"
+#include "simple_time.hpp"
 
 #include <QOpenGLContext>
 #include <QFunctionPointer>
@@ -109,6 +110,7 @@ public:
         , page(0)
         , renderHints(QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform)
         , m_fastuidraw_painter_stats(fastuidraw::Painter::number_stats(), 0)
+        , m_num_frames(0)
     {
         Q_ASSERT(view);
     }
@@ -152,6 +154,9 @@ public:
     fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_font;
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
     std::vector<unsigned int> m_fastuidraw_painter_stats;
+
+    unsigned int m_num_frames;
+    simple_time m_time;
 };
 
 QWebViewPrivate::~QWebViewPrivate()
@@ -1213,18 +1218,62 @@ void QWebView::resizeGL(int w, int h)
 
 void QWebView::paintGL(void)
 {
-  QPainter p(this);
   QWebFrame *frame = d->page->mainFrame();
+  std::string text;
+  float dx(2), dy(2);
+
+  if (d->m_num_frames == 0) {
+    text = "First Frame";
+    d->m_time.restart_us();
+  } else {
+    std::ostringstream ostr;
+    uint64_t us;
+    float fus;
+
+    us = d->m_time.restart_us();
+    fus = static_cast<float>(us);
+
+    ostr << "FPS = " << 1000000.0f / std::max(fus, 1.0f)
+         << "(ms = " << us / 1000 << ")";
+    text = ostr.str();
+  }
+  ++d->m_num_frames;
 
   if (!d->m_drawWithFastUIDraw || !d->m_painter) {
     //std::cout << " ----------- Qt paint begin -------------\n";
+      QPainter p(this);
+      QFont font(p.font());
+      float x(0), y(64);
+
+      p.save();
       p.setRenderHints(d->renderHints);
       frame->render(&p);
+      p.restore();
+
+      font.setPixelSize(32);
+      p.setFont(font);
+      QString qtext(text.c_str());
+      const QColor colors[] =
+        {
+          QColor(255, 0, 0, 255),
+          QColor(0, 255, 0, 255),
+          QColor(0, 0, 255, 255),
+
+          QColor(255, 255, 0, 255),
+          QColor(255, 0, 255, 255),
+          QColor(0, 255, 255, 255),
+        };
+      for (int i = 0; i < 1; ++i, x += dx, y += dy)
+        {
+          p.setPen(colors[i]);
+          p.drawText(x, y, qtext);
+        }
       //std::cout << " ----------- Qt paint end -------------\n";
+      update();
       return;
   }
 
-  p.beginNativePainting(); {
+  {
     //std::cout << " ----------- FastUIDraw paint begin -------------\n";
       /* endNativePainting() fails to restore the enable/disable on
        * GL_CLIP_DISTANCE, so we need to restore them here ourselves.
@@ -1265,11 +1314,11 @@ void QWebView::paintGL(void)
       frame->render(d->m_painter, render_flags);
       d->m_painter->restore();
 
-      if (d->m_drawFastUIDrawStats) {
-          std::ostringstream ostr;
-          fastuidraw::PainterBrush brush;
+      std::ostringstream ostr;
+      fastuidraw::PainterBrush brush;
 
-          brush.color(0.0f, 1.0f, 1.0f, 1.0f);
+      ostr << text;
+      if (d->m_drawFastUIDrawStats) {
           for (unsigned int i = 0; i < d->m_fastuidraw_painter_stats.size(); ++i) {
               enum fastuidraw::Painter::query_stats_t st;
 
@@ -1278,9 +1327,27 @@ void QWebView::paintGL(void)
                    << d->m_fastuidraw_painter_stats[i];
           }
           ostr << "\n";
-          d->draw_text(ostr.str(), 32.0f, fastuidraw::GlyphRenderer(),
-                       fastuidraw::PainterData(&brush));
       }
+
+      fastuidraw::vec4 colors[] =
+        {
+          fastuidraw::vec4(1.0f, 0.0f, 0.0f, 1.0f),
+          fastuidraw::vec4(0.0f, 1.0f, 0.0f, 1.0f),
+          fastuidraw::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+
+          fastuidraw::vec4(1.0f, 1.0f, 0.0f, 1.0f),
+          fastuidraw::vec4(1.0f, 0.0f, 1.0f, 1.0f),
+          fastuidraw::vec4(0.0f, 1.0f, 1.0f, 1.0f),
+        };
+
+      d->m_painter->translate(fastuidraw::vec2(0.0f, 64.0f));
+      for (int i = 0; i < 1; ++i)
+        {
+          brush.color(colors[i]);
+          d->draw_text(ostr.str(), 32.0f, fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph),
+                       fastuidraw::PainterData(&brush));
+          d->m_painter->translate(fastuidraw::vec2(dx, dy));
+        }
 
       d->m_painter->end();
       d->m_painter->query_stats(cast_c_array(d->m_fastuidraw_painter_stats));
@@ -1288,8 +1355,8 @@ void QWebView::paintGL(void)
       fastuidraw_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
       d->m_surface->blit_surface(GL_NEAREST);
       fastuidraw_glPixelStorei(GL_UNPACK_ALIGNMENT, unpack_alignment);
+      update();
   }
-  p.endNativePainting();
 }
 
 /*!
