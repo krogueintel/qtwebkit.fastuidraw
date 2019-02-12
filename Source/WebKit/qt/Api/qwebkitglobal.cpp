@@ -131,3 +131,15 @@ qSupportShadows(bool v)
 {
   WebCore::GraphicsContext::supportsShadow(v);
 }
+
+fastuidraw::GlyphRenderer
+qFastUIDrawGlyphRenderer(void)
+{
+  return WebCore::FastUIDraw::defaultGlyphRenderer();
+}
+
+void
+qFastUIDrawGlyphRenderer(fastuidraw::GlyphRenderer G)
+{
+  WebCore::FastUIDraw::defaultGlyphRenderer(G);
+}

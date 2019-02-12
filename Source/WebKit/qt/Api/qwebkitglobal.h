@@ -88,4 +88,10 @@ qSupportShadows(void);
 QWEBKIT_EXPORT void
 qSupportShadows(bool v);
 
+QWEBKIT_EXPORT fastuidraw::GlyphRenderer
+qFastUIDrawGlyphRenderer(void);
+
+QWEBKIT_EXPORT void
+qFastUIDrawGlyphRenderer(fastuidraw::GlyphRenderer);
+
 #endif // QWEBKITGLOBAL_H
