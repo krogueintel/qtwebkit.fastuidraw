@@ -29,6 +29,12 @@ namespace WebCore {
     void
     clearResources(void);
 
+    fastuidraw::GlyphRenderer
+    defaultGlyphRenderer(void);
+
+    void
+    defaultGlyphRenderer(fastuidraw::GlyphRenderer R);
+
     const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
     glyphCache(void);
 

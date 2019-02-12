@@ -37,6 +37,8 @@
  */
 
 #define TransparencyLayerColor(X) fastuidraw::vec4(1.0f, 1.0f, 1.0f, X)
+#define FastUIDrawStrokingMethod fastuidraw::Painter::stroking_method_linear
+//#define FastUIDrawStrokingMethod fastuidraw::Painter::stroking_method_auto
 
 #include "config.h"
 #include "GraphicsContext.h"
@@ -1036,7 +1038,8 @@ void GraphicsContext::drawRect(const FloatRect& rect, float borderThickness)
                                                                       &stroke_params),
                                               P,
                                               m_data->fastuidraw_state().m_stroke_style,
-                                              m_data->fastuidraw_state().m_stroke_aa);
+                                              m_data->fastuidraw_state().m_stroke_aa,
+                                              FastUIDrawStrokingMethod);
         }
     }
 }
@@ -1197,7 +1200,8 @@ void GraphicsContext::drawEllipse(const FloatRect& rect)
                                                                   &stroke_params),
                                           m_data->m_fastuidraw_circle_path,
                                           m_data->fastuidraw_state().m_stroke_style,
-                                          m_data->fastuidraw_state().m_stroke_aa);
+                                          m_data->fastuidraw_state().m_stroke_aa,
+                                          FastUIDrawStrokingMethod);
                 
         m_data->fastuidraw()->restore();
     }
@@ -1517,7 +1521,8 @@ void GraphicsContext::strokePath(const Path& path)
                                                                   m_data->fastuidraw_state().m_stroke_params.packed_value()),
                                           path.FastUIDrawPath(),
                                           m_data->fastuidraw_state().m_stroke_style,
-                                          m_data->fastuidraw_state().m_stroke_aa);
+                                          m_data->fastuidraw_state().m_stroke_aa,
+                                          FastUIDrawStrokingMethod);
     }
 }
 
@@ -2451,7 +2456,8 @@ void GraphicsContext::strokeRect(const FloatRect& rect, float lineWidth)
                                                                   m_data->fastuidraw_state().m_stroke_brush.packed_value()),
                                           path,
                                           m_data->fastuidraw_state().m_stroke_style,
-                                          m_data->fastuidraw_state().m_stroke_aa);
+                                          m_data->fastuidraw_state().m_stroke_aa,
+                                          FastUIDrawStrokingMethod);
     }
 }
 
@@ -2811,7 +2817,7 @@ void GraphicsContext::setPlatformStrokeColor(const Color& color)
 void GraphicsContext::setPlatformStrokeStyle(StrokeStyle strokeStyle)
 {
     FUID_TRACE;
-    if (paintingDisabled())
+    if (paintingDisabled() || true)
         return;
 
     if (m_data->is_qt()) {
@@ -3052,7 +3058,7 @@ void GraphicsContext::fillText(const fastuidraw::GlyphRun& glyphRun)
     FASTUIDRAWassert(m_data && m_data->is_fastuidraw());
 
     fastuidraw::PainterData pd(m_data->fastuidraw_state().m_fill_brush.packed_value());
-    m_data->fastuidraw()->draw_glyphs(pd, glyphRun, fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph));
+    m_data->fastuidraw()->draw_glyphs(pd, glyphRun, FastUIDraw::defaultGlyphRenderer());
 }
 
 void GraphicsContext::drawImage(const fastuidraw::PainterBrush &brush,

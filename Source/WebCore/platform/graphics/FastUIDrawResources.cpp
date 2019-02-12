@@ -164,11 +164,13 @@ namespace {
     fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> m_backend;
     std::vector<fastuidraw::reference_counted_ptr<fastuidraw::Painter> > m_painters;
     fastuidraw::reference_counted_ptr<FontConfig> m_font_config;
+    fastuidraw::GlyphRenderer m_glyph_renderer;
     std::mutex m_mutex;
     int m_reference_counter;
   private:
     AtlasSet(void):
       m_font_config(nullptr),
+      m_glyph_renderer(fastuidraw::banded_rays_glyph),
       m_reference_counter(0)
     {}
   };
@@ -687,6 +689,20 @@ WebCore::FastUIDraw::
 threeStopColorStops(void)
 {
   return AtlasSet::atlas_set().m_three_stops_color_stops;
+}
+
+fastuidraw::GlyphRenderer
+WebCore::FastUIDraw::
+defaultGlyphRenderer(void)
+{
+  return AtlasSet::atlas_set().m_glyph_renderer;
+}
+
+void
+WebCore::FastUIDraw::
+defaultGlyphRenderer(fastuidraw::GlyphRenderer G)
+{
+  AtlasSet::atlas_set().m_glyph_renderer = G;
 }
 
 void
