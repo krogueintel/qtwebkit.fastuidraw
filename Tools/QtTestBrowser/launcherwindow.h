@@ -136,6 +136,7 @@ protected Q_SLOTS:
     void toggleFastUIDrawFillAA(bool v);
     void toggleFastUIDrawStrokeAA(bool v);
     void toggleFastUIDrawShowStats(bool v);
+    void changeFastUIDrawGlyphRenderer(QAction *action);
     void toggleAcceleratedCompositing(bool toggle);
     void toggleAccelerated2dCanvas(bool toggle);
     void toggleTiledBackingStore(bool toggle);

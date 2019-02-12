@@ -84,6 +84,32 @@ struct HighlightedElement {
 const int gExitClickArea = 80;
 QVector<int> LauncherWindow::m_zoomLevels;
 
+enum glyph_render_choice_t
+  {
+    glyph_render_choice_distance_field,
+    glyph_render_choice_restricted_rays,
+    glyph_render_choice_banded_rays,
+    glyph_render_choice_adaptive,
+
+    glyph_render_choice_count,
+  };
+
+static enum fastuidraw::glyph_type rendererChoices[glyph_render_choice_count] =
+  {
+    [glyph_render_choice_distance_field] = fastuidraw::distance_field_glyph,
+    [glyph_render_choice_restricted_rays] = fastuidraw::restricted_rays_glyph,
+    [glyph_render_choice_banded_rays] = fastuidraw::banded_rays_glyph,
+    [glyph_render_choice_adaptive] = fastuidraw::adaptive_rendering,
+  };
+
+static const char *rendererChoicLabels[glyph_render_choice_count] =
+  {
+    [glyph_render_choice_distance_field] = "distance_field_glyph",
+    [glyph_render_choice_restricted_rays] = "restricted_rays_glyph",
+    [glyph_render_choice_banded_rays] = "banded_rays_glyph",
+    [glyph_render_choice_adaptive] = "adaptive_rendering",
+  };
+
 static TestBrowserCookieJar* testBrowserCookieJarInstance()
 {
     static TestBrowserCookieJar* cookieJar = new TestBrowserCookieJar(qApp);
@@ -375,6 +401,20 @@ void LauncherWindow::createChrome()
     toggleFastUIDrawShowStats->setEnabled(!m_windowOptions.useGraphicsView);
     QObject::connect(toggleFastUIDraw, SIGNAL(toggled(bool)),
                      toggleFastUIDrawShowStats, SLOT(setEnabled(bool)));
+
+    QMenu *glyphRendererSelection = menuFastUIDraw->addMenu("Glyph Renderer");
+    QActionGroup *glyphRendererGroup = new QActionGroup(menuFastUIDraw);
+    QAction *changeGlyphRendererActions[glyph_render_choice_count];
+    for (unsigned int i = 0; i < glyph_render_choice_count; ++i)
+      {
+        changeGlyphRendererActions[i] = glyphRendererSelection->addAction(rendererChoicLabels[i]);
+        changeGlyphRendererActions[i]->setCheckable(true);
+        changeGlyphRendererActions[i]->setData(i);
+        changeGlyphRendererActions[i]->setChecked(qFastUIDrawGlyphRenderer().m_type == rendererChoices[i]);
+        glyphRendererGroup->addAction(changeGlyphRendererActions[i]);
+      }
+    QObject::connect(glyphRendererGroup, SIGNAL(triggered(QAction*)),
+                     this, SLOT(changeFastUIDrawGlyphRenderer(QAction*)));
 
     QAction* toggleWebGL = toolsMenu->addAction("Toggle WebGL", this, SLOT(toggleWebGL(bool)));
     toggleWebGL->setCheckable(true);
@@ -673,6 +713,14 @@ void LauncherWindow::closeEvent(QCloseEvent* e)
     });
     page()->triggerAction(QWebPage::RequestClose);
     disconnect(c);
+}
+
+void LauncherWindow::changeFastUIDrawGlyphRenderer(QAction *action)
+{
+  int I;
+
+  I = action->data().toInt();
+  qFastUIDrawGlyphRenderer(fastuidraw::GlyphRenderer(rendererChoices[I]));
 }
 
 void LauncherWindow::sendTouchEvent()
