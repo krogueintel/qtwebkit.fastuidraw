@@ -137,7 +137,7 @@ public:
         std::istringstream str(text);
         fastuidraw::GlyphRun run(pixel_size, orientation, qFastUIDrawGlyphCache());
         create_formatted_textT(run, str, m_font, qFastUIDrawFontDatabase(), fastuidraw::vec2(0.0f, 0.0f));
-        m_painter->draw_glyphs(draw, run, 0, run.number_glyphs(), renderer);
+        m_painter->draw_glyphs(draw, run, 0, run.number_glyphs(), qFastUIDrawGlyphRenderer());
     }    
   
     QWebView *view;
@@ -1344,7 +1344,7 @@ void QWebView::paintGL(void)
       for (int i = 0; i < 1; ++i)
         {
           brush.color(colors[i]);
-          d->draw_text(ostr.str(), 32.0f, fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph),
+          d->draw_text(ostr.str(), 32.0f, fastuidraw::GlyphRenderer(fastuidraw::banded_rays_glyph),
                        fastuidraw::PainterData(&brush));
           d->m_painter->translate(fastuidraw::vec2(dx, dy));
         }
