@@ -1431,13 +1431,26 @@ void GraphicsContext::fillPath(const Path& path)
         if (hasShadow()) {
             unimplementedFastUIDrawMessage("-Shadow");
         }
-        if (m_state.fillPattern) {
-            unimplementedFastUIDrawMessage("-fillPattern");
-        }
-        m_data->fastuidraw()->fill_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_fill_brush.packed_value()),
-                                        path.FastUIDrawPath(),
-                                        toFastUIDrawFillRule(fillRule()),
-                                        m_data->fastuidraw_state().m_fill_aa);
+
+        const fastuidraw::ShaderFilledPath *sf;
+        fastuidraw::PainterData pd(m_data->fastuidraw_state().m_fill_brush.packed_value());
+        sf = path.FastUIDrawPath().shader_filled_path().get();
+
+        /* TODO: check the complexity of the path against the amount of area
+         * it covers and from that value, decide to render the path as a
+         * ShaderFilledPath.
+         */
+        if (sf)
+          {
+            m_data->fastuidraw()->fill_path(pd, *sf, toFastUIDrawFillRule(fillRule()));
+                                            
+          }
+        else
+          {
+            m_data->fastuidraw()->fill_path(pd, path.FastUIDrawPath(),
+                                            toFastUIDrawFillRule(fillRule()),
+                                            m_data->fastuidraw_state().m_fill_aa);
+          }
     }
 }
 
