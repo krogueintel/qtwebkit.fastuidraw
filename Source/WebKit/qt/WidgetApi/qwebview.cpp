@@ -1287,7 +1287,7 @@ void QWebView::paintGL(void)
 
       if (!d->m_surface) {
         int w(width()), h(height());
-        fastuidraw::PainterBackend::Surface::Viewport vwp(0, 0, w, h);
+        fastuidraw::PainterSurface::Viewport vwp(0, 0, w, h);
         
         d->m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(fastuidraw::ivec2(w, h));
         d->m_surface->viewport(vwp);

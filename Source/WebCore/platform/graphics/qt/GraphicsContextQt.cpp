@@ -595,7 +595,7 @@ public:
 class FastUIDrawTransparencyLayer
 {
 public:
-  FastUIDrawTransparencyLayer(const fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> &root_surface,
+  FastUIDrawTransparencyLayer(const fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> &root_surface,
                               const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &parent,
                               float opacity)
   {
@@ -604,7 +604,7 @@ public:
      */
     fastuidraw::vec2 fm, fM;
     fastuidraw::ivec2 m, M, sz;
-    fastuidraw::PainterBackend::Surface::Viewport vwp;
+    fastuidraw::PainterSurface::Viewport vwp;
     bool b;
 
     vwp = root_surface->viewport();    
@@ -747,7 +747,7 @@ public:
     fastuidraw::PainterPackedValue<fastuidraw::PainterBrush> m_packed_black_brush;
     std::vector<FastUIDrawStateElement> m_fastuidraw_state_stack;
     FastUIDrawStateElement &fastuidraw_state(void) { return m_fastuidraw_state_stack.back(); }
-    fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> m_root_surface;
+    fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> m_root_surface;
     std::vector<FastUIDrawTransparencyLayer> m_fastuidraw_layers;
 
     std::string printPrefix(void)
@@ -2359,7 +2359,7 @@ void GraphicsContext::endPlatformTransparencyLayer()
             m_data->fastuidraw()->end_layer();
         } else {
             FastUIDrawTransparencyLayer layer(m_data->m_fastuidraw_layers.back());
-            const fastuidraw::PainterBackend::Surface::Viewport vwp(m_data->m_root_surface->viewport());
+            const fastuidraw::PainterSurface::Viewport vwp(m_data->m_root_surface->viewport());
 
             //std::cout << m_data->printPrefix() << "End transparency layer at "
             //        << m_data->m_fastuidraw_layers.back().m_blit_rect

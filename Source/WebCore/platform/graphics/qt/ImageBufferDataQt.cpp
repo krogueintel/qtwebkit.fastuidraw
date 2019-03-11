@@ -87,7 +87,7 @@ public:
     static fastuidraw::vec4 clear_color(void) { return fastuidraw::vec4(0.0f, 0.0f, 0.0f, 0.0f); }
 
     fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> m_painter;
-    mutable fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> m_surface;
+    mutable fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> m_surface;
 };
 
 ImageBufferDataPrivateFastUIDraw::ImageBufferDataPrivateFastUIDraw(const FloatSize &sz)
@@ -96,7 +96,7 @@ ImageBufferDataPrivateFastUIDraw::ImageBufferDataPrivateFastUIDraw(const FloatSi
 
     m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
     m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(wh);
-    fastuidraw::PainterBackend::Surface::Viewport vwp(0, 0, wh.x(), wh.y());
+    fastuidraw::PainterSurface::Viewport vwp(0, 0, wh.x(), wh.y());
     m_surface->viewport(vwp);
     m_surface->clear_color(clear_color());
     m_painter->painter()->begin(m_surface, fastuidraw::Painter::y_increases_downwards);
@@ -144,7 +144,7 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::image() const
 
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
 {
-    fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> old_surface(m_surface);
+    fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> old_surface(m_surface);
     m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(m_surface->dimensions());
     m_surface->viewport(old_surface->viewport());
     m_surface->clear_color(clear_color());
@@ -154,7 +154,14 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
 
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::takeImage()
 {
-    return copyImage();
+    fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> old_surface(m_surface);
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(m_surface->dimensions());
+    m_surface->viewport(old_surface->viewport());
+    m_surface->clear_color(clear_color());
+    m_painter->painter()->end();
+    m_painter->painter()->begin(m_surface, fastuidraw::Painter::y_increases_downwards);
+    
+    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::imageAtlas()));
 }
 
 void ImageBufferDataPrivateFastUIDraw::draw(GraphicsContext& destContext, const FloatRect& destRect,
@@ -665,9 +672,11 @@ ImageBufferData::ImageBufferData(const PlatformGraphicsContext::FastUIDrawOption
 {
     if (options) {
         ImageBufferDataPrivateFastUIDraw *impl;
+        PlatformGraphicsContext::FastUIDrawOption opts(*options);
+
         m_painter = nullptr;
         m_impl = impl = new ImageBufferDataPrivateFastUIDraw(size);
-        m_platform_context = new PlatformGraphicsContext(impl->m_painter->painter(), *options);
+        m_platform_context = new PlatformGraphicsContext(impl->m_painter->painter(), opts);
     } else {
         m_painter = new QPainter;
         m_platform_context = new PlatformGraphicsContext(m_painter);

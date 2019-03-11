@@ -100,7 +100,7 @@ namespace WebCore {
 
         fastuidraw::reference_counted_ptr<const fastuidraw::Image> m_fastuidraw_image;
         fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> m_fastuidraw_painter;
-        fastuidraw::reference_counted_ptr<fastuidraw::PainterBackend::Surface> m_fastuidraw_surface;
+        fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> m_fastuidraw_surface;
         QPixmap m_empty_pixmap;
     };
 }
