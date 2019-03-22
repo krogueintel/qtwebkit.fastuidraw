@@ -12,7 +12,7 @@ namespace WebCore {
      * reference and its dtor returns the Painter to the pool for use.
      */
     class PainterHolder:
-      public fastuidraw::reference_counted<PainterHolder>::default_base
+      public fastuidraw::reference_counted<PainterHolder>::concurrent
     {
     public:
       explicit

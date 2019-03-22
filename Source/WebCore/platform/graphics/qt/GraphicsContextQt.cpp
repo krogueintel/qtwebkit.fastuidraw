@@ -234,45 +234,43 @@ static inline QPainter::CompositionMode toQtCompositionMode(CompositeOperator op
     return QPainter::CompositionMode_SourceOver;
 }
 
-static fastuidraw::Painter::composite_mode_t toFastUIDrawCompositeMode(CompositeOperator op)
+static fastuidraw::Painter::blend_mode_t toFastUIDrawBlendMode(CompositeOperator op)
 {
     switch (op) {
     case CompositeClear:
-        return fastuidraw::Painter::composite_porter_duff_clear;
+        return fastuidraw::Painter::blend_porter_duff_clear;
     case CompositeCopy:
-        return fastuidraw::Painter::composite_porter_duff_src;
+        return fastuidraw::Painter::blend_porter_duff_src;
     case CompositeSourceOver:
-        return fastuidraw::Painter::composite_porter_duff_src_over;
+        return fastuidraw::Painter::blend_porter_duff_src_over;
     case CompositeSourceIn:
-        return fastuidraw::Painter::composite_porter_duff_src_in;
+        return fastuidraw::Painter::blend_porter_duff_src_in;
     case CompositeSourceOut:
-        return fastuidraw::Painter::composite_porter_duff_src_out;
+        return fastuidraw::Painter::blend_porter_duff_src_out;
     case CompositeSourceAtop:
-        return fastuidraw::Painter::composite_porter_duff_src_atop;
+        return fastuidraw::Painter::blend_porter_duff_src_atop;
     case CompositeDestinationOver:
-        return fastuidraw::Painter::composite_porter_duff_dst_over;
+        return fastuidraw::Painter::blend_porter_duff_dst_over;
     case CompositeDestinationIn:
-        return fastuidraw::Painter::composite_porter_duff_dst_in;
+        return fastuidraw::Painter::blend_porter_duff_dst_in;
     case CompositeDestinationOut:
-        return fastuidraw::Painter::composite_porter_duff_dst_out;
+        return fastuidraw::Painter::blend_porter_duff_dst_out;
     case CompositeDestinationAtop:
-        return fastuidraw::Painter::composite_porter_duff_dst_atop;
+        return fastuidraw::Painter::blend_porter_duff_dst_atop;
     case CompositeXOR:
-        return fastuidraw::Painter::composite_porter_duff_xor;
-
-        /* TODO: FastUIDraw needs these additional composite modes */
+        return fastuidraw::Painter::blend_porter_duff_xor;
     case CompositePlusDarker:
-        warningFastUIDraw("Unsupported composite mode");
+        return fastuidraw::Painter::blend_w3c_darken;
     case CompositePlusLighter:
-        warningFastUIDraw("Unsupported composite mode");
+        return fastuidraw::Painter::blend_w3c_lighten;
     case CompositeDifference:
-        warningFastUIDraw("Unsupported composite mode");
+        return fastuidraw::Painter::blend_w3c_lighten;
         break;
     default:
         ASSERT_NOT_REACHED();
     }
 
-    return fastuidraw::Painter::composite_porter_duff_src_over;
+    return fastuidraw::Painter::blend_porter_duff_src_over;
 }
 
 static inline QPainter::CompositionMode toQtCompositionMode(BlendMode op)
@@ -315,11 +313,11 @@ static inline QPainter::CompositionMode toQtCompositionMode(BlendMode op)
     return QPainter::CompositionMode_SourceOver;
 }
 
-static fastuidraw::Painter::blend_w3c_mode_t toFastUIDrawBlendMode(BlendMode op)
+static fastuidraw::Painter::blend_mode_t toFastUIDrawBlendMode(BlendMode op)
 {
     switch (op) {
     case BlendModeNormal:
-        return fastuidraw::Painter::blend_w3c_normal;
+        return fastuidraw::Painter::blend_porter_duff_src_over;
     case BlendModeMultiply:
         return fastuidraw::Painter::blend_w3c_multiply;
     case BlendModeScreen:
@@ -355,7 +353,7 @@ static fastuidraw::Painter::blend_w3c_mode_t toFastUIDrawBlendMode(BlendMode op)
     }
 
     warningFastUIDraw("Unsupported blend mode");
-    return fastuidraw::Painter::blend_w3c_normal;
+    return fastuidraw::Painter::blend_porter_duff_src_over;
 }
 
 static inline Qt::PenCapStyle toQtLineCap(LineCap lc)
@@ -569,8 +567,8 @@ class FastUIDrawStateElement
 public:
   FastUIDrawStateElement(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p,
                          PlatformGraphicsContext::FastUIDrawOption options)
-    : m_fill_aa(options.m_allow_fill_aa ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
-    , m_stroke_aa(options.m_allow_stroke_aa ? fastuidraw::Painter::shader_anti_alias_auto : fastuidraw::Painter::shader_anti_alias_none)
+    : m_fill_aa(options.m_allow_fill_aa ? fastuidraw::Painter::shader_anti_alias_fastest : fastuidraw::Painter::shader_anti_alias_none)
+    , m_stroke_aa(options.m_allow_stroke_aa ? fastuidraw::Painter::shader_anti_alias_fastest : fastuidraw::Painter::shader_anti_alias_none)
     , m_stroke_brush(p)
     , m_fill_brush(p)
     , m_stroke_params(p)
@@ -855,8 +853,7 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
         m_fastuidraw_state_stack.push_back(FastUIDrawStateElement(platform->fastuidraw(), platform->fastuidraw_options()));
         m_packed_black_brush = pool.create_packed_value(fastuidraw::PainterBrush()
                                                         .color(0.0f, 0.0f, 0.0f, 0.0f));
-        platform->fastuidraw()->composite_shader(fastuidraw::Painter::composite_porter_duff_src_over);
-        platform->fastuidraw()->blend_shader(fastuidraw::Painter::blend_w3c_normal);
+        platform->fastuidraw()->blend_shader(fastuidraw::Painter::blend_porter_duff_src_over);
         m_fastuidraw_square_path << fastuidraw::vec2(0.0f, 0.0f)
                                  << fastuidraw::vec2(0.0f, 1.0f)
                                  << fastuidraw::vec2(1.0f, 1.0f)
@@ -1150,14 +1147,16 @@ void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point
             unimplementedFastUIDrawMessage("-Dashed");
         }
         fastuidraw::vec2 pts[2];
+        fastuidraw::Path path;
 
         pts[0] = vec2FromFloatPoint(point1);
         pts[1] = vec2FromFloatPoint(point2);
-        m_data->fastuidraw()->stroke_line_strip(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brush.packed_value(),
-                                                                        m_data->fastuidraw_state().m_stroke_params.packed_value()),
-                                                fastuidraw::c_array<const fastuidraw::vec2>(pts, 2),
-                                                m_data->fastuidraw_state().m_stroke_style,
-                                                m_data->fastuidraw_state().m_stroke_aa);
+        path << pts[0] << pts[1];
+        m_data->fastuidraw()->stroke_path(fastuidraw::PainterData(m_data->fastuidraw_state().m_stroke_brush.packed_value(),
+                                                                  m_data->fastuidraw_state().m_stroke_params.packed_value()),
+                                          path,
+                                          m_data->fastuidraw_state().m_stroke_style,
+                                          m_data->fastuidraw_state().m_stroke_aa);
     }
 }
 
@@ -1219,8 +1218,13 @@ bool GraphicsContext::drawGradientPattern(const Gradient &gradient,
 
     m_data->fastuidraw()->save();
 
-    m_data->fastuidraw()->blend_shader(toFastUIDrawBlendMode(blendMode));
-    m_data->fastuidraw()->composite_shader(toFastUIDrawCompositeMode(compositeOp));
+    fastuidraw::Painter::blend_mode_t bs;
+    ASSERT(compositeOp == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
+    if (compositeOp == WebCore::CompositeSourceOver)
+        bs = toFastUIDrawBlendMode(blendMode);
+    else
+        bs = toFastUIDrawBlendMode(compositeOp);
+    m_data->fastuidraw()->blend_shader(bs);
 
     fastuidraw::PainterBrush brush;
 
@@ -1315,8 +1319,14 @@ void GraphicsContext::drawPattern(Image& image, const FloatRect& tileRect, const
     } else {
         m_data->fastuidraw()->save();
 
-        m_data->fastuidraw()->blend_shader(toFastUIDrawBlendMode(blendMode));
-        m_data->fastuidraw()->composite_shader(toFastUIDrawCompositeMode(op));
+        fastuidraw::Painter::blend_mode_t bs;
+        ASSERT(op == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
+        if (op == WebCore::CompositeSourceOver)
+            bs = toFastUIDrawBlendMode(blendMode);
+        else
+            bs = toFastUIDrawBlendMode(op);
+  
+        m_data->fastuidraw()->blend_shader(bs);
 
         fastuidraw::PainterBrush brush;
 
@@ -2426,8 +2436,7 @@ void GraphicsContext::clearRect(const FloatRect& rect)
         p->setCompositionMode(currentCompositionMode);
     } else {
         m_data->fastuidraw()->save();
-        m_data->fastuidraw()->composite_shader(fastuidraw::Painter::composite_porter_duff_clear);
-        m_data->fastuidraw()->blend_shader(fastuidraw::Painter::blend_w3c_normal);
+        m_data->fastuidraw()->blend_shader(fastuidraw::Painter::blend_porter_duff_clear);
         m_data->fastuidraw_fill_rect(fastuidraw::PainterData(m_data->m_packed_black_brush), rect);
         m_data->fastuidraw()->restore();
     }
@@ -2595,10 +2604,14 @@ void GraphicsContext::setPlatformCompositeOperation(CompositeOperator op, BlendM
 
         p->setCompositionMode(cs);
     } else {
-        fastuidraw::Painter::composite_mode_t cs(toFastUIDrawCompositeMode(op));
-        fastuidraw::Painter::blend_w3c_mode_t bs(toFastUIDrawBlendMode(blendMode));
+        fastuidraw::Painter::blend_mode_t bs;
 
-        m_data->fastuidraw()->composite_shader(cs);
+        ASSERT(op == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
+        if (op == WebCore::CompositeSourceOver)
+            bs = toFastUIDrawBlendMode(blendMode);
+        else
+            bs = toFastUIDrawBlendMode(op);
+  
         m_data->fastuidraw()->blend_shader(bs);
     }
 }
@@ -2910,11 +2923,11 @@ void GraphicsContext::setPlatformShouldAntialias(bool enable)
         m_data->p()->setRenderHint(QPainter::Antialiasing, enable);
     } else {
         m_data->fastuidraw_state().m_fill_aa = (m_data->fastuidraw_options().m_allow_fill_aa && enable) ?
-          fastuidraw::Painter::shader_anti_alias_auto :
+          fastuidraw::Painter::shader_anti_alias_fastest :
           fastuidraw::Painter::shader_anti_alias_none;
 
         m_data->fastuidraw_state().m_stroke_aa = (m_data->fastuidraw_options().m_allow_stroke_aa && enable) ?
-          fastuidraw::Painter::shader_anti_alias_auto :
+          fastuidraw::Painter::shader_anti_alias_fastest :
           fastuidraw::Painter::shader_anti_alias_none;
     }
 }

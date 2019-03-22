@@ -1323,7 +1323,7 @@ void QWebView::paintGL(void)
               enum fastuidraw::Painter::query_stats_t st;
 
               st = static_cast<enum fastuidraw::Painter::query_stats_t>(i);
-              ostr << "\n" << fastuidraw::Painter::stat_name(st) << ": "
+              ostr << "\n" << fastuidraw::Painter::label(st) << ": "
                    << d->m_fastuidraw_painter_stats[i];
           }
           ostr << "\n";

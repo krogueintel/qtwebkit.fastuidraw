@@ -43,7 +43,7 @@
 #include <qalgorithms.h>
 
 #include <limits.h>
-#include <fastuidraw/painter/glyph_run.hpp>
+#include <fastuidraw/painter/attribute_data/glyph_run.hpp>
 
 namespace WebCore {
 

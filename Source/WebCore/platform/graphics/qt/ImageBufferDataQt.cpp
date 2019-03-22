@@ -124,7 +124,7 @@ void ImageBufferDataPrivateFastUIDraw::addCheckboardPattern(const fastuidraw::re
                      fastuidraw::vec2(im->dimensions()))
       .apply_shear(0.05f, 0.05f);
     pt->transformation(orth);
-    pt->composite_shader(fastuidraw::Painter::composite_porter_duff_src_over);
+    pt->blend_shader(fastuidraw::Painter::blend_porter_duff_src_over);
     pt->fill_rect(fastuidraw::PainterData(&brush),
                   fastuidraw::Rect().size(dims));
     pt->restore();

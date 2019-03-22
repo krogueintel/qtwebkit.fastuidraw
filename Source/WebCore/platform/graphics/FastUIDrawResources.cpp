@@ -15,7 +15,6 @@
 #include <fastuidraw/text/glyph_cache.hpp>
 #include <fastuidraw/text/font_freetype.hpp>
 #include <fastuidraw/painter/painter.hpp>
-#include <fastuidraw/painter/glyph_sequence.hpp>
 #include <fastuidraw/gl_backend/gl_binding.hpp>
 #include <fastuidraw/gl_backend/painter_backend_gl.hpp>
 #include <fastuidraw/gl_backend/ngl_header.hpp>
@@ -73,7 +72,7 @@ namespace {
     return str;
   }
 
-  class FontConfig:public fastuidraw::reference_counted<FontConfig>::default_base
+  class FontConfig:public fastuidraw::reference_counted<FontConfig>::concurrent
   {
   public:
     FontConfig();
@@ -179,7 +178,7 @@ namespace {
    * the loading of data until the first time the data
    * is requested.
    */
-  class DataBufferLoader:public fastuidraw::reference_counted<DataBufferLoader>::default_base
+  class DataBufferLoader:public fastuidraw::reference_counted<DataBufferLoader>::concurrent
   {
   public:
     explicit

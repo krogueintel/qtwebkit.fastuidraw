@@ -4,7 +4,6 @@
 #include <sstream>
 #include <QTransform>
 #include <fastuidraw/text/font_freetype.hpp>
-#include <fastuidraw/painter/glyph_sequence.hpp>
 #include <fastuidraw/image.hpp>
 #include <fastuidraw/painter/painter.hpp>
 
