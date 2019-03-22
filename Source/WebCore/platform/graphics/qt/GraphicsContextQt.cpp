@@ -356,6 +356,29 @@ static fastuidraw::Painter::blend_mode_t toFastUIDrawBlendMode(BlendMode op)
     return fastuidraw::Painter::blend_porter_duff_src_over;
 }
 
+static inline void setFastUIDrawPainterBlendMode(fastuidraw::Painter *p,
+                                                 fastuidraw::Painter::blend_mode_t bs)
+{
+    if (!p->default_shaders().blend_shaders().shader(bs)) {
+        std::cout << "!\n";
+        bs = fastuidraw::Painter::blend_porter_duff_src_over;
+    }
+    p->blend_shader(bs);
+}
+
+static inline void setFastUIDrawPainterBlendMode(fastuidraw::Painter *p,
+                                                 CompositeOperator compositeOp, BlendMode blendMode)
+{
+    fastuidraw::Painter::blend_mode_t bs;
+    ASSERT(compositeOp == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
+    if (compositeOp == WebCore::CompositeSourceOver)
+        bs = toFastUIDrawBlendMode(blendMode);
+    else
+        bs = toFastUIDrawBlendMode(compositeOp);
+
+    setFastUIDrawPainterBlendMode(p, bs);
+}
+
 static inline Qt::PenCapStyle toQtLineCap(LineCap lc)
 {
     switch (lc) {
@@ -1218,14 +1241,7 @@ bool GraphicsContext::drawGradientPattern(const Gradient &gradient,
 
     m_data->fastuidraw()->save();
 
-    fastuidraw::Painter::blend_mode_t bs;
-    ASSERT(compositeOp == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
-    if (compositeOp == WebCore::CompositeSourceOver)
-        bs = toFastUIDrawBlendMode(blendMode);
-    else
-        bs = toFastUIDrawBlendMode(compositeOp);
-    m_data->fastuidraw()->blend_shader(bs);
-
+    setFastUIDrawPainterBlendMode(m_data->fastuidraw().get(), compositeOp, blendMode);
     fastuidraw::PainterBrush brush;
 
     gradient.readyFastUIDrawBrush(brush);
@@ -1318,15 +1334,7 @@ void GraphicsContext::drawPattern(Image& image, const FloatRect& tileRect, const
         setCompositeOperation(previousOperator);
     } else {
         m_data->fastuidraw()->save();
-
-        fastuidraw::Painter::blend_mode_t bs;
-        ASSERT(op == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
-        if (op == WebCore::CompositeSourceOver)
-            bs = toFastUIDrawBlendMode(blendMode);
-        else
-            bs = toFastUIDrawBlendMode(op);
-  
-        m_data->fastuidraw()->blend_shader(bs);
+        setFastUIDrawPainterBlendMode(m_data->fastuidraw().get(), op, blendMode);
 
         fastuidraw::PainterBrush brush;
 
@@ -2604,15 +2612,7 @@ void GraphicsContext::setPlatformCompositeOperation(CompositeOperator op, BlendM
 
         p->setCompositionMode(cs);
     } else {
-        fastuidraw::Painter::blend_mode_t bs;
-
-        ASSERT(op == WebCore::CompositeSourceOver || blendMode == WebCore::BlendModeNormal);
-        if (op == WebCore::CompositeSourceOver)
-            bs = toFastUIDrawBlendMode(blendMode);
-        else
-            bs = toFastUIDrawBlendMode(op);
-  
-        m_data->fastuidraw()->blend_shader(bs);
+        setFastUIDrawPainterBlendMode(m_data->fastuidraw().get(), op, blendMode);
     }
 }
 
