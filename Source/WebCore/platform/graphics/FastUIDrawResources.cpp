@@ -288,26 +288,13 @@ initialize_resources(void *get_proc_data,
     .image_atlas(gl_image_atlas)
     .glyph_atlas(gl_glyph_atlas)
     .colorstop_atlas(gl_colorstop_atlas)
-    .configure_from_context(true);
+    .configure_from_context(true)
+    .preferred_blend_type(fastuidraw::PainterBlendShader::dual_src)
+    .use_uber_item_shader(true);
 
   m_backend = fastuidraw::gl::PainterBackendGL::create(painter_params);
   m_glyph_cache = FASTUIDRAWnew fastuidraw::GlyphCache(gl_glyph_atlas);
   m_font_database = FASTUIDRAWnew fastuidraw::FontDatabase();
-  
-  if (!m_backend->program(fastuidraw::gl::PainterBackendGL::program_all)->link_success())
-    {
-      FASTUIDRAWassert(!"fastuidraw::PainterBackendGL::program_all failed link");
-    }
-    
-  if (!m_backend->program(fastuidraw::gl::PainterBackendGL::program_without_discard)->link_success())
-    {
-      FASTUIDRAWassert(!"fastuidraw::PainterBackendGL::program_without_discard failed link");
-    }
-
-  if (!m_backend->program(fastuidraw::gl::PainterBackendGL::program_with_discard)->link_success())
-    {
-      FASTUIDRAWassert(!"fastuidraw::PainterBackendGL::program_with_discard failed link");
-    }
 
   fastuidraw::vecN<fastuidraw::u8vec4, 4> im;
   im[0] = fastuidraw::u8vec4(255, 255, 255, 255);
@@ -327,12 +314,6 @@ initialize_resources(void *get_proc_data,
   m_font_config = FASTUIDRAWnew FontConfig();
   m_font_config->add_system_fonts(m_font_database);
   ++InitCount;
-
-  std::cout << "FUID-FUZZ: Initialize resources, current_context = "
-            << QOpenGLContext::currentContext() << "(group = "
-            << QOpenGLContext::currentContext()->shareGroup() << ") global_share_context = "
-            << QOpenGLContext::globalShareContext() << "(group = "
-            << QOpenGLContext::globalShareContext()->shareGroup() << ")\n";
 }
 
 void
@@ -342,9 +323,6 @@ clear_resources(void)
   std::lock_guard<std::mutex> M(m_mutex);
   if (m_reference_counter <= 1)
     {
-      std::cout << "FUID:Clear resources\n"
-                << "FUID:\tGL_VERSION=" << fastuidraw_glGetString(GL_VERSION) << "\n"
-                << "FUID:\tGL_RENDERER=" << fastuidraw_glGetString(GL_RENDERER) << "\n";
       m_font_database.clear();
       m_glyph_cache.clear();
       m_checkerboard_image.clear();
