@@ -590,8 +590,8 @@ class FastUIDrawStateElement
 public:
   FastUIDrawStateElement(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p,
                          PlatformGraphicsContext::FastUIDrawOption options)
-    : m_fill_aa(options.m_allow_fill_aa ? fastuidraw::Painter::shader_anti_alias_fastest : fastuidraw::Painter::shader_anti_alias_none)
-    , m_stroke_aa(options.m_allow_stroke_aa ? fastuidraw::Painter::shader_anti_alias_fastest : fastuidraw::Painter::shader_anti_alias_none)
+    : m_fill_aa(options.m_allow_fill_aa)
+    , m_stroke_aa(options.m_allow_stroke_aa)
     , m_stroke_brush(p)
     , m_fill_brush(p)
     , m_stroke_params(p)
@@ -607,7 +607,7 @@ public:
       .miter_limit(10.0f);
   }
   
-  enum fastuidraw::Painter::shader_anti_alias_t m_fill_aa, m_stroke_aa;
+  bool m_fill_aa, m_stroke_aa;
   fastuidraw::StrokingStyle m_stroke_style;
   MutablePackedValue<fastuidraw::PainterBrush> m_stroke_brush, m_fill_brush;
   MutablePackedValue<fastuidraw::PainterStrokeParams, fastuidraw::PainterItemShaderData> m_stroke_params;
@@ -830,8 +830,8 @@ public:
         should_apply_aa = (tr(0, 1) != 0.0f || tr(1, 0) != 0.0f
                            || tr(2, 0) != 0.0f || tr(2, 1) != 0.0f);
         
-        enum fastuidraw::Painter::shader_anti_alias_t aa;
-        aa = (should_apply_aa) ? fastuidraw_state().m_fill_aa : fastuidraw::Painter::shader_anti_alias_none;
+        bool aa;
+        aa = should_apply_aa && fastuidraw_state().m_fill_aa;
         fastuidraw()->fill_rect(data, rectFromFloatRect(rect), aa);
     }
   
@@ -1746,23 +1746,10 @@ void GraphicsContext::platformFillRoundedRect(const FloatRoundedRect& rect, cons
 
         fastuidraw::RoundedRect fud_rect;
         fastuidraw::PainterBrush brush(FastUIDrawColorValue(color, alpha()));
-        enum fastuidraw::Painter::shader_anti_alias_t aa(m_data->fastuidraw_state().m_fill_aa);
-
-        /* admittedly, skipping anti-aliasing just because the rect is
-         * screen aligned is questionable because that means the rounded
-         * edges are never anti-aliased; for now disable this code.
-         */
-        if (0) {
-            bool should_apply_aa;
-            const fastuidraw::float3x3 &tr(m_data->fastuidraw()->transformation());
-            should_apply_aa = (tr(0, 1) != 0.0f || tr(1, 0) != 0.0f
-                               || tr(2, 0) != 0.0f || tr(2, 1) != 0.0f);
-            aa = (should_apply_aa) ? aa : fastuidraw::Painter::shader_anti_alias_none;
-        }
 
         createFastUIDrawRoundedRect(rect, &fud_rect);
         m_data->fastuidraw()->fill_rounded_rect(fastuidraw::PainterData(&brush),
-                                                fud_rect, aa);
+                                                fud_rect, m_data->fastuidraw_state().m_fill_aa);
     }
 }
 
@@ -2412,7 +2399,7 @@ void GraphicsContext::endPlatformTransparencyLayer()
             
             m_data->fastuidraw()->fill_rect(fastuidraw::PainterData(&brush),
                                             fastuidraw::Rect().size(layer.m_blit_rect.size()),
-                                            fastuidraw::Painter::shader_anti_alias_none);
+                                            false);
             m_data->fastuidraw()->restore();
         }
     }
@@ -2922,13 +2909,8 @@ void GraphicsContext::setPlatformShouldAntialias(bool enable)
     if (m_data->is_qt()) {
         m_data->p()->setRenderHint(QPainter::Antialiasing, enable);
     } else {
-        m_data->fastuidraw_state().m_fill_aa = (m_data->fastuidraw_options().m_allow_fill_aa && enable) ?
-          fastuidraw::Painter::shader_anti_alias_fastest :
-          fastuidraw::Painter::shader_anti_alias_none;
-
-        m_data->fastuidraw_state().m_stroke_aa = (m_data->fastuidraw_options().m_allow_stroke_aa && enable) ?
-          fastuidraw::Painter::shader_anti_alias_fastest :
-          fastuidraw::Painter::shader_anti_alias_none;
+        m_data->fastuidraw_state().m_fill_aa = m_data->fastuidraw_options().m_allow_fill_aa && enable;
+        m_data->fastuidraw_state().m_stroke_aa = m_data->fastuidraw_options().m_allow_stroke_aa && enable;
     }
 }
 
