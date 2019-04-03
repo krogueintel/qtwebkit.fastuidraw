@@ -435,7 +435,7 @@ create_fastuidraw_image(const QImage &image)
   ImageFromPixmap tmp(image);
   return fastuidraw::Image::create(FastUIDraw::imageAtlas(),
                                    image.width(), image.height(),
-                                   tmp, 1);
+                                   tmp);
 }
 
 fastuidraw::reference_counted_ptr<const fastuidraw::Image>

@@ -705,10 +705,7 @@ static inline enum fastuidraw::PainterBrush::image_filter computeFastUIImageFilt
         filter = fastuidraw::PainterBrush::image_filter_cubic;
         break;
     }
-    
-    if (image) {
-        filter = fastuidraw::PainterBrush::filter_for_image(image, filter);
-    }
+
     return filter;
 }
 

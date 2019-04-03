@@ -302,7 +302,7 @@ initialize_resources(void *get_proc_data,
   im[2] = fastuidraw::u8vec4(0, 0, 0, 255);
   im[3] = fastuidraw::u8vec4(255, 255, 255, 255);
   m_checkerboard_image = fastuidraw::Image::create(gl_image_atlas, 2, 2, im,
-                                                   fastuidraw::Image::rgba_format, 2);
+                                                   fastuidraw::Image::rgba_format);
 
   fastuidraw::ColorStopSequence cs;
   cs.add(fastuidraw::ColorStop(fastuidraw::u8vec4(255, 0, 0, 255), 0.0f));
@@ -746,7 +746,7 @@ PainterHolder(void)
 
       b = S.m_backend;
       FASTUIDRAWassert(b);
-      m_painter = FASTUIDRAWnew fastuidraw::Painter(b->create_shared());
+      m_painter = FASTUIDRAWnew fastuidraw::Painter(b);
     }
   else
     {
