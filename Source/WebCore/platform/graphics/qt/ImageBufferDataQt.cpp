@@ -95,7 +95,7 @@ ImageBufferDataPrivateFastUIDraw::ImageBufferDataPrivateFastUIDraw(const FloatSi
     fastuidraw::ivec2 wh(sz.width(), sz.height());
 
     m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
-    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(wh);
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(wh, *WebCore::FastUIDraw::currentBackend());
     fastuidraw::PainterSurface::Viewport vwp(0, 0, wh.x(), wh.y());
     m_surface->viewport(vwp);
     m_surface->clear_color(clear_color());
@@ -145,7 +145,8 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::image() const
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
 {
     fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> old_surface(m_surface);
-    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(m_surface->dimensions());
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(m_surface->dimensions(),
+                                                               *WebCore::FastUIDraw::currentBackend());
     m_surface->viewport(old_surface->viewport());
     m_surface->clear_color(clear_color());
     m_painter->painter()->flush(m_surface);
@@ -155,7 +156,8 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::takeImage()
 {
     fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> old_surface(m_surface);
-    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(m_surface->dimensions());
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(m_surface->dimensions(),
+                                                               *WebCore::FastUIDraw::currentBackend());
     m_surface->viewport(old_surface->viewport());
     m_surface->clear_color(clear_color());
     m_painter->painter()->end();

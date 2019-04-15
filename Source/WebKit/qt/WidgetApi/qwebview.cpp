@@ -152,7 +152,7 @@ public:
     fastuidraw::reference_counted_ptr<WebCore::FastUIDraw::PainterHolder> m_painter_holder;
     fastuidraw::reference_counted_ptr<fastuidraw::Painter> m_painter;
     fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> m_font;
-    fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
+    fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterSurfaceGL> m_surface;
     std::vector<unsigned int> m_fastuidraw_painter_stats;
 
     unsigned int m_num_frames;
@@ -1289,7 +1289,8 @@ void QWebView::paintGL(void)
         int w(width()), h(height());
         fastuidraw::PainterSurface::Viewport vwp(0, 0, w, h);
         
-        d->m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(fastuidraw::ivec2(w, h));
+        d->m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(fastuidraw::ivec2(w, h),
+                                                                      *qFastUIDrawBackend());
         d->m_surface->viewport(vwp);
       }
   

@@ -84,6 +84,12 @@ void qFastUIDrawClearResources(void)
   WebCore::FastUIDraw::clearResources();
 }
 
+const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL>&
+qFastUIDrawBackend(void)
+{
+  return WebCore::FastUIDraw::currentBackend();
+}
+
 const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
 qFastUIDrawGlyphCache(void)
 {

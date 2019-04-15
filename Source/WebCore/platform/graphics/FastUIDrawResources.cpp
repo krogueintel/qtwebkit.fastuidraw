@@ -603,6 +603,14 @@ clearResources(void)
   AtlasSet::atlas_set().clear_resources();
 }
 
+const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL>&
+WebCore::FastUIDraw::
+currentBackend(void)
+{
+  std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
+  return AtlasSet::atlas_set().m_backend;
+}
+
 const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
 WebCore::FastUIDraw::
 glyphCache(void)

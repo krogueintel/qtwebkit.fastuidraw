@@ -2,6 +2,7 @@
 #define FastUIDrawResources_h
 
 #include <fastuidraw/painter/painter.hpp>
+#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
 #include <fastuidraw/text/font_database.hpp>
 
 namespace WebCore {
@@ -34,6 +35,9 @@ namespace WebCore {
 
     void
     defaultGlyphRenderer(fastuidraw::GlyphRenderer R);
+
+    const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL>&
+    currentBackend(void);
 
     const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
     glyphCache(void);

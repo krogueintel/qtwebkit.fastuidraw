@@ -650,7 +650,8 @@ public:
 
     m_image = fastuidraw::gl::ImageAtlasGL::TextureImage::create(FastUIDraw::imageAtlas(), sz.x(), sz.y(), GL_LINEAR);
     m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
-    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterBackendGL::SurfaceGL(sz, m_image->texture());
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(sz, m_image->texture(),
+                                                               *FastUIDraw::currentBackend());
     m_surface->clear_color(fastuidraw::vec4(0.0f, 0.0f, 0.0f, 0.0f));
     m_surface->viewport(vwp);
     m_opacity = opacity;
@@ -682,7 +683,7 @@ public:
 
   fastuidraw::reference_counted_ptr<fastuidraw::gl::ImageAtlasGL::TextureImage> m_image;
   fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> m_painter;
-  fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL::SurfaceGL> m_surface;
+  fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterSurfaceGL> m_surface;
   fastuidraw::Rect m_blit_rect;
   float m_opacity;
 };
@@ -703,6 +704,7 @@ static inline enum fastuidraw::PainterBrush::image_filter computeFastUIImageFilt
         break;
     case InterpolationHigh:
         filter = fastuidraw::PainterBrush::image_filter_cubic;
+        std::cout << "!!!\n";
         break;
     }
 
