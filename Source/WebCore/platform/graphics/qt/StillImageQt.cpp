@@ -189,7 +189,7 @@ StillImageFastUIDraw::StillImageFastUIDraw(const fastuidraw::reference_counted_p
   m_fastuidraw_surface(p->painter()->surface())
 {
     p->painter()->flush();
-    m_fastuidraw_image = m_fastuidraw_surface->image(FastUIDraw::imageAtlas());
+    m_fastuidraw_image = m_fastuidraw_surface->image(FastUIDraw::currentBackend()->image_atlas());
 }
 
 bool StillImageFastUIDraw::currentFrameKnownToBeOpaque()

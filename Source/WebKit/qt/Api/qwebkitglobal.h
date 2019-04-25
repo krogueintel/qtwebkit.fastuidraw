@@ -25,7 +25,7 @@
 #include <QtCore/qstring.h>
 #include <fastuidraw/text/font_database.hpp>
 #include <fastuidraw/painter/painter.hpp>
-#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+#include <fastuidraw/gl_backend/painter_engine_gl.hpp>
 
 #ifndef QT_STATIC
 #  if !defined(BUILDING_WebKitWidgets) && (defined(BUILDING_WebKit) || defined(BUILDING_WebKit2))
@@ -65,17 +65,8 @@ QWEBKIT_EXPORT void qFastUIDrawInitializeResources(void *get_proc_data,
  */
 QWEBKIT_EXPORT void qFastUIDrawClearResources(void);
 
-QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL>&
+QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterEngineGL>&
 qFastUIDrawBackend(void);
-
-QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
-qFastUIDrawGlyphCache(void);
-
-QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
-qFastUIDrawImageAtlas(void);
-
-QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
-qFastUIDrawColorAtlas(void);
 
 QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
 qFastUIDrawFontDatabase(void);

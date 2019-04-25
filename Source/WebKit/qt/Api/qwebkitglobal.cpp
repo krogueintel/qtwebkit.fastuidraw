@@ -84,28 +84,10 @@ void qFastUIDrawClearResources(void)
   WebCore::FastUIDraw::clearResources();
 }
 
-const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL>&
+const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterEngineGL>&
 qFastUIDrawBackend(void)
 {
   return WebCore::FastUIDraw::currentBackend();
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
-qFastUIDrawGlyphCache(void)
-{
-  return WebCore::FastUIDraw::glyphCache();
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
-qFastUIDrawImageAtlas(void)
-{
-  return WebCore::FastUIDraw::imageAtlas();
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
-qFastUIDrawColorAtlas(void)
-{
-  return WebCore::FastUIDraw::colorAtlas();
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&

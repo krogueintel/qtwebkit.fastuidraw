@@ -16,7 +16,7 @@
 #include <fastuidraw/text/font_freetype.hpp>
 #include <fastuidraw/painter/painter.hpp>
 #include <fastuidraw/gl_backend/gl_binding.hpp>
-#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+#include <fastuidraw/gl_backend/painter_engine_gl.hpp>
 #include <fastuidraw/gl_backend/ngl_header.hpp>
 #include <QOpenGLContext>
 
@@ -156,11 +156,10 @@ namespace {
     void
     clear_resources(void);
 
-    fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache> m_glyph_cache;
     fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> m_font_database;
     fastuidraw::reference_counted_ptr<const fastuidraw::Image> m_checkerboard_image;
     fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> m_three_stops_color_stops;
-    fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> m_backend;
+    fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterEngineGL> m_backend;
     std::vector<fastuidraw::reference_counted_ptr<fastuidraw::Painter> > m_painters;
     fastuidraw::reference_counted_ptr<FontConfig> m_font_config;
     fastuidraw::GlyphRenderer m_glyph_renderer;
@@ -274,26 +273,14 @@ initialize_resources(void *get_proc_data,
   if (m_reference_counter > 1)
     return;
 
-  fastuidraw::reference_counted_ptr<fastuidraw::gl::GlyphAtlasGL> gl_glyph_atlas;
-  fastuidraw::reference_counted_ptr<fastuidraw::gl::ImageAtlasGL> gl_image_atlas;
-  fastuidraw::reference_counted_ptr<fastuidraw::gl::ColorStopAtlasGL> gl_colorstop_atlas;
-
   fastuidraw::gl_binding::get_proc_function(get_proc_data, get_proc, true);
-  gl_image_atlas = FASTUIDRAWnew fastuidraw::gl::ImageAtlasGL(fastuidraw::gl::ImageAtlasGL::params().delayed(true));
-  gl_glyph_atlas = FASTUIDRAWnew fastuidraw::gl::GlyphAtlasGL(fastuidraw::gl::GlyphAtlasGL::params().delayed(true));
-  gl_colorstop_atlas = FASTUIDRAWnew fastuidraw::gl::ColorStopAtlasGL(fastuidraw::gl::ColorStopAtlasGL::params().delayed(true));
-
-  fastuidraw::gl::PainterBackendGL::ConfigurationGL painter_params;
+  fastuidraw::gl::PainterEngineGL::ConfigurationGL painter_params;
   painter_params
-    .image_atlas(gl_image_atlas)
-    .glyph_atlas(gl_glyph_atlas)
-    .colorstop_atlas(gl_colorstop_atlas)
     .configure_from_context(true)
     .preferred_blend_type(fastuidraw::PainterBlendShader::dual_src)
     .use_uber_item_shader(true);
 
-  m_backend = fastuidraw::gl::PainterBackendGL::create(painter_params);
-  m_glyph_cache = FASTUIDRAWnew fastuidraw::GlyphCache(gl_glyph_atlas);
+  m_backend = fastuidraw::gl::PainterEngineGL::create(painter_params);
   m_font_database = FASTUIDRAWnew fastuidraw::FontDatabase();
 
   fastuidraw::vecN<fastuidraw::u8vec4, 4> im;
@@ -301,14 +288,17 @@ initialize_resources(void *get_proc_data,
   im[1] = fastuidraw::u8vec4(0, 0, 0, 255);
   im[2] = fastuidraw::u8vec4(0, 0, 0, 255);
   im[3] = fastuidraw::u8vec4(255, 255, 255, 255);
-  m_checkerboard_image = fastuidraw::Image::create(gl_image_atlas, 2, 2, im,
-                                                   fastuidraw::Image::rgba_format);
+  fastuidraw::c_array<const fastuidraw::u8vec4> im_ptr(im);
+  fastuidraw::c_array<const fastuidraw::c_array<const fastuidraw::u8vec4> > im_aptr(&im_ptr, 1);
+  fastuidraw::ImageSourceCArray im_source(fastuidraw::uvec2(2, 2), im_aptr, fastuidraw::Image::rgba_format);
+
+  m_checkerboard_image = m_backend->image_atlas().create(2, 2, im_source);
 
   fastuidraw::ColorStopSequence cs;
   cs.add(fastuidraw::ColorStop(fastuidraw::u8vec4(255, 0, 0, 255), 0.0f));
   cs.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0, 255, 0, 255), 0.5f));
   cs.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0, 0, 255, 255), 1.0f));
-  m_three_stops_color_stops = FASTUIDRAWnew fastuidraw::ColorStopSequenceOnAtlas(cs, gl_colorstop_atlas, 8);
+  m_three_stops_color_stops = FASTUIDRAWnew fastuidraw::ColorStopSequenceOnAtlas(cs, m_backend->colorstop_atlas(), 8);
 
   /* Populate m_font_database using FontConfig. */
   m_font_config = FASTUIDRAWnew FontConfig();
@@ -324,7 +314,6 @@ clear_resources(void)
   if (m_reference_counter <= 1)
     {
       m_font_database.clear();
-      m_glyph_cache.clear();
       m_checkerboard_image.clear();
       m_three_stops_color_stops.clear();
       m_backend.clear();
@@ -603,36 +592,12 @@ clearResources(void)
   AtlasSet::atlas_set().clear_resources();
 }
 
-const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL>&
+const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterEngineGL>&
 WebCore::FastUIDraw::
 currentBackend(void)
 {
   std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
   return AtlasSet::atlas_set().m_backend;
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::GlyphCache>&
-WebCore::FastUIDraw::
-glyphCache(void)
-{
-  std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
-  return AtlasSet::atlas_set().m_glyph_cache;
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::ImageAtlas>&
-WebCore::FastUIDraw::
-imageAtlas(void)
-{
-  std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
-  return AtlasSet::atlas_set().m_backend->image_atlas();
-}
-
-const fastuidraw::reference_counted_ptr<fastuidraw::ColorStopAtlas>&
-WebCore::FastUIDraw::
-colorAtlas(void)
-{
-  std::lock_guard<std::mutex> M(AtlasSet::atlas_set().m_mutex);
-  return AtlasSet::atlas_set().m_backend->colorstop_atlas();
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
@@ -750,7 +715,7 @@ PainterHolder(void)
 
   if (S.m_painters.empty())
     {
-      fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterBackendGL> b;
+      fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterEngineGL> b;
 
       b = S.m_backend;
       FASTUIDRAWassert(b);

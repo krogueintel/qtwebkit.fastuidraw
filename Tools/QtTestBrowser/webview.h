@@ -43,7 +43,7 @@
 
 #include <QGLWidget>
 #include <fastuidraw/gl_backend/gl_binding.hpp>
-#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+#include <fastuidraw/gl_backend/painter_engine_gl.hpp>
 
 QT_BEGIN_NAMESPACE
 class QStateMachine;

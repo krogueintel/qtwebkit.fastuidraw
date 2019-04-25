@@ -49,7 +49,8 @@
 
 #include <fastuidraw/gl_backend/ngl_header.hpp>
 #include <fastuidraw/gl_backend/gl_get.hpp>
-#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+#include <fastuidraw/gl_backend/painter_engine_gl.hpp>
+#include <fastuidraw/gl_backend/painter_surface_gl.hpp>
 
 template<GLenum state>
 class GLStateRestore
@@ -135,7 +136,7 @@ public:
     {
         enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
         std::istringstream str(text);
-        fastuidraw::GlyphRun run(pixel_size, orientation, qFastUIDrawGlyphCache());
+        fastuidraw::GlyphRun run(pixel_size, orientation, qFastUIDrawBackend()->glyph_cache());
         create_formatted_textT(run, str, m_font, qFastUIDrawFontDatabase(), fastuidraw::vec2(0.0f, 0.0f));
         m_painter->draw_glyphs(draw, run, 0, run.number_glyphs(), qFastUIDrawGlyphRenderer());
     }    
@@ -233,7 +234,7 @@ create_formatted_textT(T &out_sequence,
                        const fastuidraw::vec2 &starting_place)
 {
   std::streampos current_position, end_position;
-  float pixel_size(out_sequence.pixel_size());
+  float pixel_size(out_sequence.format_size());
   enum fastuidraw::Painter::screen_orientation orientation(out_sequence.orientation());
   unsigned int loc(0);
   fastuidraw::vec2 pen(starting_place);
@@ -270,7 +271,7 @@ create_formatted_textT(T &out_sequence,
       metrics.resize(line.length());
 
       font_database->create_glyph_sequence(font.get(), line.begin(), line.end(), glyph_sources.begin());
-      out_sequence.glyph_cache()->fetch_glyph_metrics(cast_c_array(glyph_sources), cast_c_array(metrics));
+      out_sequence.glyph_cache().fetch_glyph_metrics(cast_c_array(glyph_sources), cast_c_array(metrics));
       for(unsigned int i = 0, endi = glyph_sources.size(); i < endi; ++i)
         {
           sub_p[i] = pen;

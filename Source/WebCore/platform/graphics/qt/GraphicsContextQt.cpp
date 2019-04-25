@@ -78,8 +78,9 @@
 #include <private/qpdf_p.h>
 #include <wtf/MathExtras.h>
 
-#include <fastuidraw/gl_backend/image_gl.hpp>
-#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+#include <fastuidraw/gl_backend/texture_image_gl.hpp>
+#include <fastuidraw/gl_backend/painter_surface_gl.hpp>
+#include <fastuidraw/gl_backend/painter_engine_gl.hpp>
 
 #include <iostream>
 
@@ -558,6 +559,38 @@ private:
     fastuidraw::PainterPackedValue<T> m_packed_value;
 };
 
+class MutablePackedBrush
+{
+public:
+    MutablePackedBrush(const fastuidraw::reference_counted_ptr<fastuidraw::Painter> &p)
+      : m_pool(p ? &p->packed_value_pool() : nullptr)
+    {}
+  
+    const fastuidraw::PainterBrush&
+    constant_value(void) const { return m_value; }
+
+    fastuidraw::PainterBrush&
+    change_value(void)
+    {
+      m_packed_value = fastuidraw::PainterData::brush_value();
+      return m_value;
+    }
+
+    const fastuidraw::PainterData::brush_value&
+    packed_value(void)
+    {
+        if (!m_packed_value.packed()) {
+            m_packed_value = m_pool->create_packed_brush(m_value);
+        }
+        return m_packed_value;
+    }
+
+private:
+    fastuidraw::PainterPackedValuePool *m_pool;
+    fastuidraw::PainterBrush m_value;
+    fastuidraw::PainterData::brush_value m_packed_value;
+};
+
 void setPatternGradientOfFastUIDrawBrush(const RefPtr<Pattern> &pattern, const RefPtr<Gradient> &gr,
                                          fastuidraw::PainterBrush &brush,
                                          float alpha)
@@ -609,7 +642,7 @@ public:
   
   bool m_fill_aa, m_stroke_aa;
   fastuidraw::StrokingStyle m_stroke_style;
-  MutablePackedValue<fastuidraw::PainterBrush> m_stroke_brush, m_fill_brush;
+  MutablePackedBrush m_stroke_brush, m_fill_brush;
   MutablePackedValue<fastuidraw::PainterStrokeParams, fastuidraw::PainterItemShaderData> m_stroke_params;
 };
 
@@ -648,7 +681,11 @@ public:
       .min_point(fastuidraw::vec2(m))
       .size(fastuidraw::vec2(sz));
 
-    m_image = fastuidraw::gl::ImageAtlasGL::TextureImage::create(FastUIDraw::imageAtlas(), sz.x(), sz.y(), GL_LINEAR);
+    m_image = fastuidraw::gl::TextureImage::create(FastUIDraw::currentBackend()->image_atlas(),
+                                                   sz.x(), sz.y(), 1,
+                                                   (GLenum)GL_LINEAR,
+                                                   (GLenum)GL_LINEAR,
+                                                   fastuidraw::Image::rgba_format);
     m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
     m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(sz, m_image->texture(),
                                                                *FastUIDraw::currentBackend());
@@ -681,7 +718,7 @@ public:
     return fastuidraw::ivec2(normalized_coord);
   }
 
-  fastuidraw::reference_counted_ptr<fastuidraw::gl::ImageAtlasGL::TextureImage> m_image;
+  fastuidraw::reference_counted_ptr<fastuidraw::gl::TextureImage> m_image;
   fastuidraw::reference_counted_ptr<FastUIDraw::PainterHolder> m_painter;
   fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterSurfaceGL> m_surface;
   fastuidraw::Rect m_blit_rect;
@@ -764,7 +801,7 @@ public:
   //////////////////////////////////////////////
   // Stuff for FastUIDraw
     fastuidraw::Path m_fastuidraw_square_path, m_fastuidraw_circle_path;
-    fastuidraw::PainterPackedValue<fastuidraw::PainterBrush> m_packed_black_brush;
+    fastuidraw::PainterData::brush_value m_packed_black_brush;
     std::vector<FastUIDrawStateElement> m_fastuidraw_state_stack;
     FastUIDrawStateElement &fastuidraw_state(void) { return m_fastuidraw_state_stack.back(); }
     fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> m_root_surface;
@@ -873,7 +910,7 @@ GraphicsContextPlatformPrivate::GraphicsContextPlatformPrivate(PlatformGraphicsC
 
         m_root_surface = platform->fastuidraw()->surface();
         m_fastuidraw_state_stack.push_back(FastUIDrawStateElement(platform->fastuidraw(), platform->fastuidraw_options()));
-        m_packed_black_brush = pool.create_packed_value(fastuidraw::PainterBrush()
+        m_packed_black_brush = pool.create_packed_brush(fastuidraw::PainterBrush()
                                                         .color(0.0f, 0.0f, 0.0f, 0.0f));
         platform->fastuidraw()->blend_shader(fastuidraw::Painter::blend_porter_duff_src_over);
         m_fastuidraw_square_path << fastuidraw::vec2(0.0f, 0.0f)

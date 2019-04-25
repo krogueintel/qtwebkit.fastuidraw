@@ -433,9 +433,7 @@ WebCore::FastUIDraw::
 create_fastuidraw_image(const QImage &image)
 {
   ImageFromPixmap tmp(image);
-  return fastuidraw::Image::create(FastUIDraw::imageAtlas(),
-                                   image.width(), image.height(),
-                                   tmp);
+  return FastUIDraw::currentBackend()->image_atlas().create(image.width(), image.height(), tmp);
 }
 
 fastuidraw::reference_counted_ptr<const fastuidraw::Image>

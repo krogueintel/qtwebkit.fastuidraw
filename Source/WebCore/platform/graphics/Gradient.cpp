@@ -259,7 +259,7 @@ const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtl
         }
         
         m_fastuidraw_cs = FASTUIDRAWnew fastuidraw::ColorStopSequenceOnAtlas(sq,
-                                                                             FastUIDraw::colorAtlas(),
+                                                                             FastUIDraw::currentBackend()->colorstop_atlas(),
                                                                              width);
     }
 

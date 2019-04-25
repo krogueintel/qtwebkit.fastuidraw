@@ -58,7 +58,8 @@
 #include <private/qopenglpaintengine_p.h>
 #endif
 
-#include <fastuidraw/gl_backend/painter_backend_gl.hpp>
+#include <fastuidraw/gl_backend/painter_engine_gl.hpp>
+#include <fastuidraw/gl_backend/painter_surface_gl.hpp>
 
 namespace WebCore {
   
@@ -150,7 +151,7 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
     m_surface->viewport(old_surface->viewport());
     m_surface->clear_color(clear_color());
     m_painter->painter()->flush(m_surface);
-    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::imageAtlas()));
+    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::currentBackend()->image_atlas()));
 }
 
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::takeImage()
@@ -163,7 +164,7 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::takeImage()
     m_painter->painter()->end();
     m_painter->painter()->begin(m_surface, fastuidraw::Painter::y_increases_downwards);
     
-    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::imageAtlas()));
+    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::currentBackend()->image_atlas()));
 }
 
 void ImageBufferDataPrivateFastUIDraw::draw(GraphicsContext& destContext, const FloatRect& destRect,
