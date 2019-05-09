@@ -124,6 +124,7 @@ public:
     template<typename T>
     void
     create_formatted_textT(T &out_sequence,
+                           enum fastuidraw::Painter::screen_orientation orientation,
                            std::istream &istr,
                            const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &font,
                            const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> &font_database,
@@ -136,8 +137,8 @@ public:
     {
         enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
         std::istringstream str(text);
-        fastuidraw::GlyphRun run(pixel_size, orientation, qFastUIDrawBackend()->glyph_cache());
-        create_formatted_textT(run, str, m_font, qFastUIDrawFontDatabase(), fastuidraw::vec2(0.0f, 0.0f));
+        fastuidraw::GlyphRun run(pixel_size, orientation, qFastUIDrawEngine()->glyph_cache());
+        create_formatted_textT(run, orientation, str, m_font, qFastUIDrawFontDatabase(), fastuidraw::vec2(0.0f, 0.0f));
         m_painter->draw_glyphs(draw, run, 0, run.number_glyphs(), qFastUIDrawGlyphRenderer());
     }    
   
@@ -228,6 +229,7 @@ template<typename T>
 void
 QWebViewPrivate::
 create_formatted_textT(T &out_sequence,
+                       enum fastuidraw::Painter::screen_orientation orientation,
                        std::istream &istr,
                        const fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> &font,
                        const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase> &font_database,
@@ -235,7 +237,6 @@ create_formatted_textT(T &out_sequence,
 {
   std::streampos current_position, end_position;
   float pixel_size(out_sequence.format_size());
-  enum fastuidraw::Painter::screen_orientation orientation(out_sequence.orientation());
   unsigned int loc(0);
   fastuidraw::vec2 pen(starting_place);
   std::string line, original_line;
@@ -1291,7 +1292,7 @@ void QWebView::paintGL(void)
         fastuidraw::PainterSurface::Viewport vwp(0, 0, w, h);
         
         d->m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(fastuidraw::ivec2(w, h),
-                                                                      *qFastUIDrawBackend());
+                                                                      *qFastUIDrawEngine());
         d->m_surface->viewport(vwp);
       }
   

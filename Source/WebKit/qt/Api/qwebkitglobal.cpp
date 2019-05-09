@@ -85,9 +85,9 @@ void qFastUIDrawClearResources(void)
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterEngineGL>&
-qFastUIDrawBackend(void)
+qFastUIDrawEngine(void)
 {
-  return WebCore::FastUIDraw::currentBackend();
+  return WebCore::FastUIDraw::currentEngine();
 }
 
 const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&

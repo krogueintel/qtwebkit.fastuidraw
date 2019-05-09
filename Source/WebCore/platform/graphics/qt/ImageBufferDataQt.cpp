@@ -96,7 +96,7 @@ ImageBufferDataPrivateFastUIDraw::ImageBufferDataPrivateFastUIDraw(const FloatSi
     fastuidraw::ivec2 wh(sz.width(), sz.height());
 
     m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
-    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(wh, *WebCore::FastUIDraw::currentBackend());
+    m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(wh, *WebCore::FastUIDraw::currentEngine());
     fastuidraw::PainterSurface::Viewport vwp(0, 0, wh.x(), wh.y());
     m_surface->viewport(vwp);
     m_surface->clear_color(clear_color());
@@ -147,24 +147,24 @@ RefPtr<Image> ImageBufferDataPrivateFastUIDraw::copyImage() const
 {
     fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> old_surface(m_surface);
     m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(m_surface->dimensions(),
-                                                               *WebCore::FastUIDraw::currentBackend());
+                                                               *WebCore::FastUIDraw::currentEngine());
     m_surface->viewport(old_surface->viewport());
     m_surface->clear_color(clear_color());
     m_painter->painter()->flush(m_surface);
-    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::currentBackend()->image_atlas()));
+    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::currentEngine()->image_atlas()));
 }
 
 RefPtr<Image> ImageBufferDataPrivateFastUIDraw::takeImage()
 {
     fastuidraw::reference_counted_ptr<fastuidraw::PainterSurface> old_surface(m_surface);
     m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(m_surface->dimensions(),
-                                                               *WebCore::FastUIDraw::currentBackend());
+                                                               *WebCore::FastUIDraw::currentEngine());
     m_surface->viewport(old_surface->viewport());
     m_surface->clear_color(clear_color());
     m_painter->painter()->end();
     m_painter->painter()->begin(m_surface, fastuidraw::Painter::y_increases_downwards);
     
-    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::currentBackend()->image_atlas()));
+    return StillImageFastUIDraw::create(old_surface->image(FastUIDraw::currentEngine()->image_atlas()));
 }
 
 void ImageBufferDataPrivateFastUIDraw::draw(GraphicsContext& destContext, const FloatRect& destRect,

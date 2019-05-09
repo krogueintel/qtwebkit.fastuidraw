@@ -10,7 +10,7 @@ namespace WebCore {
 
     /* A GL context must be current when this call is made
      * so that the GL context can be queried to properly
-     * configure the (hidden) PainterBackendGL object.
+     * configure the (hidden) PainterEngineGL object.
      * Calling this increments a reference counter and
      * only when at entry when the reference counter is zero
      * are objects actually created.
@@ -37,7 +37,7 @@ namespace WebCore {
     defaultGlyphRenderer(fastuidraw::GlyphRenderer R);
 
     const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterEngineGL>&
-    currentBackend(void);
+    currentEngine(void);
 
     const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
     fontDatabase(void);
@@ -45,7 +45,7 @@ namespace WebCore {
     const fastuidraw::reference_counted_ptr<const fastuidraw::Image>&
     checkerboardImage(void);
 
-    const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>&
+    const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequence>&
     threeStopColorStops(void);
 
     void

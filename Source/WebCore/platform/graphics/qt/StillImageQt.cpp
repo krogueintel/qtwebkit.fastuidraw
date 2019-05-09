@@ -46,7 +46,7 @@ static void genericReadyFastUIDrawBrush(fastuidraw::PainterBrush &brush,
         brush.reset();
         brush
           .image(im,
-                 fastuidraw::PainterBrush::image_filter_linear)
+                 fastuidraw::PainterImageBrushShader::filter_linear)
           .repeat_window(fastuidraw::vec2(0.0f, 0.0f),
                          fastuidraw::vec2(im->dimensions()),
                          fastuidraw::PainterBrush::spread_clamp,
@@ -189,7 +189,7 @@ StillImageFastUIDraw::StillImageFastUIDraw(const fastuidraw::reference_counted_p
   m_fastuidraw_surface(p->painter()->surface())
 {
     p->painter()->flush();
-    m_fastuidraw_image = m_fastuidraw_surface->image(FastUIDraw::currentBackend()->image_atlas());
+    m_fastuidraw_image = m_fastuidraw_surface->image(FastUIDraw::currentEngine()->image_atlas());
 }
 
 bool StillImageFastUIDraw::currentFrameKnownToBeOpaque()

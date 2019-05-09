@@ -245,7 +245,7 @@ void FontCascade::drawComplexText(GraphicsContext& ctx, const TextRun& run, cons
             fastuidraw::reference_counted_ptr<const fastuidraw::FontBase> fastuidraw_font(FastUIDraw::select_font(qfont));
             float pixel_size(qfont.pixelSize());
             fastuidraw::GlyphRun fastuidraw_run(pixel_size, orientation,
-                                                FastUIDraw::currentBackend()->glyph_cache(),
+                                                FastUIDraw::currentEngine()->glyph_cache(),
                                                 layout);
 
             addQtGlyphRunToFastUIDrawGlyphRun(fastuidraw_font, glyphRun, fastuidraw_run);
@@ -397,7 +397,7 @@ void FontCascade::drawGlyphs(GraphicsContext& context, const Font& font, const G
           float pixel_size(font.getQtRawFont().pixelSize());
           enum fastuidraw::Painter::screen_orientation orientation(fastuidraw::Painter::y_increases_downwards);
           enum fastuidraw::Painter::glyph_layout_type layout(fastuidraw::Painter::glyph_layout_horizontal);
-          fastuidraw::GlyphRun fud_run(pixel_size, orientation, FastUIDraw::currentBackend()->glyph_cache(), layout);
+          fastuidraw::GlyphRun fud_run(pixel_size, orientation, FastUIDraw::currentEngine()->glyph_cache(), layout);
           float width(0.0f);
           std::vector<uint32_t> glyph_codes;
           std::vector<fastuidraw::vec2> glyph_positions;

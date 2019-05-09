@@ -223,10 +223,10 @@ unsigned Gradient::hash() const
     return m_cachedHash;
 }
 
-const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>& Gradient::fastuidrawGradient(void) const
+const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequence>& Gradient::fastuidrawGradient(void) const
 {
     if (!m_fastuidraw_cs) {
-        fastuidraw::ColorStopSequence sq;
+        fastuidraw::ColorStopArray sq;
         unsigned int width(256);
         float last_time(-1.0f);
 
@@ -258,9 +258,7 @@ const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtl
             sq.add(fastuidraw::ColorStop(fastuidraw::u8vec4(0), 1.0f));
         }
         
-        m_fastuidraw_cs = FASTUIDRAWnew fastuidraw::ColorStopSequenceOnAtlas(sq,
-                                                                             FastUIDraw::currentBackend()->colorstop_atlas(),
-                                                                             width);
+        m_fastuidraw_cs = FastUIDraw::currentEngine()->colorstop_atlas().create(sq, width);
     }
 
     return m_fastuidraw_cs;
@@ -284,7 +282,7 @@ static inline enum fastuidraw::PainterBrush::spread_type_t toFastUIDrawGradientS
 
 void Gradient::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) const
 {
-    const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> &cs(fastuidrawGradient());
+    const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequence> &cs(fastuidrawGradient());
     fastuidraw::vec2 q0(FastUIDraw::vec2FromFloatPoint(p0())), q1(FastUIDraw::vec2FromFloatPoint(p1()));
     fastuidraw::float3x3 M;
     fastuidraw::float2x2 N;

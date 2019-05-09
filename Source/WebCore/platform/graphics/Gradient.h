@@ -136,7 +136,7 @@ namespace WebCore {
 #else
         PlatformGradient platformGradient();
 #endif
-        const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas>& fastuidrawGradient(void) const;
+        const fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequence>& fastuidrawGradient(void) const;
         void readyFastUIDrawBrush(fastuidraw::PainterBrush &brush) const;
 
         struct ColorStop {
@@ -197,7 +197,7 @@ namespace WebCore {
         mutable unsigned m_cachedHash;
 
         PlatformGradient m_gradient;
-        mutable fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> m_fastuidraw_cs;
+        mutable fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequence> m_fastuidraw_cs;
 
 #if USE(CAIRO)
         float m_platformGradientAlpha;

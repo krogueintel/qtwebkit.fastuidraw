@@ -66,7 +66,7 @@ QWEBKIT_EXPORT void qFastUIDrawInitializeResources(void *get_proc_data,
 QWEBKIT_EXPORT void qFastUIDrawClearResources(void);
 
 QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::gl::PainterEngineGL>&
-qFastUIDrawBackend(void);
+qFastUIDrawEngine(void);
 
 QWEBKIT_EXPORT const fastuidraw::reference_counted_ptr<fastuidraw::FontDatabase>&
 qFastUIDrawFontDatabase(void);

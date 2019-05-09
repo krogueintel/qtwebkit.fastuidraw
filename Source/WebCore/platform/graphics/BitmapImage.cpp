@@ -662,7 +662,7 @@ void BitmapImage::readyFastUIDrawBrush(fastuidraw::PainterBrush &brush)
         const fastuidraw::reference_counted_ptr<const fastuidraw::Image> &im(f->fastuidraw_image());
         brush
           .image(im,
-                 fastuidraw::PainterBrush::image_filter_linear)
+                 fastuidraw::PainterImageBrushShader::filter_linear)
           .repeat_window(fastuidraw::vec2(0.0f, 0.0f),
                          fastuidraw::vec2(width(), height()),
                          fastuidraw::PainterBrush::spread_clamp,

@@ -172,8 +172,9 @@ namespace {
       fastuidraw::GlyphRenderer
       choose_glyph_render(float logical_pixel_size,
                           const fastuidraw::float3x3& /*transformation */,
+                          fastuidraw::vec2,
                           float max_singular_value,
-                          float /*min_singular_value*/) const
+                          float /*min_singular_value*/) const override
       {
           float sz;
           sz = logical_pixel_size * max_singular_value;
@@ -185,7 +186,8 @@ namespace {
       virtual
       fastuidraw::GlyphRenderer
       choose_glyph_render(float /*logical_pixel_size */,
-                          const fastuidraw::float3x3& /*transformation*/) const
+                          const fastuidraw::float3x3& /*transformation*/,
+                          fastuidraw::vec2) const override
       {
           return fastuidraw::GlyphRenderer(fastuidraw::restricted_rays_glyph);
       }
@@ -681,14 +683,14 @@ public:
       .min_point(fastuidraw::vec2(m))
       .size(fastuidraw::vec2(sz));
 
-    m_image = fastuidraw::gl::TextureImage::create(FastUIDraw::currentBackend()->image_atlas(),
+    m_image = fastuidraw::gl::TextureImage::create(FastUIDraw::currentEngine()->image_atlas(),
                                                    sz.x(), sz.y(), 1,
                                                    (GLenum)GL_LINEAR,
                                                    (GLenum)GL_LINEAR,
                                                    fastuidraw::Image::rgba_format);
     m_painter = FASTUIDRAWnew FastUIDraw::PainterHolder();
     m_surface = FASTUIDRAWnew fastuidraw::gl::PainterSurfaceGL(sz, m_image->texture(),
-                                                               *FastUIDraw::currentBackend());
+                                                               *FastUIDraw::currentEngine());
     m_surface->clear_color(fastuidraw::vec4(0.0f, 0.0f, 0.0f, 0.0f));
     m_surface->viewport(vwp);
     m_opacity = opacity;
@@ -725,22 +727,22 @@ public:
   float m_opacity;
 };
 
-static inline enum fastuidraw::PainterBrush::image_filter computeFastUIImageFilter(InterpolationQuality quality,
+static inline enum fastuidraw::PainterImageBrushShader::filter_t computeFastUIImageFilter(InterpolationQuality quality,
                                                                                    fastuidraw::reference_counted_ptr<const fastuidraw::Image> image)
 {
-    enum fastuidraw::PainterBrush::image_filter filter;
+    enum fastuidraw::PainterImageBrushShader::filter_t filter;
 
     switch (quality) {
     case InterpolationNone:
     case InterpolationLow:
-        filter = fastuidraw::PainterBrush::image_filter_nearest;
+        filter = fastuidraw::PainterImageBrushShader::filter_nearest;
         break;
     case InterpolationDefault:
     case InterpolationMedium:
-        filter = fastuidraw::PainterBrush::image_filter_linear;
+        filter = fastuidraw::PainterImageBrushShader::filter_linear;
         break;
     case InterpolationHigh:
-        filter = fastuidraw::PainterBrush::image_filter_cubic;
+        filter = fastuidraw::PainterImageBrushShader::filter_cubic;
         std::cout << "!!!\n";
         break;
     }
@@ -1745,7 +1747,7 @@ void GraphicsContext::fillRect(const FloatRect& rect, Gradient& gradient)
         QPainter* p = m_data->p();
         p->fillRect(rect, *gradient.platformGradient());
     } else {
-        fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequenceOnAtlas> cs(gradient.fastuidrawGradient());
+        fastuidraw::reference_counted_ptr<const fastuidraw::ColorStopSequence> cs(gradient.fastuidrawGradient());
         fastuidraw::PainterBrush brush;
 
         gradient.readyFastUIDrawBrush(brush);
