@@ -1490,7 +1490,7 @@ void GraphicsContext::fillPath(const Path& path)
 
         const fastuidraw::ShaderFilledPath *sf;
         fastuidraw::PainterData pd(m_data->fastuidraw_state().m_fill_brush.packed_value());
-        sf = path.FastUIDrawPath().shader_filled_path().get();
+        sf = &path.FastUIDrawPath().shader_filled_path();
 
         /* TODO: check the complexity of the path against the amount of area
          * it covers and from that value, decide to render the path as a

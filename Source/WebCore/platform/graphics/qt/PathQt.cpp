@@ -61,7 +61,6 @@ static bool indicatesClosePath(const QPainterPath &path, int lastMoveToI, int cu
 }
 
 Path::Path()
-  : m_fastuidraw_path_ready(true)
 {
 }
 
@@ -71,7 +70,6 @@ Path::~Path()
 
 Path::Path(const Path& other)
     : m_path(other.m_path)
-    , m_fastuidraw_path_ready(other.m_fastuidraw_path_ready)
     , m_fastuidraw_path(other.m_fastuidraw_path)
 {
 }
@@ -79,7 +77,6 @@ Path::Path(const Path& other)
 Path& Path::operator=(const Path& other)
 {
     m_path = other.m_path;
-    m_fastuidraw_path_ready = other.m_fastuidraw_path_ready;
     m_fastuidraw_path = other.m_fastuidraw_path;
     return *this;
 }
@@ -166,7 +163,7 @@ bool Path::strokeContains(StrokeStyleApplier* applier, const FloatPoint& point) 
 
 void Path::translate(const FloatSize& size)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path.translate(size.width(), size.height());
 }
 
@@ -223,31 +220,31 @@ FloatRect Path::strokeBoundingRect(StrokeStyleApplier* applier) const
 
 void Path::moveTo(const FloatPoint& point)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path.moveTo(point);
 }
 
 void Path::addLineTo(const FloatPoint& p)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path.lineTo(p);
 }
 
 void Path::addQuadCurveTo(const FloatPoint& cp, const FloatPoint& p)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path.quadTo(cp, p);
 }
 
 void Path::addBezierCurveTo(const FloatPoint& cp1, const FloatPoint& cp2, const FloatPoint& p)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path.cubicTo(cp1, cp2, p);
 }
 
 void Path::addArcTo(const FloatPoint& p1, const FloatPoint& p2, float radius)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
 
     FloatPoint p0(m_path.currentPosition());
 
@@ -309,7 +306,7 @@ void Path::addArcTo(const FloatPoint& p1, const FloatPoint& p2, float radius)
 
 void Path::closeSubpath()
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path.closeSubpath();
 }
 
@@ -371,19 +368,19 @@ static void addEllipticArc(QPainterPath &path, qreal xc, qreal yc, qreal radiusX
 
 void Path::addArc(const FloatPoint& p, float r, float sar, float ear, bool anticlockwise)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     addEllipticArc(m_path, p.x(), p.y(), r, r, sar, ear, anticlockwise);
 }
 
 void Path::addRect(const FloatRect& r)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path.addRect(r.x(), r.y(), r.width(), r.height());
 }
 
 void Path::addEllipse(FloatPoint p, float radiusX, float radiusY, float rotation, float startAngle, float endAngle, bool anticlockwise)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     if (!qFuzzyIsNull(rotation)) {
         QPainterPath subPath;
         QTransform t;
@@ -411,13 +408,13 @@ void Path::addEllipse(FloatPoint p, float radiusX, float radiusY, float rotation
 
 void Path::addEllipse(const FloatRect& r)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path.addEllipse(r.x(), r.y(), r.width(), r.height());
 }
 
 void Path::addPath(const Path& path, const AffineTransform& transform)
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     if (!transform.isInvertible())
         return;
 
@@ -427,7 +424,7 @@ void Path::addPath(const Path& path, const AffineTransform& transform)
 
 void Path::clear()
 {
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     if (!m_path.elementCount())
         return;
     m_path = QPainterPath();
@@ -495,7 +492,7 @@ void Path::apply(const PathApplierFunction& function) const
 void Path::transform(const AffineTransform& transform)
 {
     QTransform qTransform(transform);
-    m_fastuidraw_path_ready = false;
+    m_fastuidraw_path.clear();
     m_path = qTransform.map(m_path);
 }
 
@@ -578,11 +575,10 @@ static void printQtPath(const QPainterPath &path)
 
 const fastuidraw::Path &Path::FastUIDrawPath() const
 {
-    if (!m_fastuidraw_path_ready) {
+    if (!m_fastuidraw_path) {
         int lastMoveToAt(-1);
       
-        m_fastuidraw_path_ready = true;
-        m_fastuidraw_path.clear();
+        m_fastuidraw_path = FASTUIDRAWnew PathHolder();
 
         //printQtPath(m_path);
 
@@ -591,14 +587,14 @@ const fastuidraw::Path &Path::FastUIDrawPath() const
 
             switch (cur.type) {
                 case QPainterPath::MoveToElement:
-                    m_fastuidraw_path.move(fastuidraw::vec2(cur.x, cur.y));
+                    m_fastuidraw_path->m_path.move(fastuidraw::vec2(cur.x, cur.y));
                     lastMoveToAt = i;
                     break;
                 case QPainterPath::LineToElement:
                     if (indicatesClosePath(m_path, lastMoveToAt, i)) {
-                        m_fastuidraw_path.close_contour();
+                        m_fastuidraw_path->m_path.close_contour();
                     } else {
-                        m_fastuidraw_path.line_to(fastuidraw::vec2(cur.x, cur.y));
+                        m_fastuidraw_path->m_path.line_to(fastuidraw::vec2(cur.x, cur.y));
                     }
                     break;
                 case QPainterPath::CurveToElement:
@@ -610,12 +606,12 @@ const fastuidraw::Path &Path::FastUIDrawPath() const
                     Q_ASSERT(c2.type == QPainterPath::CurveToDataElement);
 
                     if (indicatesClosePath(m_path, lastMoveToAt, i + 2)) {
-                        m_fastuidraw_path.close_contour_cubic(fastuidraw::vec2(cur.x, cur.y),
-                                                              fastuidraw::vec2(c1.x, c1.y));
+                        m_fastuidraw_path->m_path.close_contour_cubic(fastuidraw::vec2(cur.x, cur.y),
+                                                                      fastuidraw::vec2(c1.x, c1.y));
                     } else {
-                        m_fastuidraw_path.cubic_to(fastuidraw::vec2(cur.x, cur.y),
-                                                   fastuidraw::vec2(c1.x, c1.y),
-                                                   fastuidraw::vec2(c2.x, c2.y));
+                        m_fastuidraw_path->m_path.cubic_to(fastuidraw::vec2(cur.x, cur.y),
+                                                           fastuidraw::vec2(c1.x, c1.y),
+                                                           fastuidraw::vec2(c2.x, c2.y));
                     }
 
                     i += 2;
@@ -627,7 +623,7 @@ const fastuidraw::Path &Path::FastUIDrawPath() const
         }
     }
 
-    return m_fastuidraw_path;
+    return m_fastuidraw_path->m_path;
 }
 
 }

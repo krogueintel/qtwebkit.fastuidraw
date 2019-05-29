@@ -193,9 +193,14 @@ namespace WebCore {
 #endif
 
     private:
+        class PathHolder:public fastuidraw::reference_counted<PathHolder>::concurrent
+        {
+        public:
+          fastuidraw::Path m_path;
+        };
+      
         PlatformPathPtr m_path;
-        mutable bool m_fastuidraw_path_ready;
-        mutable fastuidraw::Path m_fastuidraw_path;
+        mutable fastuidraw::reference_counted_ptr<PathHolder> m_fastuidraw_path;
     };
 
 TextStream& operator<<(TextStream&, const Path&);
